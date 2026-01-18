@@ -232,20 +232,21 @@
   }
   
   .indicadores-grid {
-    grid-template-columns: 1fr; /* una columna */
-    gap: 0.75rem;
+    grid-template-columns: repeat(3, 1fr); /* tres columnas compactas */
+    gap: 0.5rem;
   }
   
   .indicador-card {
-    padding: 0.75rem;
+    padding: 0.5rem 0.25rem;
   }
   
   .indicador-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    margin-bottom: 0.25rem;
   }
   
   .indicador-valor {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
   
   .ventas-acciones {
@@ -278,18 +279,21 @@
   
   .table-container {
     -webkit-overflow-scrolling: touch;
-    margin: 0 -1rem;
-    padding: 0 1rem;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
   }
   
   .table {
     font-size: 0.8rem; /* texto mas chico */
-    min-width: 800px;
+    min-width: 700px;
   }
   
   .table th,
   .table td {
-    padding: 0.5rem 0.5rem; /* padding reducido */
+    padding: 0.4rem 0.5rem; /* padding más reducido */
   }
   
   .table-actions {
