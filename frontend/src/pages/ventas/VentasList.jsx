@@ -67,7 +67,7 @@ function VentasList() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filtroFecha, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago])
+  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago])
 
   const loadVentas = async () => {
     setLoading(true)
