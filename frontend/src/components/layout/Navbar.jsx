@@ -10,8 +10,18 @@ function Navbar({ onToggleSidebar }) {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await signOut()
-    navigate('/auth/login')
+    try {
+      const { error } = await signOut()
+      if (error) {
+        console.error('Error al cerrar sesión:', error)
+        // Aún así redirigir al login
+      }
+      navigate('/auth/login', { replace: true })
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+      // Aún así redirigir al login
+      navigate('/auth/login', { replace: true })
+    }
   }
 
   if (!isAuthenticated) {
