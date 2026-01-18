@@ -13,7 +13,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Crear y exportar el cliente de Supabase
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true, // Persistir sesión en localStorage
+      autoRefreshToken: true, // Refrescar token automáticamente
+      detectSessionInUrl: true, // Detectar sesión en URLs (útil para OAuth)
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined // Usar localStorage del navegador
+    }
+  }
 )
 
 // Función para verificar la conexión (opcional, útil para testing)

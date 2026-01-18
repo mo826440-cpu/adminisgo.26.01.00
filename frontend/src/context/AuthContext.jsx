@@ -10,24 +10,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+    
     // Obtener sesión inicial
     getSession().then(({ session, error }) => {
-      if (session) {
-        setSession(session)
-        setUser(session.user)
+      if (mounted) {
+        if (session) {
+          setSession(session)
+          setUser(session.user)
+        } else if (error) {
+          console.error('Error al obtener sesión:', error)
+        }
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     // Escuchar cambios de autenticación
     const { data: { subscription } } = onAuthStateChange((event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setLoading(false)
+      }
     })
 
     return () => {
-      subscription.unsubscribe()
+      mounted = false
+      if (subscription) {
+        subscription.unsubscribe()
+      }
     }
   }, [])
 
