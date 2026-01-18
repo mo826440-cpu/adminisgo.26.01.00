@@ -5,7 +5,7 @@ import { signOut } from '../../services/auth'
 import { Button } from '../common'
 import './Navbar.css'
 
-function Navbar() {
+function Navbar({ onToggleSidebar }) {
   const { user, isAuthenticated } = useAuthContext()
   const navigate = useNavigate()
 
@@ -21,6 +21,15 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
+        <button 
+          className="navbar-menu-toggle"
+          onClick={onToggleSidebar}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <div className="navbar-menu">
           {user && (
             <div className="navbar-user">

@@ -721,21 +721,21 @@
     - [ ] `VITE_SUPABASE_URL`
     - [ ] `VITE_SUPABASE_ANON_KEY`
     - [ ] Otras variables necesarias
-- [ ] Primer deploy de prueba
-- [ ] Verificar que la app funciona en producción
+- [x] Primer deploy de prueba: ✅
+- [x] Verificar que la app funciona en producción: ✅
 
 ### 5.3 Configuración del Dominio (adminisgo.com)
 
-- [ ] Agregar dominio en Vercel:
-  - [ ] Agregar `adminisgo.com`
-  - [ ] Agregar `www.adminisgo.com` (opcional)
-- [ ] Configurar DNS en proveedor de dominio:
-  - [ ] Registrar CNAME según instrucciones de Vercel
-  - [ ] Registrar A record según instrucciones de Vercel
-  - [ ] Esperar propagación DNS (puede tardar horas)
-- [ ] Verificar SSL (debe ser automático con Vercel)
-- [ ] Probar acceso desde adminisgo.com
-- [ ] Verificar redirección HTTP → HTTPS
+- [x] Agregar dominio en Vercel: ✅
+  - [x] Agregar `adminisgo.com`
+  - [x] Agregar `www.adminisgo.com`
+- [x] Configurar DNS en proveedor de dominio: ✅
+  - [x] Registrar CNAME según instrucciones de Vercel
+  - [x] Registrar A record según instrucciones de Vercel
+  - [x] Esperar propagación DNS
+- [x] Verificar SSL (debe ser automático con Vercel): ✅
+- [x] Probar acceso desde adminisgo.com: ✅
+- [x] Verificar redirección HTTP → HTTPS: ✅
 
 ### 5.4 Configuración de Supabase (Producción)
 
@@ -744,29 +744,31 @@
   - [ ] Políticas de seguridad configuradas
   - [ ] Storage buckets configurados correctamente
   - [ ] Auth providers configurados
-- [ ] Configurar dominios permitidos en Supabase:
-  - [ ] Agregar `adminisgo.com`
-  - [ ] Agregar dominio de Vercel (si necesario)
+- [x] Configurar dominios permitidos en Supabase: ✅
+  - [x] Agregar `adminisgo.com`
+  - [x] Agregar `www.adminisgo.com`
+  - [ ] Agregar dominio de Vercel (opcional)
 - [ ] Backup de base de datos configurado
 - [ ] Monitoreo de Supabase activado
 
 ### 5.5 Testing en Producción
 
-- [ ] Probar todas las funcionalidades en producción
-- [ ] Probar autenticación en producción
-- [ ] Probar PWA en producción:
-  - [ ] Instalación desde adminisgo.com
-  - [ ] Funcionamiento offline
-  - [ ] Service Worker funcionando
+- [x] Probar todas las funcionalidades en producción: ✅
+- [x] Probar autenticación en producción: ✅
+- [x] Probar PWA en producción: ✅
+  - [x] Instalación desde adminisgo.com: ✅
+  - [ ] Funcionamiento offline (pendiente verificación completa)
+  - [ ] Service Worker funcionando (pendiente verificación completa)
+- [x] Probar creación/guardado de datos: ✅ (ventas guardadas correctamente)
 - [ ] Probar en diferentes navegadores:
-  - [ ] Chrome
+  - [x] Chrome: ✅
   - [ ] Firefox
   - [ ] Safari
   - [ ] Edge
 - [ ] Probar en diferentes dispositivos:
   - [ ] Android (móvil)
   - [ ] iOS (móvil)
-  - [ ] Desktop (Windows, macOS, Linux)
+  - [x] Desktop (Windows): ✅
 
 ### 5.6 Documentación de Deployment
 

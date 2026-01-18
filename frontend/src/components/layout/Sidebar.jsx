@@ -1,9 +1,9 @@
 // Componente Sidebar de navegación
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import './Sidebar.css'
 
-function Sidebar() {
+function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const [referenciasOpen, setReferenciasOpen] = useState(true)
 
@@ -15,8 +15,16 @@ function Sidebar() {
     setReferenciasOpen(!referenciasOpen)
   }
 
+  // Cerrar sidebar al navegar en móvil
+  useEffect(() => {
+    if (window.innerWidth <= 768 && isOpen) {
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <nav className="sidebar-nav">
         <Link 
           to="/dashboard" 

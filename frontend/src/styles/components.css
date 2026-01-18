@@ -261,12 +261,20 @@
 }
 
 /* ===== TABLAS ===== */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+  width: 100%;
+  position: relative;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   background: var(--bg-primary);
   border-radius: var(--radius-md);
   overflow: hidden;
+  min-width: 600px; /* Ancho mínimo para scroll horizontal */
 }
 
 .table thead {
@@ -280,12 +288,14 @@
   font-size: var(--font-size-small);
   color: var(--text-primary);
   border-bottom: 2px solid var(--border-color);
+  white-space: nowrap; /* Evita que el texto se corte */
 }
 
 .table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
+  white-space: nowrap; /* Evita que el texto se corte */
 }
 
 .table tbody tr:hover {

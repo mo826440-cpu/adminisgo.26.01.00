@@ -39,13 +39,36 @@
     margin-bottom: var(--spacing-sm);
   }
   
+  .table-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  
   .table {
     font-size: var(--font-size-small);
+    min-width: 600px;
   }
   
   .table th,
   .table td {
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Indicador visual de scroll horizontal */
+  .table-container::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to right, transparent, rgba(0,0,0,0.05));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .table-container.scrollable::after {
+    opacity: 1;
   }
 }
 

@@ -230,18 +230,87 @@
 @media (max-width: 768px) {
   .pos-header {
     flex-direction: column;
+    margin-bottom: 1.5rem;
+  }
+  
+  .pos-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .pos-form-grid {
+    gap: 1.5rem;
+  }
+  
+  .pos-formulario {
+    min-height: auto;
+  }
+  
+  .pos-formulario h3,
+  .pos-carrito h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+  }
+  
+  .form-control {
+    min-height: 48px; /* Más grande para touch */
+    font-size: 16px; /* Evita zoom en iOS */
+  }
+  
+  .pos-carrito h4 {
+    font-size: 1.1rem;
+    margin-top: 1rem;
+  }
+  
+  .carrito-table-container {
+    max-height: 250px;
+    margin-bottom: 1rem;
   }
   
   .carrito-table {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    min-width: 500px;
   }
   
   .carrito-table th,
   .carrito-table td {
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
   
   .carrito-actions {
     flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .carrito-actions button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  
+  .carrito-totales {
+    font-size: 1rem;
+    padding: 1rem;
+  }
+  
+  .carrito-totales-row {
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+  }
+  
+  .pos-finalizar {
+    width: 100%;
+    min-height: 52px;
+    font-size: 1.1rem;
+    font-weight: 600;
   }
 }
