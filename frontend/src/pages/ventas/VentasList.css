@@ -135,9 +135,19 @@
 
 .registros-panel {
   resize: vertical; /* permite estirar con mouse */
-  overflow: visible; /* NO scroll aquí - el scroll está en table-container */
+  overflow: hidden; /* oculta overflow del panel */
   min-height: 500px; /* alto minimo */
   max-height: 600px; /* sin limite maximo - lo maneja table-container */
+  display: flex;
+  flex-direction: column;
+}
+
+.registros-panel .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1rem;
 }
 
 .table.table-sticky-header {
@@ -277,13 +287,19 @@
     width: 100%;
   }
   
+  .registros-panel .card-body {
+    padding: 0.75rem;
+  }
+  
   .table-container {
     -webkit-overflow-scrolling: touch;
     margin: 0;
     padding: 0;
     width: 100%;
+    flex: 1;
     overflow-x: auto;
     overflow-y: auto;
+    min-height: 0; /* permite que el flex funcione */
   }
   
   .table {
