@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
 import { getVentas, deleteVenta } from '../../services/ventas'
+import ActionsMenu from './ActionsMenu'
 import './VentasList.css'
 
 const ITEMS_PER_PAGE = 100
