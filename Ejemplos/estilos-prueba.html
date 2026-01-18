@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Estilos - App Gestión de Comercios</title>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    
+    <style>
+        body {
+            background: var(--bg-secondary);
+            padding: var(--spacing-xl) 0;
+        }
+        
+        .section {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .section-title {
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--color-primary);
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+        
+        .color-swatch {
+            width: 100%;
+            height: 80px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--spacing-sm);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-5">Guía de Estilos - Prueba Visual</h1>
+        
+        <!-- Sección: Colores -->
+        <section class="section">
+            <h2 class="section-title">1. Sistema de Colores</h2>
+            
+            <h3>Colores Primarios</h3>
+            <div class="demo-grid">
+                <div>
+                    <div class="color-swatch" style="background: var(--color-primary);">Primary</div>
+                    <p class="text-small text-center">#667eea</p>
+                </div>
+                <div>
+                    <div class="color-swatch" style="background: var(--color-secondary);">Secondary</div>
+                    <p class="text-small text-center">#764ba2</p>
+                </div>
+                <div>
+                    <div class="color-swatch" style="background: var(--color-accent);">Accent</div>
+                    <p class="text-small text-center">#f093fb</p>
+                </div>
+            </div>
+            
+            <h3 class="mt-4">Colores Semánticos</h3>
+            <div class="demo-grid">
+                <div>
+                    <div class="color-swatch" style="background: var(--color-success);">Success</div>
+                    <p class="text-small text-center">#28a745</p>
+                </div>
+                <div>
+                    <div class="color-swatch" style="background: var(--color-danger);">Danger</div>
+                    <p class="text-small text-center">#dc3545</p>
+                </div>
+                <div>
+                    <div class="color-swatch" style="background: var(--color-warning); color: var(--text-primary);">Warning</div>
+                    <p class="text-small text-center">#ffc107</p>
+                </div>
+                <div>
+                    <div class="color-swatch" style="background: var(--color-info);">Info</div>
+                    <p class="text-small text-center">#17a2b8</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sección: Tipografía -->
+        <section class="section">
+            <h2 class="section-title">2. Tipografía</h2>
+            
+            <h1>H1 - Título Principal (2.5rem)</h1>
+            <h2>H2 - Subtítulo (2rem)</h2>
+            <h3>H3 - Título de Sección (1.75rem)</h3>
+            <h4>H4 - Subtítulo Menor (1.5rem)</h4>
+            <h5>H5 - Subtítulo (1.25rem)</h5>
+            <h6>H6 - Subtítulo (1rem)</h6>
+            
+            <p>Este es un párrafo normal (1rem) con texto de ejemplo para mostrar cómo se ve el texto en la aplicación. El line-height es 1.6 para una mejor legibilidad.</p>
+            
+            <p class="text-secondary">Texto secundario en color gris (#6c757d)</p>
+            <p class="text-small">Texto pequeño (0.875rem)</p>
+            <p class="text-xs">Texto extra pequeño (0.75rem)</p>
+            
+            <p class="text-bold">Texto en negrita</p>
+            <p class="text-italic">Texto en cursiva</p>
+            <p class="text-uppercase">Texto en mayúsculas</p>
+            <p class="text-strikethrough">Texto tachado (para precios antiguos)</p>
+            
+            <p class="mono">Texto monoespaciado: $1,234.56 (para números y códigos)</p>
+        </section>
+        
+        <!-- Sección: Botones -->
+        <section class="section">
+            <h2 class="section-title">3. Botones</h2>
+            
+            <h3>Tamaños</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary btn-sm">Pequeño</button>
+                <button class="btn btn-primary">Normal</button>
+                <button class="btn btn-primary btn-lg">Grande</button>
+            </div>
+            
+            <h3 class="mt-4">Tipos</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-success">Success</button>
+                <button class="btn btn-danger">Danger</button>
+                <button class="btn btn-warning">Warning</button>
+                <button class="btn btn-info">Info</button>
+                <button class="btn btn-outline">Outline</button>
+                <button class="btn btn-ghost">Ghost</button>
+            </div>
+            
+            <h3 class="mt-4">Estados</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary">Normal</button>
+                <button class="btn btn-primary" disabled>Disabled</button>
+                <button class="btn btn-primary">
+                    <span class="spinner spinner-sm"></span> Loading
+                </button>
+            </div>
+            
+            <h3 class="mt-4">Botones Especiales</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-success">
+                    <i class="bi bi-check-lg"></i> Guardar
+                </button>
+                <button class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
+                <button class="btn btn-info">
+                    <i class="bi bi-pencil"></i> Editar
+                </button>
+                <button class="btn btn-primary">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+                <button class="btn btn-primary">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+            </div>
+        </section>
+        
+        <!-- Sección: Cards -->
+        <section class="section">
+            <h2 class="section-title">4. Cards</h2>
+            
+            <div class="row">
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Card Simple</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>Contenido de la card. Puede incluir cualquier tipo de contenido.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Card con Footer</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>Card con header, body y footer.</p>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-primary btn-sm">Acción</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title">Card sin Header</h4>
+                            <p>Card simple sin header separado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sección: Formularios -->
+        <section class="section">
+            <h2 class="section-title">5. Formularios</h2>
+            
+            <form>
+                <div class="mb-3">
+                    <label class="form-label">
+                        Nombre completo <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-control" placeholder="Juan Pérez">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" placeholder="tu@email.com">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" placeholder="••••••••">
+                    <p class="text-small text-secondary mt-1">Mínimo 8 caracteres</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Precio</label>
+                    <input type="number" class="form-control mono" placeholder="$1,234.56" value="1234.56">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <select class="form-control">
+                        <option>Seleccionar...</option>
+                        <option>Activo</option>
+                        <option>Inactivo</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">
+                        <input type="checkbox"> Acepto los términos y condiciones
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Guardar</button>
+            </form>
+        </section>
+        
+        <!-- Sección: Tablas -->
+        <section class="section">
+            <h2 class="section-title">6. Tablas</h2>
+            
+            <h3>Tabla de Ventas (Ejemplo)</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#001</td>
+                        <td>15/01/2026 14:30</td>
+                        <td>Juan Pérez</td>
+                        <td class="text-right mono">$1,234.56</td>
+                        <td class="text-center">
+                            <span class="badge badge-success">Pagado</span>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#002</td>
+                        <td>15/01/2026 15:45</td>
+                        <td>María González</td>
+                        <td class="text-right mono">$2,500.00</td>
+                        <td class="text-center">
+                            <span class="badge badge-warning">Pendiente</span>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>#003</td>
+                        <td>15/01/2026 16:20</td>
+                        <td>Carlos Rodríguez</td>
+                        <td class="text-right mono">$890.50</td>
+                        <td class="text-center">
+                            <span class="badge badge-success">Pagado</span>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-ghost btn-sm">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- Sección: Badges -->
+        <section class="section">
+            <h2 class="section-title">7. Badges y Estados</h2>
+            
+            <h3>Badges</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge badge-primary">Primary</span>
+                <span class="badge badge-success">Success</span>
+                <span class="badge badge-danger">Danger</span>
+                <span class="badge badge-warning">Warning</span>
+                <span class="badge badge-info">Info</span>
+                <span class="badge badge-secondary">Secondary</span>
+            </div>
+            
+            <h3 class="mt-4">Estados de Gestión</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge" style="background: var(--color-positive);">Ingresos</span>
+                <span class="badge" style="background: var(--color-negative);">Egresos</span>
+                <span class="badge" style="background: var(--color-stock-low);">Stock Bajo</span>
+                <span class="badge" style="background: var(--color-stock-critical);">Stock Crítico</span>
+                <span class="badge" style="background: var(--color-pending);">Pendiente</span>
+                <span class="badge" style="background: var(--color-cancelled);">Cancelado</span>
+            </div>
+        </section>
+        
+        <!-- Sección: Alertas -->
+        <section class="section">
+            <h2 class="section-title">8. Alertas y Notificaciones</h2>
+            
+            <div class="alert alert-success">
+                <strong>Éxito!</strong> La operación se completó correctamente.
+            </div>
+            
+            <div class="alert alert-danger">
+                <strong>Error!</strong> Ocurrió un error al procesar la solicitud.
+            </div>
+            
+            <div class="alert alert-warning">
+                <strong>Advertencia!</strong> Revisa los datos antes de continuar.
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Información:</strong> Este es un mensaje informativo.
+            </div>
+        </section>
+        
+        <!-- Sección: KPIs -->
+        <section class="section">
+            <h2 class="section-title">9. Cards de KPIs (Dashboard)</h2>
+            
+            <div class="row">
+                <div class="col-12 col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-small text-secondary mb-1">VENTAS DEL MES</p>
+                            <h2 class="mb-1" style="color: var(--color-primary);">$45,230</h2>
+                            <p class="text-small" style="color: var(--color-success);">
+                                <i class="bi bi-arrow-up"></i> +15.5%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-small text-secondary mb-1">CLIENTES</p>
+                            <h2 class="mb-1" style="color: var(--color-primary);">1,234</h2>
+                            <p class="text-small" style="color: var(--color-success);">
+                                <i class="bi bi-arrow-up"></i> +8.2%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-small text-secondary mb-1">PRODUCTOS</p>
+                            <h2 class="mb-1" style="color: var(--color-primary);">567</h2>
+                            <p class="text-small" style="color: var(--color-neutral);">
+                                Sin cambios
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="text-small text-secondary mb-1">STOCK BAJO</p>
+                            <h2 class="mb-1" style="color: var(--color-stock-low);">12</h2>
+                            <p class="text-small" style="color: var(--color-stock-low);">
+                                Requiere atención
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sección: Toggle Tema -->
+        <section class="section">
+            <h2 class="section-title">10. Toggle de Tema</h2>
+            
+            <div class="d-flex align-center gap-3">
+                <label style="font-weight: var(--font-weight-medium);">Modo Oscuro:</label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="theme-toggle" style="width: 48px; height: 24px; cursor: pointer;">
+                    <span class="ml-2">Activar modo oscuro</span>
+                </label>
+            </div>
+            
+            <p class="text-small text-secondary mt-2">
+                Cambia entre tema claro y oscuro para probar los estilos.
+            </p>
+        </section>
+        
+    </div>
+    
+    <script>
+        // Toggle de tema
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        // Cargar preferencia guardada
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        html.setAttribute('data-theme', savedTheme);
+        themeToggle.checked = savedTheme === 'dark';
+        
+        // Cambiar tema
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        });
+    </script>
+</body>
+</html>
+

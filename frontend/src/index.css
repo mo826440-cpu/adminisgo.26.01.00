@@ -1,0 +1,31 @@
+/* Importar nuestros estilos base */
+@import './styles/variables.css';
+@import './styles/typography.css';
+@import './styles/components.css';
+@import './styles/layout.css';
+@import './styles/responsive.css';
+
+/* Bootstrap (opcional, si queremos usar algunos componentes de Bootstrap) */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+/* Importar estilos de temas (después de Bootstrap para poder sobrescribir) */
+@import './styles/estiloTemaClaro.css';
+@import './styles/estiloTemaOscuro.css';
+
+/* Reset básico */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-primary);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}

@@ -1,0 +1,211 @@
+/* ==========================================
+   ESTILOS PARA TEMA OSCURO
+   ========================================== */
+
+/* Variables CSS para tema oscuro */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #ffffff;
+  --text-secondary: #adb5bd;
+  --text-disabled: #6c757d;
+  --bg-dark: #121212;
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+  --border-color: #404040;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilos específicos para formularios en tema oscuro (sobrescribir Bootstrap) */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] input.form-control,
+[data-theme="dark"] select.form-control,
+[data-theme="dark"] textarea.form-control {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .form-control:focus {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+[data-theme="dark"] .form-control:disabled {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-disabled) !important;
+}
+
+/* Estilos específicos para cards y paneles en tema oscuro (sobrescribir Bootstrap) */
+[data-theme="dark"] .card,
+[data-theme="dark"] div.card {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] div.card-header {
+  border-bottom-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .card-body,
+[data-theme="dark"] div.card-body {
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .card-footer,
+[data-theme="dark"] div.card-footer {
+  border-top-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .card-title,
+[data-theme="dark"] h3.card-title {
+  color: var(--text-primary) !important;
+}
+
+/* Mejorar visibilidad de placeholders y texto en campos de búsqueda */
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] input.form-control::placeholder,
+[data-theme="dark"] textarea.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] input.form-control {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Estilos específicos para tablas en tema oscuro (sobrescribir Bootstrap) */
+[data-theme="dark"] .table,
+[data-theme="dark"] table.table,
+[data-theme="dark"] .table.table-sticky-header,
+[data-theme="dark"] table.table.table-sticky-header {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .table thead,
+[data-theme="dark"] table.table thead,
+[data-theme="dark"] .table.table-sticky-header thead {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table th,
+[data-theme="dark"] table.table th {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+/* Encabezados sticky en tema oscuro - mantener position sticky y fondo sólido */
+[data-theme="dark"] .table.table-sticky-header thead th,
+[data-theme="dark"] .table-container .table.table-sticky-header thead th {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .table td,
+[data-theme="dark"] table.table td,
+[data-theme="dark"] .table.table-sticky-header td {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .table tbody,
+[data-theme="dark"] table.table tbody,
+[data-theme="dark"] .table.table-sticky-header tbody {
+  background-color: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .table tbody tr,
+[data-theme="dark"] table.table tbody tr,
+[data-theme="dark"] .table.table-sticky-header tbody tr {
+  background-color: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even),
+[data-theme="dark"] table.table tbody tr:nth-child(even),
+[data-theme="dark"] .table.table-sticky-header tbody tr:nth-child(even) {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .table tbody tr:hover,
+[data-theme="dark"] table.table tbody tr:hover,
+[data-theme="dark"] .table.table-sticky-header tbody tr:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even):hover,
+[data-theme="dark"] table.table tbody tr:nth-child(even):hover,
+[data-theme="dark"] .table.table-sticky-header tbody tr:nth-child(even):hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Estilos para botones en tema oscuro (mejorar visibilidad) */
+[data-theme="dark"] .btn-ghost,
+[data-theme="dark"] button.btn-ghost {
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .btn-ghost:hover,
+[data-theme="dark"] button.btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] button.btn-outline {
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] button.btn-outline:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Estilos para listas desplegables/autocompletado en tema oscuro */
+[data-theme="dark"] .autocomplete-list {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .autocomplete-list li {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .autocomplete-list li:hover,
+[data-theme="dark"] .autocomplete-list li.active {
+  background-color: var(--color-primary) !important;
+  color: #fff !important;
+  border-left-color: var(--color-primary-dark) !important;
+}
+
+/* Estilos para elementos select y option en tema oscuro */
+[data-theme="dark"] select option {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+

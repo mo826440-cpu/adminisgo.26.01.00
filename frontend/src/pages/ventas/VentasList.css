@@ -1,0 +1,237 @@
+/* Estilos para la lista de ventas */
+
+/* Indicadores */
+.ventas-indicadores {
+  margin-bottom: 1rem; /* separa indicadores del resto */
+}
+
+.indicadores-header {
+  display: flex; /* alinea titulo y filtro en fila */
+  justify-content: space-between; /* separa extremos */
+  align-items: center; /* centra verticalmente */
+  margin-bottom: 1rem; /* espacio inferior */
+  flex-wrap: wrap; /* permite salto en pantallas chicas */
+  gap: 1rem; /* separacion entre items */
+}
+
+.indicadores-header h3 {
+  margin: 0; /* elimina margen por defecto */
+  font-size: 1.1rem; /* titulo compacto */
+  font-weight: 600; /* peso medio */
+}
+
+.section-label {
+  font-size: 0.7rem; /* etiqueta pequena */
+  color: var(--text-secondary); /* color secundario */
+  letter-spacing: 0.08em; /* separacion letras */
+  text-transform: uppercase; /* mayusculas */
+  margin-bottom: 0.25rem; /* espacio bajo etiqueta */
+}
+
+.filtro-fecha-indicadores {
+  min-width: 250px; /* ancho minimo del select */
+}
+
+.indicadores-grid {
+  display: grid; /* layout en grilla */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* columnas responsivas */
+  gap: 1rem; /* separacion entre cards */
+}
+
+.indicador-card {
+  padding: 0.5rem 1rem; /* espacio interno */
+  text-align: center; /* centra texto */
+}
+
+.indicador-card.indicador-verde {
+  background-color: #28a745; /* fondo verde */
+  color: white; /* texto blanco */
+}
+
+.indicador-label {
+  font-size: 0.75rem; /* etiqueta chica */
+  font-weight: 600; /* peso medio */
+  margin-bottom: 0.5rem; /* espacio inferior */
+  opacity: 0.9; /* leve transparencia */
+}
+
+.indicador-valor {
+  font-size: 1.75rem; /* numero destacado */
+  font-weight: 700; /* negrita */
+}
+
+/* Acciones */
+.ventas-acciones {
+  margin-bottom: 2rem; /* separa acciones de la tabla */
+}
+
+.acciones-header {
+  display: flex; /* fila */
+  align-items: center; /* centra vertical */
+  justify-content: space-between; /* titulo y botones a extremos */
+  gap: 1rem; /* espacio entre grupos */
+  margin-bottom: 0.5rem; /* espacio inferior */
+}
+
+.acciones-header-buttons {
+  display: flex; /* botones en fila */
+  gap: 0.5rem; /* separacion botones */
+  flex-wrap: wrap; /* permite salto */
+}
+
+.ventas-acciones h3 {
+  margin: 0; /* elimina margen */
+  font-size: 1.1rem; /* titulo compacto */
+  font-weight: 600; /* peso medio */
+}
+
+.acciones-content {
+  display: flex; /* contenedor flexible */
+  flex-direction: column; /* columna */
+  gap: 1.5rem; /* separacion entre bloques */
+}
+
+.filtro-fecha-registros {
+  display: flex; /* columna para label+select */
+  flex-direction: column; /* apila */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-fecha-registros label {
+  font-weight: 600; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+}
+
+.filtros-adicionales {
+  display: grid; /* grid para filtros */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* columnas responsivas */
+  gap: 1.5rem; /* separacion */
+}
+
+.filtro-busqueda,
+.filtro-estado-pago {
+  display: flex; /* columna */
+  flex-direction: column; /* apila */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-busqueda label,
+.filtro-estado-pago label {
+  font-weight: 600; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+}
+
+.filtro-tipo {
+  margin-bottom: 0.5rem; /* separa select del input */
+}
+
+/* Tabla */
+.table-container {
+  overflow-x: auto; /* scroll horizontal */
+  overflow-y: auto; /* scroll vertical */
+  max-height: 800px; /* alto maximo visible */
+  position: relative; /* base para sticky */
+}
+
+.registros-panel {
+  resize: vertical; /* permite estirar con mouse */
+  overflow: visible; /* NO scroll aquí - el scroll está en table-container */
+  min-height: 500px; /* alto minimo */
+  max-height: 600px; /* sin limite maximo - lo maneja table-container */
+}
+
+.table.table-sticky-header {
+  border-collapse: separate !important; /* necesario para sticky */
+  border-spacing: 0 !important; /* sin espacios */
+  width: 100%; /* ocupa todo */
+  overflow: visible !important; /* evita corte */
+}
+
+.table.table-sticky-header thead th {
+  position: -webkit-sticky !important; /* soporte safari */
+  position: sticky !important; /* sticky header */
+  top: 0 !important; /* pegado arriba */
+  z-index: 10 !important; /* sobre filas */
+  background: var(--bg-secondary) !important; /* fondo fijo */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* sombra sutil */
+}
+
+.table {
+  width: 100%; /* ancho total */
+  border-collapse: collapse; /* colapsa bordes */
+  background: white; /* fondo blanco */
+}
+
+.table thead {
+  background-color: var(--bg-tertiary); /* fondo header */
+}
+
+.table th {
+  padding: 1rem; /* espacio interno */
+  text-align: left; /* alineacion */
+  font-weight: 600; /* peso medio */
+  color: var(--text-primary); /* color texto */
+  border-bottom: 2px solid var(--border-color); /* separador */
+}
+
+.table td {
+  padding: 1rem; /* espacio interno */
+  border-bottom: 1px solid var(--border-color); /* separador */
+  color: var(--text-primary); /* color texto */
+}
+
+.table tbody tr:hover {
+  background-color: var(--bg-secondary); /* hover fila */
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none; /* sin borde final */
+}
+
+.table-actions {
+  display: flex; /* acciones en fila */
+  gap: 0.5rem; /* separacion */
+  flex-wrap: wrap; /* salto en chico */
+}
+
+.table-info {
+  color: var(--text-secondary); /* texto secundario */
+  font-size: var(--font-size-small); /* tamaño chico */
+  text-align: right; /* alineacion derecha */
+}
+
+.empty-state {
+  padding: 3rem; /* espacio interno */
+  text-align: center; /* centra texto */
+}
+
+.empty-state p {
+  font-size: 1.1rem; /* texto destacado */
+  color: var(--text-secondary); /* color secundario */
+  margin-bottom: 1rem; /* separacion */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .indicadores-grid {
+    grid-template-columns: 1fr; /* una columna */
+  }
+  
+  .filtros-adicionales {
+    grid-template-columns: 1fr; /* una columna */
+  }
+  
+  .table {
+    font-size: 0.875rem; /* texto mas chico */
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem; /* padding reducido */
+  }
+  
+  .table-actions {
+    flex-direction: column; /* acciones en columna */
+  }
+}
+
