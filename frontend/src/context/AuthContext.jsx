@@ -28,14 +28,11 @@ export const AuthProvider = ({ children }) => {
     })
 
     // Escuchar cambios de autenticación
-    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = onAuthStateChange((event, session) => {
       if (!mountedRef.current) return
       
-      console.log('Auth event:', event, 'Session:', session ? 'present' : 'null')
-      
-      // Manejar diferentes eventos de autenticación
+      // Solo cerrar sesión si es explícitamente un SIGNED_OUT
       if (event === 'SIGNED_OUT') {
-        // Solo cerrar sesión si es explícitamente un SIGNED_OUT
         setSession(null)
         setUser(null)
         setLoading(false)
@@ -44,37 +41,10 @@ export const AuthProvider = ({ children }) => {
         setSession(session)
         setUser(session.user)
         setLoading(false)
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Cuando se refresca el token, intentar obtener la sesión actualizada
-        try {
-          const { session: refreshedSession } = await getSession()
-          if (mountedRef.current && refreshedSession) {
-            setSession(refreshedSession)
-            setUser(refreshedSession.user)
-          }
-        } catch (error) {
-          console.error('Error al obtener sesión refrescada:', error)
-        }
-        setLoading(false)
       } else {
-        // Para otros eventos sin sesión, intentar recuperar la sesión guardada
-        // No establecer user como null inmediatamente (puede ser un error temporal)
-        try {
-          const { session: currentSession } = await getSession()
-          if (mountedRef.current) {
-            if (currentSession) {
-              setSession(currentSession)
-              setUser(currentSession.user)
-            } else {
-              // Solo si realmente no hay sesión, entonces cerrar
-              setSession(null)
-              setUser(null)
-            }
-          }
-        } catch (error) {
-          console.error('Error al recuperar sesión:', error)
-          // Mantener el estado actual si hay error al recuperar
-        }
+        // Para eventos sin sesión (pueden ser errores temporales),
+        // mantener el estado actual en lugar de cerrar sesión
+        // Supabase manejará el refresco automático del token
         setLoading(false)
       }
     })
