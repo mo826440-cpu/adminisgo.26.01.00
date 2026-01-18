@@ -28,9 +28,6 @@
   margin-bottom: 0.25rem; /* espacio bajo etiqueta */
 }
 
-.filtro-fecha-indicadores {
-  min-width: 250px; /* ancho minimo del select */
-}
 
 .indicadores-grid {
   display: grid; /* layout en grilla */
@@ -68,15 +65,16 @@
 .acciones-header {
   display: flex; /* fila */
   align-items: center; /* centra vertical */
-  justify-content: space-between; /* titulo y botones a extremos */
+  justify-content: flex-start; /* titulo al inicio */
   gap: 1rem; /* espacio entre grupos */
   margin-bottom: 0.5rem; /* espacio inferior */
 }
 
-.acciones-header-buttons {
+.acciones-buttons {
   display: flex; /* botones en fila */
-  gap: 0.5rem; /* separacion botones */
-  flex-wrap: wrap; /* permite salto */
+  flex-direction: column; /* botones apilados verticalmente */
+  gap: 0.75rem; /* separacion botones */
+  margin-bottom: 1rem; /* espacio inferior */
 }
 
 .ventas-acciones h3 {
@@ -92,7 +90,7 @@
 }
 
 .filtro-fecha-registros {
-  display: flex; /* columna para label+select */
+  display: flex; /* columna para label+inputs */
   flex-direction: column; /* apila */
   gap: 0.5rem; /* separacion */
 }
@@ -100,6 +98,24 @@
 .filtro-fecha-registros label {
   font-weight: 600; /* peso medio */
   font-size: 0.875rem; /* tamaño label */
+}
+
+.filtro-fecha-rango {
+  display: grid; /* layout en grilla */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* columnas responsivas */
+  gap: 1rem; /* separacion entre inputs */
+}
+
+.filtro-fecha-item {
+  display: flex; /* columna */
+  flex-direction: column; /* apila label e input */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-fecha-item label {
+  font-weight: 500; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+  color: var(--text-secondary); /* color texto secundario */
 }
 
 .filtros-adicionales {
@@ -236,11 +252,6 @@
     font-size: 1rem;
   }
   
-  .filtro-fecha-indicadores {
-    width: 100%;
-    min-width: unset;
-  }
-  
   .indicadores-grid {
     grid-template-columns: repeat(3, 1fr); /* tres columnas compactas */
     gap: 0.5rem;
@@ -269,13 +280,17 @@
     gap: 1rem;
   }
   
-  .acciones-header-buttons {
+  .acciones-buttons {
     width: 100%;
   }
   
-  .acciones-header-buttons button {
-    flex: 1;
-    min-width: auto;
+  .acciones-buttons button,
+  .acciones-buttons a {
+    width: 100%;
+  }
+  
+  .filtro-fecha-rango {
+    grid-template-columns: 1fr; /* una columna en móvil */
   }
   
   .filtros-adicionales {

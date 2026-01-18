@@ -23,7 +23,19 @@ function VentasList() {
   const [showActions, setShowActions] = useState(false)
   
   // Estados de filtros
-  const [filtroFecha, setFiltroFecha] = useState('mes_actual') // Por defecto mes actual
+  // Inicializar con mes actual por defecto
+  const getInicioMes = () => {
+    const ahora = new Date()
+    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+    return inicioMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+  }
+  const getFinMes = () => {
+    const ahora = new Date()
+    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
+    return finMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+  }
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getInicioMes())
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getFinMes())
   const [filtroBusqueda, setFiltroBusqueda] = useState('')
   const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('cliente') // cliente, facturacion, codigo_barras, codigo_interno
   const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
@@ -72,19 +84,20 @@ function VentasList() {
     setLoading(false)
   }
 
-  // Filtrar ventas por fecha (mes actual por defecto)
+  // Filtrar ventas por rango de fechas
   const filtrarPorFecha = useCallback((ventas) => {
-    if (filtroFecha === 'mes_actual') {
-      const ahora = new Date()
-      const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-      return ventas.filter(venta => {
-        const fechaVenta = new Date(venta.fecha_hora)
-        return fechaVenta >= inicioMes
-      })
-    }
-    // TODO: Implementar otros filtros de fecha (semana, mes anterior, rango personalizado)
-    return ventas
-  }, [filtroFecha])
+    if (!filtroFechaDesde || !filtroFechaHasta) return ventas
+    
+    const fechaDesde = new Date(filtroFechaDesde)
+    fechaDesde.setHours(0, 0, 0, 0) // Inicio del día
+    const fechaHasta = new Date(filtroFechaHasta)
+    fechaHasta.setHours(23, 59, 59, 999) // Fin del día
+    
+    return ventas.filter(venta => {
+      const fechaVenta = new Date(venta.fecha_hora)
+      return fechaVenta >= fechaDesde && fechaVenta <= fechaHasta
+    })
+  }, [filtroFechaDesde, filtroFechaHasta])
 
   // Filtrar ventas por búsqueda
   const filtrarPorBusqueda = useCallback((ventas) => {
@@ -226,16 +239,6 @@ function VentasList() {
               <div className="section-label">SECCIÓN</div>
               <h3>INDICADORES</h3>
             </div>
-            <div className="filtro-fecha-indicadores">
-              <select 
-                value={filtroFecha} 
-                onChange={(e) => setFiltroFecha(e.target.value)}
-                className="form-control"
-              >
-                <option value="mes_actual">(POR DEFECTO, MES ACTUAL)</option>
-                {/* TODO: Agregar más opciones de fecha */}
-              </select>
-            </div>
           </div>
           <div className="indicadores-grid">
             <Card className="indicador-card indicador-verde">
@@ -260,32 +263,48 @@ function VentasList() {
               <div className="section-label">SECCIÓN</div>
               <h3>ACCIONES</h3>
             </div>
-            <div className="acciones-header-buttons">
-              <Link to="/ventas/nueva">
-                <Button variant="primary" size="sm">
-                  Cargar nueva venta (F2)
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowActions(!showActions)}
-              >
-                {showActions ? 'Ocultar filtros' : 'Mostrar filtros'}
+          </div>
+          <div className="acciones-buttons">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowActions(!showActions)}
+            >
+              {showActions ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </Button>
+            <Link to="/ventas/nueva">
+              <Button variant="primary" size="sm">
+                Cargar nueva venta (F2)
               </Button>
-            </div>
+            </Link>
           </div>
           {showActions && (
             <div className="acciones-content">
               <div className="filtro-fecha-registros">
                 <label>FILTRO DE REGISTROS POR FECHA:</label>
-                <select 
-                  value={filtroFecha} 
-                  onChange={(e) => setFiltroFecha(e.target.value)}
-                  className="form-control"
-                >
-                  <option value="mes_actual">(POR DEFECTO, MES ACTUAL)</option>
-                </select>
+                <div className="filtro-fecha-rango">
+                  <div className="filtro-fecha-item">
+                    <label htmlFor="fecha-desde">Desde:</label>
+                    <input
+                      type="date"
+                      id="fecha-desde"
+                      value={filtroFechaDesde}
+                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
+                      className="form-control"
+                    />
+                  </div>
+                  <div className="filtro-fecha-item">
+                    <label htmlFor="fecha-hasta">Hasta:</label>
+                    <input
+                      type="date"
+                      id="fecha-hasta"
+                      value={filtroFechaHasta}
+                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
+                      className="form-control"
+                      min={filtroFechaDesde}
+                    />
+                  </div>
+                </div>
               </div>
               
               <div className="filtros-adicionales">
