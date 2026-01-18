@@ -1,5 +1,5 @@
 // Página de lista de ventas
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
@@ -397,32 +397,13 @@ function VentasList() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <Link to={`/ventas/${venta.id}`}>
-                                <Button variant="ghost" size="sm" title="Detalle">
-                                  <i className="bi bi-eye" />
-                                </Button>
-                              </Link>
-                              <Link to={`/ventas/${venta.id}/editar`}>
-                                <Button variant="ghost" size="sm" title="Editar">
-                                  <i className="bi bi-pencil" />
-                                </Button>
-                              </Link>
-                              <Link to={`/ventas/${venta.id}`} state={{ print: true }}>
-                                <Button variant="ghost" size="sm" title="Imprimir">
-                                  <i className="bi bi-printer" />
-                                </Button>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Eliminar"
-                                onClick={() => {
-                                  setVentaToDelete(venta.id)
+                              <ActionsMenu
+                                ventaId={venta.id}
+                                onDelete={(id) => {
+                                  setVentaToDelete(id)
                                   setShowDeleteModal(true)
                                 }}
-                              >
-                                <i className="bi bi-trash" />
-                              </Button>
+                              />
                             </div>
                           </td>
                         </tr>

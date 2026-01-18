@@ -313,12 +313,7 @@
   }
   
   .table-actions {
-    flex-direction: column; /* acciones en columna */
-    gap: 0.5rem;
-  }
-  
-  .table-actions button {
-    width: 100%;
+    justify-content: center; /* centra el botón de menú */
   }
   
   .registros-panel {

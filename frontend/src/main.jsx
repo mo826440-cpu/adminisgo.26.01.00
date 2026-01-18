@@ -3,6 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+// Aplicar tema guardado al cargar la aplicación
+const temaGuardado = localStorage.getItem('tema')
+if (temaGuardado === 'oscuro') {
+  document.documentElement.setAttribute('data-theme', 'dark')
+} else {
+  document.documentElement.removeAttribute('data-theme')
+}
+
 // Registrar Service Worker para PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

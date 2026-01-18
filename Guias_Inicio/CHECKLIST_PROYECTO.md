@@ -170,8 +170,14 @@
   - [x] Menú desplegable para Referencias ✅
   - [x] Estilos responsivos ✅
 - [ ] Implementar footer base (pendiente, opcional)
-- [ ] Configurar tema claro/oscuro (dark mode)
-- [ ] Probar responsive design básico
+- [x] Configurar tema claro/oscuro (dark mode): ✅
+- [x] Probar responsive design básico: ✅
+  - [x] Botón hamburguesa para sidebar en móvil: ✅
+  - [x] Tablas con scroll horizontal optimizado: ✅
+  - [x] Formularios adaptados para móvil: ✅
+  - [x] Página POS optimizada para móvil: ✅
+  - [x] Listas responsive (Productos, Clientes, Proveedores, Ventas): ✅
+  - [x] Indicadores y filtros adaptados para móvil: ✅
 
 ---
 
