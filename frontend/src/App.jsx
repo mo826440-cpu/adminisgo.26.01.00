@@ -20,6 +20,7 @@ import VentasList from './pages/ventas/VentasList'
 import POS from './pages/ventas/POS'
 import VentaDetalle from './pages/ventas/VentaDetalle'
 import Configuracion from './pages/configuracion/Configuracion'
+import EnDesarrollo from './pages/EnDesarrollo'
 import './App.css'
 
 function App() {
@@ -226,6 +227,48 @@ function App() {
                 <ErrorBoundary>
                   <Configuracion />
                 </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rutas en desarrollo */}
+          <Route 
+            path="/usuarios" 
+            element={
+              <ProtectedRoute>
+                <EnDesarrollo modulo="Módulo de Usuarios" />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/compras" 
+            element={
+              <ProtectedRoute>
+                <EnDesarrollo modulo="Módulo de Compras" />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/inventario" 
+            element={
+              <ProtectedRoute>
+                <EnDesarrollo modulo="Módulo de Inventario" />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/reportes" 
+            element={
+              <ProtectedRoute>
+                <EnDesarrollo modulo="Módulo de Reportes" />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/mantenimiento" 
+            element={
+              <ProtectedRoute>
+                <EnDesarrollo modulo="Módulo de Mantenimiento" />
               </ProtectedRoute>
             } 
           />
