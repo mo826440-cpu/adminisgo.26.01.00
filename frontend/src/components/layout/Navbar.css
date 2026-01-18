@@ -41,9 +41,19 @@
   background: var(--text-primary);
   border-radius: 2px;
   transition: all 0.3s ease;
+  display: block;
 }
 
 .navbar-menu-toggle:hover span {
+  background: var(--color-primary);
+}
+
+/* Asegurar visibilidad en ambos temas */
+[data-theme="dark"] .navbar-menu-toggle span {
+  background: var(--text-primary);
+}
+
+[data-theme="dark"] .navbar-menu-toggle:hover span {
   background: var(--color-primary);
 }
 
