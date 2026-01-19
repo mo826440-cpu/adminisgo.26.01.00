@@ -7,6 +7,8 @@ import { getProductos, getProducto } from '../../services/productos'
 import { getClientes } from '../../services/clientes'
 import { createVenta, getVentaById, updateVenta } from '../../services/ventas'
 import { useAuthContext } from '../../context/AuthContext'
+import { useDateTime } from '../../context/DateTimeContext'
+import { utcToLocalDateTime, getCurrentLocalDateTime } from '../../utils/dateFormat'
 import './POS.css'
 
 function POS() {
@@ -14,6 +16,7 @@ function POS() {
   const { id } = useParams()
   const isEditing = !!id
   const { user } = useAuthContext()
+  const { timezone } = useDateTime()
   const productoInputRef = useRef(null)
   const clienteListRef = useRef(null)
   const productoListRef = useRef(null)
@@ -24,7 +27,7 @@ function POS() {
   const [error, setError] = useState(null)
   
   // Estados del formulario
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 16))
+  const [fecha, setFecha] = useState(getCurrentLocalDateTime(timezone))
   const [facturacion, setFacturacion] = useState('')
   const [facturacionesUsadas, setFacturacionesUsadas] = useState([])
   const [clienteSearch, setClienteSearch] = useState('')
@@ -109,7 +112,7 @@ function POS() {
         const { data: ventaData, error: errVenta } = await getVentaById(id)
         if (errVenta) throw errVenta
 
-        setFecha(ventaData.fecha_hora ? new Date(ventaData.fecha_hora).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16))
+        setFecha(ventaData.fecha_hora ? utcToLocalDateTime(ventaData.fecha_hora, timezone) : getCurrentLocalDateTime(timezone))
         setFacturacion(ventaData.facturacion || '')
         if (ventaData.clientes?.nombre) {
           setClienteSeleccionado({ id: ventaData.cliente_id, nombre: ventaData.clientes.nombre })

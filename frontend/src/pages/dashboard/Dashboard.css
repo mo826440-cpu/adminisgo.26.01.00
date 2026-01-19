@@ -10,6 +10,25 @@
   margin-bottom: 0.5rem;
 }
 
+.dashboard-clock {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-small);
+}
+
+.clock-label {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.clock-time {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  font-family: 'Courier New', monospace;
+}
+
 .dashboard-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));

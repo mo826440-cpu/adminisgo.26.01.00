@@ -77,6 +77,17 @@
   margin-bottom: 1rem; /* espacio inferior */
 }
 
+.acciones-buttons button,
+.acciones-buttons a {
+  width: 30%; /* ambos botones con mismo ancho */
+}
+
+/* Asegurar que el botón dentro del Link también ocupe el 100% */
+.acciones-buttons a .btn {
+  width: 100%;
+  display: block; /* cambiar de inline-block a block para que respete el width */
+}
+
 .ventas-acciones h3 {
   margin: 0; /* elimina margen */
   font-size: 1.1rem; /* titulo compacto */
@@ -87,6 +98,12 @@
   display: flex; /* contenedor flexible */
   flex-direction: column; /* columna */
   gap: 1.5rem; /* separacion entre bloques */
+}
+
+.filtros-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
 }
 
 .filtro-fecha-registros {
@@ -145,7 +162,7 @@
 .table-container {
   overflow-x: auto; /* scroll horizontal */
   overflow-y: auto; /* scroll vertical */
-  max-height: 800px; /* alto maximo visible */
+  max-height: 1200px; /* alto maximo visible */
   position: relative; /* base para sticky */
 }
 
@@ -153,9 +170,9 @@
   resize: vertical; /* permite estirar con mouse */
   overflow: hidden; /* oculta overflow del panel */
   min-height: 500px; /* alto minimo */
-  max-height: 600px; /* sin limite maximo - lo maneja table-container */
+  max-height: 1800px; /* limite maximo */
   display: flex;
-  flex-direction: column;
+  /*flex-direction: column;*/ /*este comando permite que el panel se agrande automaticamente*/
 }
 
 .registros-panel .card-body {
@@ -319,12 +336,18 @@
   
   .table {
     font-size: 0.8rem; /* texto mas chico */
-    min-width: 700px;
+    min-width: 400px; /* reducido porque ocultamos columnas */
   }
   
   .table th,
   .table td {
     padding: 0.4rem 0.5rem; /* padding más reducido */
+  }
+  
+  /* Ocultar columnas en móvil usando la clase hide-mobile */
+  .table th.hide-mobile,
+  .table td.hide-mobile {
+    display: none;
   }
   
   .table-actions {

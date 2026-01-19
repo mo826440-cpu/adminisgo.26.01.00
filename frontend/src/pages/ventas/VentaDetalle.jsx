@@ -5,11 +5,14 @@ import { Layout } from '../../components/layout'
 import { Card, Spinner, Alert, Button, Badge } from '../../components/common'
 import { getVentaById } from '../../services/ventas'
 import { getComercio } from '../../services/comercio'
+import { useDateTime } from '../../context/DateTimeContext'
+import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import './VentaDetalle.css'
 
 function VentaDetalle() {
   const { id } = useParams()
   const location = useLocation()
+  const { timezone, dateFormat } = useDateTime()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [venta, setVenta] = useState(null)
@@ -53,10 +56,9 @@ function VentaDetalle() {
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, venta])
 
+  // Formatear fecha usando la configuración del usuario
   const formatearFecha = (fecha) => {
-    if (!fecha) return '-'
-    const date = new Date(fecha)
-    return date.toLocaleString('es-AR')
+    return formatDateTime(fecha, dateFormat, timezone)
   }
 
   const formatearMoneda = (valor) => {
@@ -65,23 +67,11 @@ function VentaDetalle() {
   }
 
   const formatearFechaCorta = (fecha) => {
-    if (!fecha) return '-'
-    const d = new Date(fecha)
-    const day = String(d.getDate()).padStart(2, '0')
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const year = d.getFullYear()
-    return `${day}/${month}/${year}`
+    return formatDate(fecha, 'DD/MM/YYYY', timezone)
   }
 
   const formatearFechaHoraTicket = (fecha) => {
-    if (!fecha) return '-'
-    const d = new Date(fecha)
-    const day = String(d.getDate()).padStart(2, '0')
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const year = d.getFullYear()
-    const hours = String(d.getHours()).padStart(2, '0')
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    return `${day}/${month}/${year} ${hours}:${minutes}`
+    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
   }
 
   const estadoPago = (() => {
@@ -126,7 +116,7 @@ function VentaDetalle() {
           </Card>
         ) : (
           <>
-            <Card>
+            <Card className="venta-detalle-panel">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 <div>
                   <div className="text-secondary text-small">Fecha</div>
@@ -163,7 +153,7 @@ function VentaDetalle() {
               </div>
             </Card>
 
-            <Card title="Items" style={{ marginTop: '1.5rem' }}>
+            <Card title="Items" className="venta-detalle-panel" style={{ marginTop: '1.5rem' }}>
               {(venta.items || []).length === 0 ? (
                 <p className="text-secondary">Sin items.</p>
               ) : (
@@ -194,7 +184,7 @@ function VentaDetalle() {
               )}
             </Card>
 
-            <Card title="Pagos" style={{ marginTop: '1.5rem' }}>
+            <Card title="Pagos" className="venta-detalle-panel" style={{ marginTop: '1.5rem' }}>
               {(venta.pagos || []).length === 0 ? (
                 <p className="text-secondary">Sin pagos registrados.</p>
               ) : (

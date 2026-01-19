@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { DateTimeProvider } from './context/DateTimeContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Login from './pages/auth/Login'
@@ -27,7 +28,8 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
+        <DateTimeProvider>
+          <Router>
           <Routes>
             {/* Rutas públicas */}
             <Route path="/auth/login" element={<Login />} />
@@ -277,6 +279,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
+        </DateTimeProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

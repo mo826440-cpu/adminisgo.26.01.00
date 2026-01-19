@@ -299,10 +299,16 @@
   - [x] Filtros por fecha (mes actual por defecto) ✅
   - [x] Filtros por búsqueda (cliente, facturación, códigos) ✅
   - [x] Filtros por estado de pago (pagadas, con deuda) ✅
+  - [x] Botón "Mostrar/Ocultar filtros" ✅
+  - [x] Botón "Limpiar filtros" ✅
   - [x] Tabla de registros: ✅
     - [x] Columnas: FECHA, FACTURACIÓN, CLIENTE, UNIDADES, $TOTAL, $ PAGADO, $ DEUDA, ESTADO, ACCIONES ✅
     - [x] Headers fijos (sticky) ✅
     - [x] Paginación (máx 100 registros por página) ✅
+    - [x] Columnas responsive (ocultar columnas no esenciales en móvil) ✅
+  - [x] Vista de detalle de venta: ✅
+    - [x] Panel completo en desktop ✅
+    - [x] Solo ticket en móvil ✅
   - [x] Botón "CARGAR NUEVA VENTA (F2)" que redirige a /ventas/nueva ✅
   - [x] Rutas: /ventas (lista) y /ventas/nueva (formulario POS) ✅
 
@@ -352,6 +358,11 @@
   - [x] Cambio de contraseña ✅
   - [x] Tema claro/oscuro (toggle) ✅
   - [x] Formato de impresión: elegir tipo (POS 80 / A4 / etc.) ✅
+  - [x] Configuración de fecha y hora: ✅
+    - [x] Selección de zona horaria ✅
+    - [x] Selección de formato de fecha/hora ✅
+    - [x] Reloj en tiempo real en dashboard ✅
+    - [x] Aplicación de formato configurado en toda la app ✅
 - [x] Perfil de usuario: ✅
   - [x] Ver información del usuario ✅
   - [x] Editar información básica ✅

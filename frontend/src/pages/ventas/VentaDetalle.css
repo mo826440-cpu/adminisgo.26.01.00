@@ -191,3 +191,56 @@
   font-style: italic;
 }
 
+/* En móvil: ocultar panel de detalles y mostrar solo el ticket */
+@media (max-width: 768px) {
+  /* Ocultar el header de la página en móvil */
+  .page-header {
+    display: none !important;
+  }
+  
+  /* Ocultar las Cards del panel de detalles */
+  .venta-detalle-panel {
+    display: none !important;
+  }
+  
+  /* Ocultar el Alert también en móvil */
+  .container > .alert {
+    display: none !important;
+  }
+  
+  /* Mostrar el ticket centrado y con mejor formato */
+  .ticket-print {
+    max-width: 100%;
+    margin: 1rem auto;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    background: var(--bg-primary);
+    display: block !important;
+  }
+  
+  /* Asegurar que el ticket sea visible y todos sus elementos */
+  .ticket-print * {
+    visibility: visible !important;
+  }
+  
+  /* Ajustar colores del ticket para tema oscuro/claro */
+  .ticket-print {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+/* En PC: mostrar todo (comportamiento por defecto) */
+@media (min-width: 769px) {
+  /* Asegurar que todo se vea normalmente en PC */
+  .venta-detalle-panel {
+    display: block;
+  }
+  
+  .page-header {
+    display: flex;
+  }
+}
+

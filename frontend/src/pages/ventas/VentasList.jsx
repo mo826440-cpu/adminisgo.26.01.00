@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
 import { getVentas, deleteVenta } from '../../services/ventas'
+import { useDateTime } from '../../context/DateTimeContext'
+import { formatDateTime } from '../../utils/dateFormat'
 import ActionsMenu from './ActionsMenu'
 import './VentasList.css'
 
@@ -21,6 +23,14 @@ function VentasList() {
   const [ventaToDelete, setVentaToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  
+  // Estado para el texto del botón de filtros
+  const [textoBotonFiltros, setTextoBotonFiltros] = useState('Mostrar filtros')
+  
+  // Sincronizar texto con showActions
+  useEffect(() => {
+    setTextoBotonFiltros(showActions ? 'Ocultar filtros' : 'Mostrar filtros')
+  }, [showActions])
   
   // Estados de filtros
   // Inicializar con mes actual por defecto
@@ -68,6 +78,15 @@ function VentasList() {
   useEffect(() => {
     setCurrentPage(1)
   }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago])
+
+  // Función para limpiar todos los filtros y volver a valores por defecto
+  const limpiarFiltros = () => {
+    setFiltroFechaDesde(getInicioMes())
+    setFiltroFechaHasta(getFinMes())
+    setFiltroBusqueda('')
+    setTipoFiltroBusqueda('cliente')
+    setFiltroEstadoPago('todas')
+  }
 
   const loadVentas = async () => {
     setLoading(true)
@@ -191,17 +210,12 @@ function VentasList() {
     await loadVentas()
   }
 
-  // Formatear fecha
+  // Obtener configuración de fecha/hora
+  const { timezone, dateFormat } = useDateTime()
+  
+  // Formatear fecha usando la configuración del usuario
   const formatearFecha = (fecha) => {
-    if (!fecha) return '-'
-    const date = new Date(fecha)
-    return date.toLocaleDateString('es-AR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return formatDateTime(fecha, dateFormat, timezone)
   }
 
   // Formatear moneda
@@ -268,9 +282,9 @@ function VentasList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowActions(!showActions)}
+              onClick={() => setShowActions(prev => !prev)}
             >
-              {showActions ? 'Ocultar filtros' : 'Mostrar filtros'}
+              {textoBotonFiltros}
             </Button>
             <Link to="/ventas/nueva">
               <Button variant="primary" size="sm">
@@ -280,6 +294,15 @@ function VentasList() {
           </div>
           {showActions && (
             <div className="acciones-content">
+              <div className="filtros-header-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={limpiarFiltros}
+                >
+                  🗑️ Limpiar Filtros
+                </Button>
+              </div>
               <div className="filtro-fecha-registros">
                 <label>FILTRO DE REGISTROS POR FECHA:</label>
                 <div className="filtro-fecha-rango">
@@ -384,12 +407,12 @@ function VentasList() {
                   <thead>
                     <tr>
                       <th>FECHA</th>
-                      <th>FACTURACIÓN</th>
+                      <th className="hide-mobile">FACTURACIÓN</th>
                       <th>CLIENTE</th>
-                      <th>UNIDADES</th>
-                      <th>$TOTAL</th>
-                      <th>$ PAGADO</th>
-                      <th>$ DEUDA</th>
+                      <th className="hide-mobile">UNIDADES</th>
+                      <th className="hide-mobile">$TOTAL</th>
+                      <th className="hide-mobile">$ PAGADO</th>
+                      <th className="hide-mobile">$ DEUDA</th>
                       <th>ESTADO</th>
                       <th>ACCIONES</th>
                     </tr>
@@ -404,12 +427,12 @@ function VentasList() {
                       return (
                         <tr key={venta.id}>
                           <td>{formatearFecha(venta.fecha_hora)}</td>
-                          <td>{venta.facturacion || '-'}</td>
+                          <td className="hide-mobile">{venta.facturacion || '-'}</td>
                           <td>{venta.clientes?.nombre || 'Cliente genérico'}</td>
-                          <td>{venta.unidades_totales || 0}</td>
-                          <td>{formatearMoneda(venta.total)}</td>
-                          <td>{formatearMoneda(venta.monto_pagado)}</td>
-                          <td>{formatearMoneda(deuda)}</td>
+                          <td className="hide-mobile">{venta.unidades_totales || 0}</td>
+                          <td className="hide-mobile">{formatearMoneda(venta.total)}</td>
+                          <td className="hide-mobile">{formatearMoneda(venta.monto_pagado)}</td>
+                          <td className="hide-mobile">{formatearMoneda(deuda)}</td>
                           <td>
                             <Badge variant={estadoPago === 'pagado' ? 'success' : 'warning'}>
                               {estadoPago === 'pagado' ? 'Pagado' : 'Debe'}

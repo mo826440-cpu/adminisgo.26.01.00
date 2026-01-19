@@ -1,14 +1,17 @@
 // Página de Dashboard
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
+import { useDateTime } from '../../context/DateTimeContext'
 import { Layout } from '../../components/layout'
 import { Card, Spinner, Badge, Button } from '../../components/common'
 import { usePWAInstall } from '../../hooks/usePWAInstall'
+import { formatDateTime } from '../../utils/dateFormat'
 import './Dashboard.css'
 
 function Dashboard() {
   const { user, loading } = useAuthContext()
   const { isInstallable, isInstalled, install } = usePWAInstall()
+  const { currentDateTime, timezone, dateFormat } = useDateTime()
 
   if (loading) {
     return (
@@ -36,6 +39,10 @@ function Dashboard() {
           <div>
             <h1>Dashboard</h1>
             <p className="text-secondary">Bienvenido, {user?.email}</p>
+            <div className="dashboard-clock">
+              <span className="clock-label">Fecha y Hora:</span>
+              <span className="clock-time">{formatDateTime(currentDateTime, dateFormat, timezone)}</span>
+            </div>
           </div>
           {isInstallable && !isInstalled && (
             <Button 

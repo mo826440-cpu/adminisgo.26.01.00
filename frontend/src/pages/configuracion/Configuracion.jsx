@@ -6,10 +6,12 @@ import { getComercio, updateComercio } from '../../services/comercio'
 import { getUsuario, updateUsuario } from '../../services/usuarios'
 import { updatePassword } from '../../services/auth'
 import { useAuthContext } from '../../context/AuthContext'
+import { useDateTime } from '../../context/DateTimeContext'
 import './Configuracion.css'
 
 function Configuracion() {
   const { user } = useAuthContext()
+  const { timezone, dateFormat, updateTimezone, updateDateFormat, TIMEZONES, DATE_FORMATS } = useDateTime()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -425,6 +427,47 @@ function Configuracion() {
                   >
                     <option value="pos80">POS 80mm (Ticket estándar)</option>
                     <option value="a4">A4 (Papel tamaño carta)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Configuración de Fecha y Hora */}
+        <Card title="Fecha y Hora" className="config-section">
+          <div className="datetime-section">
+            <p className="text-secondary">Configurá la zona horaria y el formato de fecha/hora que se mostrará en toda la aplicación.</p>
+            <div className="form-row">
+              <div className="form-col">
+                <label className="form-label">
+                  Zona Horaria
+                  <select
+                    className="form-control"
+                    value={timezone}
+                    onChange={(e) => updateTimezone(e.target.value)}
+                  >
+                    {TIMEZONES.map((tz) => (
+                      <option key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="form-col">
+                <label className="form-label">
+                  Formato de Fecha/Hora
+                  <select
+                    className="form-control"
+                    value={dateFormat}
+                    onChange={(e) => updateDateFormat(e.target.value)}
+                  >
+                    {DATE_FORMATS.map((fmt) => (
+                      <option key={fmt.value} value={fmt.value}>
+                        {fmt.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
