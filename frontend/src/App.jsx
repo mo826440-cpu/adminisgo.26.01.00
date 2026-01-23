@@ -20,8 +20,14 @@ import ProveedorForm from './pages/proveedores/ProveedorForm'
 import VentasList from './pages/ventas/VentasList'
 import POS from './pages/ventas/POS'
 import VentaDetalle from './pages/ventas/VentaDetalle'
+import VentasRapidas from './pages/ventas/VentasRapidas'
+import HistorialCajas from './pages/ventas/HistorialCajas'
+import VentaRapidaDetalle from './pages/ventas/VentaRapidaDetalle'
 import Configuracion from './pages/configuracion/Configuracion'
 import EnDesarrollo from './pages/EnDesarrollo'
+import ComprasList from './pages/compras/ComprasList'
+import CompraForm from './pages/compras/CompraForm'
+import CompraDetalle from './pages/compras/CompraDetalle'
 import './App.css'
 
 function App() {
@@ -223,6 +229,36 @@ function App() {
             } 
           />
           <Route 
+            path="/ventas-rapidas" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <VentasRapidas />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/ventas-rapidas/historial" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <HistorialCajas />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/ventas-rapidas/:id" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <VentaRapidaDetalle />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/configuraciones" 
             element={
               <ProtectedRoute>
@@ -246,7 +282,39 @@ function App() {
             path="/compras" 
             element={
               <ProtectedRoute>
-                <EnDesarrollo modulo="Módulo de Compras" />
+                <ErrorBoundary>
+                  <ComprasList />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/compras/nueva" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <CompraForm />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/compras/:id" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <CompraDetalle />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/compras/:id/editar" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <CompraForm />
+                </ErrorBoundary>
               </ProtectedRoute>
             } 
           />

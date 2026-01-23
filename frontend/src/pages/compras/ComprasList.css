@@ -1,0 +1,362 @@
+/* Estilos para la lista de compras */
+/* Basado en VentasList.css, adaptado para compras */
+
+/* Indicadores */
+.compras-indicadores {
+  margin-bottom: 1rem; /* separa indicadores del resto */
+}
+
+.indicadores-header {
+  display: flex; /* alinea titulo y filtro en fila */
+  justify-content: space-between; /* separa extremos */
+  align-items: center; /* centra verticalmente */
+  margin-bottom: 1rem; /* espacio inferior */
+  flex-wrap: wrap; /* permite salto en pantallas chicas */
+  gap: 1rem; /* separacion entre items */
+}
+
+.indicadores-header h3 {
+  margin: 0; /* elimina margen por defecto */
+  font-size: 1.1rem; /* titulo compacto */
+  font-weight: 600; /* peso medio */
+}
+
+.section-label {
+  font-size: 0.7rem; /* etiqueta pequena */
+  color: var(--text-secondary); /* color secundario */
+  letter-spacing: 0.08em; /* separacion letras */
+  text-transform: uppercase; /* mayusculas */
+  margin-bottom: 0.25rem; /* espacio bajo etiqueta */
+}
+
+
+.indicadores-grid {
+  display: grid; /* layout en grilla */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* columnas responsivas */
+  gap: 1rem; /* separacion entre cards */
+}
+
+.indicador-card {
+  padding: 0.5rem 1rem; /* espacio interno */
+  text-align: center; /* centra texto */
+}
+
+.indicador-card.indicador-verde {
+  background-color: #28a745; /* fondo verde */
+  color: white; /* texto blanco */
+}
+
+.indicador-label {
+  font-size: 0.75rem; /* etiqueta chica */
+  font-weight: 600; /* peso medio */
+  margin-bottom: 0.5rem; /* espacio inferior */
+  opacity: 0.9; /* leve transparencia */
+}
+
+.indicador-valor {
+  font-size: 1.75rem; /* numero destacado */
+  font-weight: 700; /* negrita */
+}
+
+/* Acciones */
+.compras-acciones {
+  margin-bottom: 2rem; /* separa acciones de la tabla */
+}
+
+.acciones-header {
+  display: flex; /* fila */
+  align-items: center; /* centra vertical */
+  justify-content: flex-start; /* titulo al inicio */
+  gap: 1rem; /* espacio entre grupos */
+  margin-bottom: 0.5rem; /* espacio inferior */
+}
+
+.acciones-buttons {
+  display: flex; /* botones en fila */
+  flex-direction: column; /* botones apilados verticalmente */
+  gap: 0.75rem; /* separacion botones */
+  margin-bottom: 1rem; /* espacio inferior */
+}
+
+.acciones-buttons button,
+.acciones-buttons a {
+  width: 30%; /* ambos botones con mismo ancho */
+}
+
+/* Asegurar que el botón dentro del Link también ocupe el 100% */
+.acciones-buttons a .btn {
+  width: 100%;
+  display: block; /* cambiar de inline-block a block para que respete el width */
+}
+
+.compras-acciones h3 {
+  margin: 0; /* elimina margen */
+  font-size: 1.1rem; /* titulo compacto */
+  font-weight: 600; /* peso medio */
+}
+
+.acciones-content {
+  display: flex; /* contenedor flexible */
+  flex-direction: column; /* columna */
+  gap: 1.5rem; /* separacion entre bloques */
+}
+
+.filtros-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.filtro-fecha-registros {
+  display: flex; /* columna para label+inputs */
+  flex-direction: column; /* apila */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-fecha-registros label {
+  font-weight: 600; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+}
+
+.filtro-fecha-rango {
+  display: grid; /* layout en grilla */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* columnas responsivas */
+  gap: 1rem; /* separacion entre inputs */
+}
+
+.filtro-fecha-item {
+  display: flex; /* columna */
+  flex-direction: column; /* apila label e input */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-fecha-item label {
+  font-weight: 500; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+  color: var(--text-secondary); /* color texto secundario */
+}
+
+.filtros-adicionales {
+  display: grid; /* grid para filtros */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* columnas responsivas */
+  gap: 1.5rem; /* separacion */
+}
+
+.filtro-busqueda,
+.filtro-estado {
+  display: flex; /* columna */
+  flex-direction: column; /* apila */
+  gap: 0.5rem; /* separacion */
+}
+
+.filtro-busqueda label,
+.filtro-estado label {
+  font-weight: 600; /* peso medio */
+  font-size: 0.875rem; /* tamaño label */
+}
+
+.filtro-tipo {
+  margin-bottom: 0.5rem; /* separa select del input */
+}
+
+/* Tabla */
+.table-container {
+  overflow-x: auto; /* scroll horizontal */
+  overflow-y: auto; /* scroll vertical */
+  max-height: 1200px; /* alto maximo visible */
+  position: relative; /* base para sticky */
+}
+
+.registros-panel {
+  resize: vertical; /* permite estirar con mouse */
+  overflow: hidden; /* oculta overflow del panel */
+  min-height: 500px; /* alto minimo */
+  max-height: 1800px; /* limite maximo */
+  display: flex;
+  /*flex-direction: column;*/ /*este comando permite que el panel se agrande automaticamente*/
+}
+
+.registros-panel .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.table.table-sticky-header {
+  border-collapse: separate !important; /* necesario para sticky */
+  border-spacing: 0 !important; /* sin espacios */
+  width: 100%; /* ocupa todo */
+  overflow: visible !important; /* evita corte */
+}
+
+.table.table-sticky-header thead th {
+  position: -webkit-sticky !important; /* soporte safari */
+  position: sticky !important; /* sticky header */
+  top: 0 !important; /* pegado arriba */
+  z-index: 10 !important; /* sobre filas */
+  background: var(--bg-secondary) !important; /* fondo fijo */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* sombra sutil */
+}
+
+.table {
+  width: 100%; /* ancho total */
+  border-collapse: collapse; /* colapsa bordes */
+  background: white; /* fondo blanco */
+}
+
+.table thead {
+  background-color: var(--bg-tertiary); /* fondo header */
+}
+
+.table th {
+  padding: 1rem; /* espacio interno */
+  text-align: left; /* alineacion */
+  font-weight: 600; /* peso medio */
+  color: var(--text-primary); /* color texto */
+  border-bottom: 2px solid var(--border-color); /* separador */
+}
+
+.table td {
+  padding: 1rem; /* espacio interno */
+  border-bottom: 1px solid var(--border-color); /* separador */
+  color: var(--text-primary); /* color texto */
+}
+
+.table tbody tr:hover {
+  background-color: var(--bg-secondary); /* hover fila */
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none; /* sin borde final */
+}
+
+.table-actions {
+  display: flex; /* acciones en fila */
+  gap: 0.5rem; /* separacion */
+  flex-wrap: wrap; /* salto en chico */
+}
+
+.table-info {
+  color: var(--text-secondary); /* texto secundario */
+  font-size: var(--font-size-small); /* tamaño chico */
+  text-align: right; /* alineacion derecha */
+}
+
+.empty-state {
+  padding: 3rem; /* espacio interno */
+  text-align: center; /* centra texto */
+}
+
+.empty-state p {
+  font-size: 1.1rem; /* texto destacado */
+  color: var(--text-secondary); /* color secundario */
+  margin-bottom: 1rem; /* separacion */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .compras-indicadores {
+    margin-bottom: 1.5rem;
+  }
+  
+  .indicadores-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .indicadores-header h3 {
+    font-size: 1rem;
+  }
+  
+  .indicadores-grid {
+    grid-template-columns: repeat(3, 1fr); /* tres columnas compactas */
+    gap: 0.5rem;
+  }
+  
+  .indicador-card {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .indicador-label {
+    font-size: 0.65rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .indicador-valor {
+    font-size: 1.1rem;
+  }
+  
+  .compras-acciones {
+    margin-bottom: 1.5rem;
+  }
+  
+  .acciones-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .acciones-buttons {
+    width: 100%;
+  }
+  
+  .acciones-buttons button,
+  .acciones-buttons a {
+    width: 100%;
+  }
+  
+  .filtro-fecha-rango {
+    grid-template-columns: 1fr; /* una columna en móvil */
+  }
+  
+  .filtros-adicionales {
+    grid-template-columns: 1fr; /* una columna */
+    gap: 1rem;
+  }
+  
+  .filtro-fecha-registros {
+    width: 100%;
+  }
+  
+  .registros-panel .card-body {
+    padding: 0.75rem;
+  }
+  
+  .table-container {
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    min-height: 0; /* permite que el flex funcione */
+  }
+  
+  .table {
+    font-size: 0.8rem; /* texto mas chico */
+    min-width: 400px; /* reducido porque ocultamos columnas */
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.4rem 0.5rem; /* padding más reducido */
+  }
+  
+  /* Ocultar columnas en móvil usando la clase hide-mobile */
+  .table th.hide-mobile,
+  .table td.hide-mobile {
+    display: none;
+  }
+  
+  .table-actions {
+    justify-content: center; /* centra el botón de menú */
+  }
+  
+  .registros-panel {
+    min-height: 400px;
+    max-height: 500px;
+  }
+}

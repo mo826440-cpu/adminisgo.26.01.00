@@ -98,6 +98,13 @@ function Sidebar({ isOpen, onClose }) {
         </Link>
 
         <Link 
+          to="/ventas-rapidas" 
+          className={`sidebar-item ${isActive('/ventas-rapidas') ? 'active' : ''}`}
+        >
+          ⚡ Ventas Rápidas
+        </Link>
+
+        <Link 
           to="/reportes" 
           className={`sidebar-item ${isActive('/reportes') ? 'active' : ''}`}
         >

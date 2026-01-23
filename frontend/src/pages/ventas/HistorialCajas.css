@@ -1,0 +1,261 @@
+/* Estilos para Historial de Cajas */
+
+.filtros-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.filtros-content {
+  margin-top: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.historial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.historial-header h2 {
+  margin: 0;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+}
+
+.table thead {
+  background-color: var(--bg-tertiary);
+}
+
+.table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.table tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+.table tfoot tr {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Estilos de impresión para ticket POS 80 */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .ticket-print,
+  .ticket-print * {
+    visibility: visible;
+  }
+
+  .ticket-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    background: white !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    color: #000 !important;
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .navbar,
+  .sidebar,
+  .page-header,
+  button,
+  .btn,
+  a,
+  .card:not(.ticket-print),
+  .container > *:not(.ticket-print) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .container {
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+.ticket-print {
+  max-width: 80mm;
+  margin: 0 auto;
+  padding: 1rem;
+  background: white;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #000;
+  border: 1px dashed #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-header {
+  text-align: center;
+  border-bottom: 1px dashed #000;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ticket-header .nombre-comercio {
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-header .datos-comercio {
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.ticket-info {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #000;
+}
+
+.ticket-info .ticket-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 10px;
+}
+
+.ticket-info .label {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.ticket-items {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #000;
+}
+
+.ticket-item {
+  margin-bottom: 0.5rem;
+}
+
+.ticket-item .item-nombre {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+  font-size: 10px;
+}
+
+.ticket-item .item-detalle {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  padding-left: 0.5rem;
+}
+
+.ticket-totales {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #000;
+}
+
+.ticket-total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 10px;
+}
+
+.ticket-total-row.total-final {
+  font-weight: bold;
+  font-size: 12px;
+  border-top: 1px dashed #000;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ticket-footer {
+  text-align: center;
+  font-size: 9px;
+  margin-top: 0.5rem;
+}
+
+.ticket-footer .leyenda {
+  margin-top: 0.5rem;
+  font-weight: bold;
+  border-top: 1px dashed #000;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .historial-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .table {
+    font-size: 0.875rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem;
+  }
+}
+
