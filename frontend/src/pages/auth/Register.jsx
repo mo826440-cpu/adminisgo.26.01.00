@@ -105,16 +105,23 @@ function Register() {
           boxShadow: 'var(--shadow-lg)',
           textAlign: 'center'
         }}>
-          <div className="alert alert-success">
-            <strong>✅ ¡Email enviado!</strong>
-            <p style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-              Hemos enviado un email de confirmación a <strong>{formData.email}</strong>
+          <div className="alert alert-success" style={{ 
+            backgroundColor: '#d4edda', 
+            borderColor: '#c3e6cb',
+            color: '#155724',
+            padding: '1rem',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '1rem'
+          }}>
+            <strong style={{ color: '#155724', display: 'block', marginBottom: '0.5rem' }}>✅ ¡Email enviado!</strong>
+            <p style={{ marginTop: '0.5rem', marginBottom: '0.5rem', color: '#155724' }}>
+              Hemos enviado un email de confirmación a <strong style={{ color: '#155724' }}>{formData.email}</strong>
             </p>
-            <p style={{ marginTop: '0.5rem', marginBottom: 0, fontSize: 'var(--font-size-small)', color: 'var(--text-secondary)' }}>
+            <p style={{ marginTop: '0.5rem', marginBottom: 0, fontSize: 'var(--font-size-small)', color: '#155724' }}>
               Por favor, revisa tu bandeja de entrada y haz clic en el enlace para confirmar tu cuenta.
             </p>
-            <p style={{ marginTop: '1rem', marginBottom: 0, fontSize: 'var(--font-size-small)', color: 'var(--text-secondary)' }}>
-              Una vez confirmado el email, serás redirigido para completar el registro de tu comercio.
+            <p style={{ marginTop: '1rem', marginBottom: 0, fontSize: 'var(--font-size-small)', color: '#155724' }}>
+              Una vez confirmado el email, serás redirigido para elegir tu plan y completar el registro de tu comercio.
             </p>
           </div>
           

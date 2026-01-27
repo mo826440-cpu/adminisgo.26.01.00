@@ -6,6 +6,9 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import CompleteRegistration from './pages/auth/CompleteRegistration'
+import SelectPlan from './pages/auth/SelectPlan'
+import AuthCallback from './pages/auth/AuthCallback'
+import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/dashboard/Dashboard'
 import ProductosList from './pages/productos/ProductosList'
 import ProductoForm from './pages/productos/ProductoForm'
@@ -28,6 +31,9 @@ import EnDesarrollo from './pages/EnDesarrollo'
 import ComprasList from './pages/compras/ComprasList'
 import CompraForm from './pages/compras/CompraForm'
 import CompraDetalle from './pages/compras/CompraDetalle'
+import ServiciosTest from './pages/test/ServiciosTest'
+import TestServicios from './pages/test/TestServicios'
+import TestFirmaCanvas from './pages/test/TestFirmaCanvas'
 import './App.css'
 
 function App() {
@@ -41,6 +47,22 @@ function App() {
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route 
+              path="/auth/callback" 
+              element={
+                <ProtectedRoute>
+                  <AuthCallback />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/auth/select-plan" 
+              element={
+                <ProtectedRoute>
+                  <SelectPlan />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/auth/complete-registration" 
               element={
                 <ProtectedRoute>
@@ -48,6 +70,32 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Ruta de prueba de servicios (solo desarrollo) */}
+          <Route 
+            path="/test/servicios" 
+            element={
+              <ProtectedRoute>
+                  <ServiciosTest />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/test/servicios-nuevos" 
+            element={
+              <ProtectedRoute>
+                  <TestServicios />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/test/firma-canvas" 
+            element={
+              <ProtectedRoute>
+                  <TestFirmaCanvas />
+              </ProtectedRoute>
+            } 
+          />
             
             {/* Rutas protegidas */}
             <Route 
@@ -343,8 +391,8 @@ function App() {
             } 
           />
           
-          {/* Ruta raíz: redirigir a dashboard si autenticado, sino a login */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Ruta raíz: Landing Page */}
+          <Route path="/" element={<LandingPage />} />
           </Routes>
         </Router>
         </DateTimeProvider>

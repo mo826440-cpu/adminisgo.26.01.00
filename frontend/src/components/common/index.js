@@ -10,4 +10,6 @@ export { default as ErrorBoundary } from './ErrorBoundary'
 export { default as TestConnection } from './TestConnection'
 export { default as Modal } from './Modal'
 export { default as Pagination } from './Pagination'
+export { default as FirmaCanvas } from './FirmaCanvas'
+export { default as TerminosYCondiciones } from './TerminosYCondiciones'
 

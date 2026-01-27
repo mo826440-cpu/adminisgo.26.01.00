@@ -59,8 +59,12 @@ ventas (N) >──< (1) clientes (opcional)
 ventas (N) >──< (1) usuarios (vendedor)
 
 compras (1) ──< (N) compra_items
+compras (1) ──< (N) compra_pagos
 compras (N) >──< (1) proveedores
 compras (N) >──< (1) usuarios
+comercios (1) ──< (N) historial_cajas
+comercios (1) ──< (N) ventas_rapidas
+ventas (1) >──< (1) ventas_rapidas
 
 usuarios (N) >──< (1) roles
 ```
@@ -352,7 +356,75 @@ usuarios (N) >──< (1) roles
 - `idx_compra_items_compra_id` (compra_id)
 - `idx_compra_items_producto_id` (producto_id)
 
-### 3.13 movimientos_inventario
+### 3.13 compra_pagos
+**Descripción**: Pagos realizados para órdenes de compra
+
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|---------------|-------------|
+| id | INTEGER | PK, AI | ID único |
+| compra_id | INTEGER | FK, NOT NULL | Compra asociada |
+| metodo_pago | VARCHAR(50) | NOT NULL | Método de pago |
+| fecha_pago | DATE | NOT NULL | Fecha del pago |
+| monto_pagado | DECIMAL(10,2) | NOT NULL | Monto pagado |
+| observaciones | TEXT | NULL | Observaciones |
+| created_at | TIMESTAMP | NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP | NOT NULL | Fecha de actualización |
+
+**Índices**:
+- `idx_compra_pagos_compra_id` (compra_id)
+
+### 3.14 historial_cajas
+**Descripción**: Historial de aperturas y cierres de caja
+
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|---------------|-------------|
+| id | INTEGER | PK, AI | ID único |
+| comercio_id | INTEGER | FK, NOT NULL | Comercio |
+| usuario_id | INTEGER | FK, NOT NULL | Usuario que realizó la operación |
+| fecha_hora_apertura | TIMESTAMP | NOT NULL | Fecha y hora de apertura |
+| importe_apertura | DECIMAL(10,2) | NOT NULL | Importe inicial de caja |
+| fecha_hora_cierre | TIMESTAMP | NULL | Fecha y hora de cierre |
+| importe_cierre | DECIMAL(10,2) | NULL | Importe final de caja |
+| ingresos | DECIMAL(10,2) | DEFAULT 0 | Ingresos totales del período |
+| egresos | DECIMAL(10,2) | DEFAULT 0 | Egresos totales del período |
+| saldo_final | DECIMAL(10,2) | NULL | Saldo final calculado |
+| observaciones_apertura | TEXT | NULL | Observaciones de apertura |
+| observaciones_cierre | TEXT | NULL | Observaciones de cierre |
+| created_at | TIMESTAMP | NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP | NOT NULL | Fecha de actualización |
+
+**Índices**:
+- `idx_historial_cajas_comercio_id` (comercio_id)
+- `idx_historial_cajas_usuario_id` (usuario_id)
+- `idx_historial_cajas_fecha_apertura` (fecha_hora_apertura)
+
+### 3.15 ventas_rapidas
+**Descripción**: Registro de ventas rápidas (simplificadas)
+
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|---------------|-------------|
+| id | INTEGER | PK, AI | ID único |
+| comercio_id | INTEGER | FK, NOT NULL | Comercio |
+| usuario_id | INTEGER | FK, NOT NULL | Usuario que realizó la venta |
+| cliente_id | INTEGER | FK, NULL | Cliente (opcional) |
+| venta_id | INTEGER | FK, NOT NULL | Venta asociada en tabla ventas |
+| fecha_hora | TIMESTAMP | NOT NULL | Fecha y hora de la venta |
+| total | DECIMAL(10,2) | NOT NULL | Total de la venta |
+| metodo_pago | VARCHAR(50) | NOT NULL | Método de pago |
+| monto_pagado | DECIMAL(10,2) | NOT NULL | Monto pagado |
+| estado | VARCHAR(20) | DEFAULT 'PAGADO' | PAGADO, DEBE |
+| observaciones | TEXT | NULL | Observaciones |
+| created_at | TIMESTAMP | NOT NULL | Fecha de creación |
+| updated_at | TIMESTAMP | NOT NULL | Fecha de actualización |
+
+**Índices**:
+- `idx_ventas_rapidas_comercio_id` (comercio_id)
+- `idx_ventas_rapidas_usuario_id` (usuario_id)
+- `idx_ventas_rapidas_cliente_id` (cliente_id)
+- `idx_ventas_rapidas_venta_id` (venta_id)
+- `idx_ventas_rapidas_fecha` (fecha_hora)
+
+### 3.16 movimientos_inventario
 **Descripción**: Movimientos de stock (ingresos/egresos)
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -501,6 +573,13 @@ usuarios (N) >──< (1) roles
 - `fk_compras_proveedor` (compras.proveedor_id → proveedores.id)
 - `fk_compra_items_compra` (compra_items.compra_id → compras.id)
 - `fk_compra_items_producto` (compra_items.producto_id → productos.id)
+- `fk_compra_pagos_compra` (compra_pagos.compra_id → compras.id)
+- `fk_historial_cajas_comercio` (historial_cajas.comercio_id → comercios.id)
+- `fk_historial_cajas_usuario` (historial_cajas.usuario_id → usuarios.id)
+- `fk_ventas_rapidas_comercio` (ventas_rapidas.comercio_id → comercios.id)
+- `fk_ventas_rapidas_usuario` (ventas_rapidas.usuario_id → usuarios.id)
+- `fk_ventas_rapidas_cliente` (ventas_rapidas.cliente_id → clientes.id)
+- `fk_ventas_rapidas_venta` (ventas_rapidas.venta_id → ventas.id)
 - `fk_movimientos_producto` (movimientos_inventario.producto_id → productos.id)
 
 ### 6.2 Índices Adicionales
@@ -566,5 +645,10 @@ INSERT INTO planes (nombre, descripcion, precio_mensual, precio_anual, limite_pr
 
 ---
 
-**Última actualización**: Enero 2026
+**Última actualización**: 23/01/2026
+
+**Cambios recientes (23/01/2026)**:
+- ✅ Agregadas tablas: `compra_pagos`, `historial_cajas`, `ventas_rapidas`
+- ✅ Actualizado diagrama de relaciones
+- ✅ Agregados índices y foreign keys para nuevas tablas
 

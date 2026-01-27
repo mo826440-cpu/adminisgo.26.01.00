@@ -1,6 +1,7 @@
 // Servicio para gestión de ventas rápidas
 import { supabase } from './supabase'
 import { createVenta } from './ventas'
+import { validarLimiteVentas } from './planes'
 
 /**
  * Crear una venta rápida

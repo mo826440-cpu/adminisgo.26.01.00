@@ -1,5 +1,6 @@
 // Servicio para gestión de ventas
 import { supabase } from './supabase'
+import { validarLimiteVentas } from './planes'
 
 /**
  * Crear una nueva venta
@@ -11,6 +12,19 @@ export const createVenta = async (ventaData) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       throw new Error('Usuario no autenticado')
+    }
+
+    // Validar límite de ventas mensuales
+    const { data: validacion, error: errorValidacion } = await validarLimiteVentas()
+    if (errorValidacion) {
+      throw new Error(`Error al validar límite: ${errorValidacion.message}`)
+    }
+    
+    if (validacion && !validacion.puede_crear) {
+      const error = new Error(validacion.mensaje || 'Has alcanzado el límite de ventas mensuales')
+      error.tipo = validacion.tipo_error || 'limite_ventas'
+      error.detalles = validacion
+      throw error
     }
 
     // Generar número de ticket único (formato: TICKET-YYYYMMDD-HHMMSS-XXXX)

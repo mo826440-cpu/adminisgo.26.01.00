@@ -1,0 +1,44 @@
+.plan-card {
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.plan-card.selected {
+  border: 2px solid var(--primary) !important;
+  background-color: var(--bg-secondary);
+}
+
+.plan-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.plan-card ul li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.plan-card ul li:last-child {
+  border-bottom: none;
+}
+
+.plan-card ul li::before {
+  content: "✓ ";
+  color: var(--success);
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .plan-card {
+    margin-bottom: 1rem;
+  }
+}
+

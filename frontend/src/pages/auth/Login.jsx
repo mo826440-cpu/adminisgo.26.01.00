@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { signIn } from '../../services/auth'
+import { getComercio } from '../../services/comercio'
 import { useAuthContext } from '../../context/AuthContext'
 
 function Login() {
@@ -12,11 +13,29 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Si ya está autenticado, redirigir al dashboard
+  // Si ya está autenticado, verificar si tiene comercio y redirigir apropiadamente
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate('/dashboard', { replace: true })
+    const verificarYRedirigir = async () => {
+      if (!authLoading && isAuthenticated) {
+        try {
+          const { data: comercio, error } = await getComercio()
+          
+          if (comercio) {
+            // Tiene comercio, redirigir al dashboard
+            navigate('/dashboard', { replace: true })
+          } else {
+            // No tiene comercio, redirigir a selección de plan
+            navigate('/auth/select-plan', { replace: true })
+          }
+        } catch (err) {
+          // Error al verificar, redirigir a selección de plan
+          console.error('Error al verificar comercio:', err)
+          navigate('/auth/select-plan', { replace: true })
+        }
+      }
     }
+
+    verificarYRedirigir()
   }, [isAuthenticated, authLoading, navigate])
 
   // Mostrar loading mientras se verifica la autenticación
@@ -51,8 +70,29 @@ function Login() {
       return
     }
 
-    // Redirigir al dashboard después de login exitoso
-    navigate('/dashboard')
+    // Verificar si tiene comercio antes de redirigir
+    try {
+      const { data: comercio, error: comercioError } = await getComercio()
+      
+      // Log para depuración
+      console.log('[Login] Verificando comercio después de login:', { comercio, error: comercioError })
+      
+      if (comercio) {
+        // Tiene comercio, redirigir al dashboard
+        console.log('[Login] Usuario tiene comercio, redirigiendo a dashboard')
+        navigate('/dashboard', { replace: true })
+      } else {
+        // No tiene comercio, redirigir a selección de plan
+        console.log('[Login] Usuario NO tiene comercio, redirigiendo a select-plan')
+        navigate('/auth/select-plan', { replace: true })
+      }
+    } catch (err) {
+      // Error al verificar, redirigir a selección de plan
+      console.error('[Login] Excepción al verificar comercio:', err)
+      navigate('/auth/select-plan', { replace: true })
+    }
+    
+    setLoading(false)
   }
 
   return (

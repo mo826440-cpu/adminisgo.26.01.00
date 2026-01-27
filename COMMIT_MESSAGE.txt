@@ -1,0 +1,20 @@
+feat: Implementar sistema de términos y condiciones con firma digital
+
+- Agregar componente FirmaCanvas para captura de firmas
+- Agregar componente TerminosYCondiciones con integración de firma
+- Integrar términos en flujo de registro (SelectPlan y CompleteRegistration)
+- Agregar servicio de consentimientos con subida a Storage
+- Corregir manejo de comercio_id null durante registro
+- Agregar logs de depuración para diagnóstico
+- Mejorar detección de localhost en auth.js para desarrollo
+- Agregar migraciones de base de datos para términos y consentimientos
+- Agregar guías de pruebas y diagnóstico
+
+Cambios principales:
+- frontend/src/components/common/FirmaCanvas.jsx (nuevo)
+- frontend/src/components/common/TerminosYCondiciones.jsx (nuevo)
+- frontend/src/services/consentimientos.js (nuevo)
+- frontend/src/pages/auth/SelectPlan.jsx (actualizado)
+- frontend/src/pages/auth/CompleteRegistration.jsx (actualizado)
+- frontend/src/services/auth.js (mejorado para desarrollo local)
+- database/migrations/019_consentimientos.sql (nuevo)

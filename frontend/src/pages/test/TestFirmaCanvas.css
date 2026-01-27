@@ -1,0 +1,147 @@
+.test-firma-canvas {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.test-header {
+  margin-bottom: 2rem;
+}
+
+.test-header h1 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.test-header p {
+  color: var(--text-secondary);
+}
+
+.test-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.test-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.test-section h2 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.test-status {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.test-status.loading {
+  background: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.3);
+  color: #0056b3;
+}
+
+.test-status.error {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: #dc3545;
+}
+
+.test-status.success {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  color: #28a745;
+}
+
+.firma-preview {
+  background: #ffffff;
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.firma-preview-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.firma-info {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.firma-info p {
+  margin: 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.firma-info code {
+  display: block;
+  background: var(--bg-secondary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  word-break: break-all;
+  margin-top: 0.5rem;
+  color: var(--text-primary);
+}
+
+.firma-url {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.firma-url p {
+  margin: 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.firma-url code {
+  display: block;
+  background: var(--bg-secondary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  word-break: break-all;
+  margin-top: 0.5rem;
+  color: var(--text-primary);
+}
+
+.test-section ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: var(--text-primary);
+}
+
+.test-section ol li {
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .test-firma-canvas {
+    padding: 1rem;
+  }
+  
+  .test-section {
+    padding: 1rem;
+  }
+}
+

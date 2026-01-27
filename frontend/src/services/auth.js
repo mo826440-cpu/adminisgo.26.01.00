@@ -6,12 +6,20 @@ import { supabase } from './supabase'
  */
 export const signUp = async (email, password, userData = {}) => {
   try {
+    // En desarrollo, forzar localhost para evitar redirecciones a producción
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const redirectUrl = isDevelopment 
+      ? 'http://localhost:5173/auth/callback'
+      : `${window.location.origin}/auth/callback`
+    
+    console.log('[signUp] URL de redirección:', redirectUrl, { hostname: window.location.hostname, origin: window.location.origin })
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userData, // Datos adicionales para el perfil
-        emailRedirectTo: `${window.location.origin}/auth/complete-registration`
+        emailRedirectTo: redirectUrl
       }
     })
 

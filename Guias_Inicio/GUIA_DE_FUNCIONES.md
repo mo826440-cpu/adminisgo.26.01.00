@@ -139,7 +139,7 @@
 - **Teclado numérico virtual**: Para ingresar cantidades y montos
 - **Scanner de códigos de barras**: Usar cámara del dispositivo
 - **Múltiples métodos de pago**: Dividir pago entre varios métodos
-- **Ventas rápidas**: Sin seleccionar cliente (venta rápida)
+- **Ventas rápidas**: Módulo completo de ventas rápidas con gestión de caja ✅
 - **Guardar borrador**: Guardar venta en proceso para continuar después
 - **Cancelar venta**: Volver a seleccionar productos
 - **Historial de ventas**: Ver ventas del día/semana/mes
@@ -281,33 +281,102 @@
 ## 7. Módulo de Compras
 
 ### 7.1 Gestión de Compras
-- **Crear orden de compra**: 
-  - Seleccionar proveedor
-  - Agregar productos (con cantidades y precios)
-  - Fecha de entrega estimada
-  - Observaciones
-- **Recibir compra**: 
-  - Confirmar recepción de productos
-  - Registrar cantidades recibidas
-  - Actualizar stock automáticamente
-- **Editar orden de compra**: Modificar antes de recibir
+- **Crear orden de compra**: ✅
+  - Seleccionar proveedor ✅
+  - Agregar productos con autocompletado ✅
+  - Cantidades y precios ✅
+  - Descuentos e impuestos por producto ✅
+  - Fecha de orden ✅
+  - Observaciones ✅
+  - Gestión de pagos múltiples ✅
+  - Cálculo automático de deuda ✅
+- **Recibir compra**: ✅
+  - Confirmar recepción de productos ✅
+  - Registrar cantidades recibidas por item ✅
+  - Actualizar stock automáticamente ✅
+- **Editar orden de compra**: ✅
+  - Modificar datos de la compra ✅
+  - Editar items ✅
+  - Ver historial de pagos ✅
+  - Agregar nuevos pagos ✅
 - **Cancelar orden**: Cancelar si no se recibió
 
 ### 7.2 Lista de Compras
-- **Tabla de compras**: 
-  - Número de orden
-  - Proveedor
-  - Fecha de orden
-  - Fecha de recepción
-  - Total
-  - Estado (pendiente, recibida, cancelada)
-- **Filtros**: Por proveedor, fecha, estado
-- **Búsqueda**: Por número de orden, proveedor
+- **Tabla de compras**: ✅
+  - Número de orden ✅
+  - Proveedor ✅
+  - Fecha de orden ✅
+  - Fecha de recepción ✅
+  - Total ✅
+  - Estado (pendiente, recibida, cancelada) ✅
+  - Estado de pago (Pagado/Deuda/Sin pago) ✅
+- **Filtros**: Por proveedor, fecha, estado ✅
+- **Búsqueda**: Por número de orden, proveedor ✅
+- **Impresión**: Ticket POS 80mm con detalle completo ✅
 
 ### 7.3 Historial de Compras
-- **Ver compra**: Detalle completo de orden de compra
-- **Productos comprados**: Lista con cantidades y precios
-- **Factura/Remito**: Adjuntar archivos PDF/imágenes
+- **Ver compra**: Detalle completo de orden de compra ✅
+- **Productos comprados**: Lista con cantidades, precios, descuentos e impuestos ✅
+- **Historial de pagos**: Lista de todos los pagos realizados ✅
+- **Factura/Remito**: Adjuntar archivos PDF/imágenes (pendiente)
+
+### 7.4 Módulo de Ventas Rápidas y Gestión de Caja
+
+#### 7.4.1 Gestión de Caja
+- **Apertura de caja**: ✅
+  - Registrar importe inicial con formato de moneda ✅
+  - Observaciones opcionales ✅
+  - Fecha y hora automática ✅
+  - Validación de usuario ✅
+- **Cierre de caja**: ✅
+  - Cálculo automático de ingresos desde apertura ✅
+  - Cálculo automático de egresos ✅
+  - Saldo final calculado ✅
+  - Observaciones opcionales ✅
+- **Estado de caja**: ✅
+  - Indicador de caja abierta/cerrada ✅
+  - Saldo actual en tiempo real ✅
+  - Información de última apertura ✅
+  - Indicadores visuales (inicio y estado actual) ✅
+- **Historial de cajas**: ✅
+  - Lista de todas las aperturas/cierres ✅
+  - Filtros por fecha ✅
+  - Detalle de cada operación ✅
+  - Impresión de registros ✅
+
+#### 7.4.2 Ventas Rápidas
+- **Formulario simplificado**: ✅
+  - Selección de cliente (opcional) con autocompletado ✅
+  - Campo de total con formato de moneda ($1.000,00) ✅
+  - Campo de monto pagado con formato de moneda ✅
+  - Sincronización automática de monto pagado con total ✅
+  - Método de pago (efectivo, transferencia, QR, débito, crédito, cheque, otro) ✅
+  - Observaciones opcionales ✅
+- **Registro de ventas**: ✅
+  - Guardado en tabla `ventas_rapidas` ✅
+  - Guardado en tabla `ventas` (consistencia de datos) ✅
+  - Validación de caja abierta antes de registrar ✅
+  - Cálculo automático de estado (PAGADO/DEBE) ✅
+- **Lista de ventas rápidas**: ✅
+  - Tabla con todas las ventas rápidas ✅
+  - Filtro automático desde última apertura de caja ✅
+  - Filtros manuales por fecha (desde/hasta) ✅
+  - Indicador de estado (PAGADO/DEBE) con badges ✅
+  - Acciones: Ver detalle, Imprimir ticket ✅
+- **Detalle de venta rápida**: ✅
+  - Información completa de la venta ✅
+  - Información de la venta asociada en tabla `ventas` ✅
+  - Impresión de ticket POS 80mm ✅
+
+#### 7.4.3 Tickets de Impresión
+- **Formato POS 80mm**: ✅
+  - Encabezado con datos del comercio ✅
+  - Información de la venta/compra (número, fecha, cliente) ✅
+  - Lista de items (si aplica) ✅
+  - Totales (parcial, pagado, saldo, total) ✅
+  - Métodos de pago ✅
+  - Mensaje aclaratorio: "Este ticket no es una factura ni tiene validez fiscal. Solo es un comprobante de venta." ✅
+  - Pie con "Conserve este ticket" ✅
 
 ---
 
@@ -530,10 +599,17 @@
 - **Sincronización automática**: Sincronizar datos cuando hay conexión
 
 ### 13.2 PWA (Progressive Web App)
-- **Instalación**: Instalar en dispositivo como app nativa
-- **Funcionamiento offline**: Service Worker para funcionar sin Internet
-- **Notificaciones push**: Notificaciones del sistema
-- **Actualización automática**: Actualizar app automáticamente
+- **Instalación**: Instalar en dispositivo como app nativa ✅
+- **Service Worker mejorado**: ✅
+  - Actualización automática cada 30 segundos ✅
+  - Estrategia Network First para obtener versión más reciente ✅
+  - Detección de actualizaciones al recuperar foco de ventana ✅
+  - Actualización automática cuando detecta nueva versión ✅
+  - Limpieza automática de caches antiguos ✅
+  - Notificaciones opcionales de actualización ✅
+- **Funcionamiento offline**: Service Worker para funcionar sin Internet (básico implementado)
+- **Notificaciones push**: Notificaciones del sistema (pendiente)
+- **Actualización automática**: Actualizar app automáticamente ✅
 
 ### 13.3 Impresión
 - **Impresión de tickets**: Impresoras térmicas o normales
