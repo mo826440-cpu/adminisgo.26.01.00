@@ -1,6 +1,6 @@
 // Landing Page - Página de Inicio
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
 import { getComercio } from '../services/comercio'
 import { Spinner } from '../components/common'
@@ -8,10 +8,29 @@ import './LandingPage.css'
 
 function LandingPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, isAuthenticated, loading: authLoading } = useAuthContext()
   const [verificandoComercio, setVerificandoComercio] = useState(false)
 
   useEffect(() => {
+    // Si hay errores de autenticación en la URL, redirigir a /auth/callback para manejarlos
+    const errorParam = searchParams.get('error')
+    const errorCode = searchParams.get('error_code')
+    
+    if (errorParam || errorCode) {
+      // Construir URL con todos los parámetros de error
+      const params = new URLSearchParams()
+      if (errorParam) params.set('error', errorParam)
+      if (errorCode) params.set('error_code', errorCode)
+      const errorDescription = searchParams.get('error_description')
+      if (errorDescription) params.set('error_description', errorDescription)
+      const email = searchParams.get('email')
+      if (email) params.set('email', email)
+      
+      navigate(`/auth/callback?${params.toString()}`, { replace: true })
+      return
+    }
+
     const verificarYRedirigir = async () => {
       // Si está cargando la autenticación, esperar
       if (authLoading) return
@@ -39,7 +58,7 @@ function LandingPage() {
     }
 
     verificarYRedirigir()
-  }, [isAuthenticated, authLoading, navigate])
+  }, [isAuthenticated, authLoading, navigate, searchParams])
 
   // Mostrar spinner mientras verifica
   if (authLoading || verificandoComercio) {
