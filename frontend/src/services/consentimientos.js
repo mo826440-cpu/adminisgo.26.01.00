@@ -115,6 +115,7 @@ export const guardarConsentimiento = async (datosConsentimiento) => {
 
 /**
  * Subir firma a Supabase Storage
+ * Si el bucket no existe, guarda el data URL directamente
  * @param {string} firmaDataUrl - Data URL de la imagen de la firma (canvas.toDataURL())
  * @param {string} tipo - 'terminos' o 'eliminacion'
  * @param {string} usuarioId - ID del usuario
@@ -127,9 +128,10 @@ export const subirFirmaAStorage = async (firmaDataUrl, tipo, usuarioId) => {
     
     // Crear nombre de archivo único
     const fileName = `${usuarioId}-${Date.now()}.png`
-    const filePath = `firmas/${tipo}/${fileName}`
+    // Corregir path: era firmas/firmas/terminos, ahora es firmas/terminos
+    const filePath = `${tipo}/${fileName}`
     
-    // Subir a Supabase Storage
+    // Intentar subir a Supabase Storage
     const { data, error } = await supabase.storage
       .from('firmas')
       .upload(filePath, blob, {
@@ -137,16 +139,49 @@ export const subirFirmaAStorage = async (firmaDataUrl, tipo, usuarioId) => {
         upsert: false
       })
     
-    if (error) throw error
+    // Si el bucket no existe, usar el data URL directamente
+    if (error) {
+      // Si es error de "bucket not found", guardar data URL directamente
+      if (error.message?.includes('Bucket not found') || error.message?.includes('bucket') || error.statusCode === 400) {
+        console.warn('Bucket "firmas" no encontrado en Supabase Storage. Guardando firma como data URL.')
+        // Retornar el data URL como si fuera una URL válida
+        // La base de datos puede almacenar data URLs (aunque son largos)
+        return { 
+          data: { 
+            url: firmaDataUrl, 
+            path: `data-url-${tipo}-${fileName}`,
+            isDataUrl: true 
+          }, 
+          error: null 
+        }
+      }
+      // Si es otro error, lanzarlo
+      throw error
+    }
     
     // Obtener URL pública
     const { data: { publicUrl } } = supabase.storage
       .from('firmas')
       .getPublicUrl(filePath)
     
-    return { data: { url: publicUrl, path: filePath }, error: null }
+    return { data: { url: publicUrl, path: filePath, isDataUrl: false }, error: null }
   } catch (error) {
     console.error('Error al subir firma a Storage:', error)
+    
+    // Si falla completamente, permitir usar el data URL como fallback
+    if (error.message?.includes('Bucket not found') || error.message?.includes('bucket')) {
+      console.warn('Usando data URL como fallback debido a bucket no encontrado.')
+      const fileName = `${usuarioId}-${Date.now()}.png`
+      return { 
+        data: { 
+          url: firmaDataUrl, 
+          path: `data-url-${tipo}-${fileName}`,
+          isDataUrl: true 
+        }, 
+        error: null 
+      }
+    }
+    
     return { data: null, error }
   }
 }

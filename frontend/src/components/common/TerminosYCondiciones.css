@@ -31,12 +31,15 @@
 }
 
 .terminos-content {
-  max-height: 400px;
+  max-height: 500px;
+  min-height: 400px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 1rem;
+  padding: 1.5rem;
   background: var(--bg-primary);
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 .terminos-text {
@@ -124,6 +127,8 @@
 /* Responsive */
 @media (max-width: 768px) {
   .terminos-content {
-    max-height: 300px;
+    max-height: 400px;
+    min-height: 300px;
+    padding: 1rem;
   }
 }
