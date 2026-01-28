@@ -1,19 +1,22 @@
 // Página para Cambiar de Plan
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Alert, Spinner, Badge } from '../../components/common'
 import { getPlanes } from '../../services/planes'
-import { actualizarPlanComercio } from '../../services/comercio'
+import { actualizarPlanComercio, getComercio } from '../../services/comercio'
 import { getEstadoSuscripcion } from '../../services/planes'
+import { crearPreferenciaPago } from '../../services/mercadopago'
 import { useAuthContext } from '../../context/AuthContext'
 import './CambiarPlan.css'
 
 function CambiarPlan() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, loading: authLoading } = useAuthContext()
   const [planes, setPlanes] = useState([])
   const [planActual, setPlanActual] = useState(null)
+  const [comercio, setComercio] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -34,12 +37,35 @@ function CambiarPlan() {
         
         setPlanes(planesFiltrados)
 
+        // Cargar comercio
+        const { data: comercioData, error: comercioError } = await getComercio()
+        if (comercioError) {
+          console.error('Error al obtener comercio:', comercioError)
+        } else {
+          setComercio(comercioData)
+        }
+
         // Cargar plan actual
         const { data: suscripcionData, error: suscripcionError } = await getEstadoSuscripcion()
         if (suscripcionError) {
           console.error('Error al obtener suscripción:', suscripcionError)
         } else if (suscripcionData?.plan) {
           setPlanActual(suscripcionData.plan)
+        }
+
+        // Verificar si viene de retorno de pago
+        const status = searchParams.get('status')
+        const payment_id = searchParams.get('payment_id')
+        if (status === 'approved' && payment_id) {
+          setSuccessMessage('¡Pago aprobado! Tu plan ha sido actualizado exitosamente.')
+          // Recargar datos después de pago exitoso
+          setTimeout(() => {
+            window.location.href = '/configuracion/cambiar-plan'
+          }, 3000)
+        } else if (status === 'rejected') {
+          setError('El pago fue rechazado. Por favor, intenta nuevamente.')
+        } else if (status === 'pending') {
+          setError('El pago está pendiente. Te notificaremos cuando se apruebe.')
         }
       } catch (err) {
         setError(err.message || 'Error al cargar los planes')
@@ -51,7 +77,7 @@ function CambiarPlan() {
     if (!authLoading && user) {
       cargarDatos()
     }
-  }, [authLoading, user])
+  }, [authLoading, user, searchParams])
 
   const getNombrePlan = (tipo) => {
     const nombres = {
@@ -73,8 +99,45 @@ function CambiarPlan() {
     return colores[tipo] || 'secondary'
   }
 
-  const handleCambiarPlan = async (planId, planNombre) => {
-    if (!window.confirm(`¿Estás seguro de que deseas cambiar a ${getNombrePlan(planNombre)}?`)) {
+  const handleCambiarPlan = async (planId, planNombre, planData) => {
+    // Si es plan gratis, actualizar directamente sin pago
+    if (planNombre === 'gratis') {
+      if (!window.confirm(`¿Estás seguro de que deseas cambiar a ${getNombrePlan(planNombre)}?`)) {
+        return
+      }
+
+      setSaving(true)
+      setError(null)
+      setSuccessMessage(null)
+
+      try {
+        const { data, error: updateError } = await actualizarPlanComercio(planId)
+        
+        if (updateError) throw updateError
+
+        setSuccessMessage(`Plan actualizado exitosamente a ${getNombrePlan(planNombre)}`)
+        
+        // Recargar plan actual
+        const { data: suscripcionData } = await getEstadoSuscripcion()
+        if (suscripcionData?.plan) {
+          setPlanActual(suscripcionData.plan)
+        }
+
+        // Redirigir al dashboard después de 2 segundos
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 2000)
+      } catch (err) {
+        setError(err.message || 'Error al actualizar el plan')
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
+
+    // Si es plan de pago, crear preferencia de Mercado Pago
+    if (!comercio || !comercio.id) {
+      setError('No se pudo obtener la información del comercio')
       return
     }
 
@@ -83,25 +146,31 @@ function CambiarPlan() {
     setSuccessMessage(null)
 
     try {
-      const { data, error: updateError } = await actualizarPlanComercio(planId)
-      
-      if (updateError) throw updateError
+      // Determinar monto y tipo de pago
+      const monto = planData.precio_mensual || 0
+      const tipoPago = 'mensual' // Por ahora solo mensual, luego se puede agregar anual
 
-      setSuccessMessage(`Plan actualizado exitosamente a ${getNombrePlan(planNombre)}`)
-      
-      // Recargar plan actual
-      const { data: suscripcionData } = await getEstadoSuscripcion()
-      if (suscripcionData?.plan) {
-        setPlanActual(suscripcionData.plan)
+      // Crear preferencia de pago
+      const { data: preferenciaData, error: preferenciaError } = await crearPreferenciaPago({
+        planId: planId,
+        planNombre: planNombre,
+        monto: monto,
+        tipoPago: tipoPago,
+        comercioId: comercio.id,
+        emailUsuario: user?.email
+      })
+
+      if (preferenciaError) throw preferenciaError
+
+      if (preferenciaData?.initPoint) {
+        // Redirigir a Mercado Pago Checkout
+        window.location.href = preferenciaData.initPoint
+      } else {
+        throw new Error('No se pudo obtener la URL de pago')
       }
-
-      // Redirigir al dashboard después de 2 segundos
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 2000)
     } catch (err) {
-      setError(err.message || 'Error al actualizar el plan')
-    } finally {
+      console.error('Error al crear preferencia de pago:', err)
+      setError(err.message || 'Error al procesar el pago. Por favor, intenta nuevamente.')
       setSaving(false)
     }
   }
@@ -254,7 +323,7 @@ function CambiarPlan() {
                         navigate('/configuracion')
                         alert('Para solicitar un plan personalizado, por favor contacta con nuestro equipo de ventas.')
                       } else if (!esPlanActual) {
-                        handleCambiarPlan(plan.id, plan.nombre)
+                        handleCambiarPlan(plan.id, plan.nombre, plan)
                       }
                     }}
                     disabled={esPlanActual || saving}
@@ -265,8 +334,10 @@ function CambiarPlan() {
                       : esPersonalizado 
                         ? 'Contactar' 
                         : saving 
-                          ? 'Actualizando...' 
-                          : 'Seleccionar Plan'
+                          ? (esGratis ? 'Actualizando...' : 'Redirigiendo a Mercado Pago...')
+                          : esGratis
+                            ? 'Seleccionar Plan'
+                            : 'Pagar con Mercado Pago'
                     }
                   </Button>
                 </Card>
