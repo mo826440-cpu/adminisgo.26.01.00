@@ -33,6 +33,16 @@ export default async function handler(req, res) {
       console.error('MERCADOPAGO_ACCESS_TOKEN no configurado')
       return res.status(500).json({ error: 'Configuración de Mercado Pago incompleta' })
     }
+    // Log seguro (sin exponer token completo)
+    console.log('[MP] crear-preferencia request', {
+      planId,
+      planNombre,
+      monto,
+      tipoPago,
+      comercioId,
+      emailUsuario,
+      tokenPrefix: String(process.env.MERCADOPAGO_ACCESS_TOKEN).slice(0, 5)
+    })
 
     // Inicializar Mercado Pago
     const client = new MercadoPagoConfig({
@@ -83,6 +93,16 @@ export default async function handler(req, res) {
     }
 
     const response = await preference.create({ body: preferenceData })
+
+    console.log('[MP] crear-preferencia response', {
+      preferenceId: response?.id,
+      init_point: response?.init_point,
+      sandbox_init_point: response?.sandbox_init_point,
+      collector_id: response?.collector_id,
+      currency_id: preferenceData?.items?.[0]?.currency_id,
+      unit_price: preferenceData?.items?.[0]?.unit_price,
+      appUrl
+    })
 
     return res.status(200).json({
       preferenceId: response.id,
