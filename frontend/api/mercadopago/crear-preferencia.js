@@ -46,9 +46,8 @@ export default async function handler(req, res) {
     const preference = new Preference(client)
 
     // URL base de la app
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'https://adminisgo.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://adminisgo.com')
 
     // Crear preferencia de pago
     const preferenceData = {
