@@ -28,6 +28,18 @@ function SelectPlan() {
   const [terminosAceptados, setTerminosAceptados] = useState(false)
   const [verificandoConsentimiento, setVerificandoConsentimiento] = useState(true)
 
+  // Formato argentino: 25000 → "25.000,00", 250000 → "250.000,00"
+  const formatearPrecioARS = (n) => {
+    if (n == null || isNaN(n)) return '0,00'
+    const num = Number(n)
+    // Formato: punto para miles, coma para decimales, siempre 2 decimales
+    return num.toLocaleString('es-AR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2,
+      useGrouping: true
+    })
+  }
+
   // Verificar si el usuario ya tiene comercio (ya completó el registro)
   useEffect(() => {
     const verificarComercio = async () => {
@@ -398,12 +410,12 @@ function SelectPlan() {
                   <h3 style={{ marginBottom: '0.5rem' }}>Plan Pago</h3>
                   <div style={{ marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                      ${planPago.precio_mensual}
+                      ${formatearPrecioARS(planPago.precio_mensual)}
                     </span>
                     <span style={{ color: 'var(--text-secondary)' }}>/mes</span>
                   </div>
                   <div style={{ fontSize: 'var(--font-size-small)', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                    o ${planPago.precio_anual}/año
+                    o ${formatearPrecioARS(planPago.precio_anual)}/año
                   </div>
                   <ul style={{ textAlign: 'left', marginBottom: '1.5rem', paddingLeft: '1.5rem' }}>
                     <li>1 usuario principal</li>
@@ -411,7 +423,7 @@ function SelectPlan() {
                     <li>Ventas ilimitadas</li>
                     <li>Compras ilimitadas</li>
                     <li>Productos ilimitados</li>
-                    <li>${planPago.precio_usuario_adicional} USD/año por usuario extra</li>
+                    <li>${formatearPrecioARS(planPago.precio_usuario_adicional)}/año por usuario extra</li>
                   </ul>
                   <Button
                     variant={planSeleccionado?.id === planPago.id ? 'primary' : 'outline'}

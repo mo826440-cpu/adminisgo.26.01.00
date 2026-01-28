@@ -181,8 +181,8 @@ function LandingPage() {
             <div className="landing-plan-card landing-plan-featured">
               <div className="landing-plan-badge">Más Popular</div>
               <h3>Plan Pago</h3>
-              <div className="landing-plan-price">$9.99<span>/mes</span></div>
-              <div className="landing-plan-price-alt">o $99.90/año</div>
+              <div className="landing-plan-price">$25.000,00<span>/mes</span></div>
+              <div className="landing-plan-price-alt">o $250.000,00/año</div>
               <ul className="landing-plan-features">
                 <li>✓ 1 usuario principal</li>
                 <li>✓ Hasta 10 usuarios adicionales</li>

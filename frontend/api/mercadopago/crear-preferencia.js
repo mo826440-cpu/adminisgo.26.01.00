@@ -69,13 +69,17 @@ export default async function handler(req, res) {
         pending: `${appUrl}/configuracion/cambiar-plan?status=pending`
       },
       auto_return: 'approved',
+      statement_descriptor: 'Adminis Go', // Descripción que aparece en el resumen de tarjeta
       metadata: {
         plan_id: planId.toString(),
         plan_nombre: planNombre,
         comercio_id: comercioId.toString(),
         tipo_pago: tipoPago
       },
-      notification_url: `${appUrl}/api/webhooks/mercadopago`
+      notification_url: `${appUrl}/api/webhooks/mercadopago`,
+      // Configuraciones adicionales para sandbox
+      binary_mode: false, // Permite pagos pendientes
+      expires: false // No expira la preferencia
     }
 
     const response = await preference.create({ body: preferenceData })

@@ -99,6 +99,18 @@ function CambiarPlan() {
     return colores[tipo] || 'secondary'
   }
 
+  // Formato argentino: 25000 → "25.000,00", 250000 → "250.000,00"
+  const formatearPrecioARS = (n) => {
+    if (n == null || isNaN(n)) return '0,00'
+    const num = Number(n)
+    // Formato: punto para miles, coma para decimales, siempre 2 decimales
+    return num.toLocaleString('es-AR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2,
+      useGrouping: true
+    })
+  }
+
   const handleCambiarPlan = async (planId, planNombre, planData) => {
     // Si es plan gratis, actualizar directamente sin pago
     if (planNombre === 'gratis') {
@@ -162,9 +174,12 @@ function CambiarPlan() {
 
       if (preferenciaError) throw preferenciaError
 
-      if (preferenciaData?.initPoint) {
+      // Usar sandbox_init_point si está disponible (modo test), sino usar init_point
+      const checkoutUrl = preferenciaData?.sandboxInitPoint || preferenciaData?.initPoint
+      
+      if (checkoutUrl) {
         // Redirigir a Mercado Pago Checkout
-        window.location.href = preferenciaData.initPoint
+        window.location.href = checkoutUrl
       } else {
         throw new Error('No se pudo obtener la URL de pago')
       }
@@ -262,14 +277,14 @@ function CambiarPlan() {
                     ) : (
                       <div>
                         <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                          ${plan.precio_mensual?.toFixed(2) || '0.00'}
+                          ${formatearPrecioARS(plan.precio_mensual)}
                         </div>
                         <div className="text-secondary" style={{ fontSize: '0.9rem' }}>
                           por mes
                         </div>
-                        {plan.precio_anual && (
+                        {plan.precio_anual != null && plan.precio_anual !== '' && (
                           <div className="text-secondary" style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                            o ${plan.precio_anual.toFixed(2)}/año
+                            o ${formatearPrecioARS(plan.precio_anual)}/año
                           </div>
                         )}
                       </div>
