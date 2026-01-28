@@ -1,6 +1,6 @@
 // Página de Dashboard
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { Layout } from '../../components/layout'
@@ -11,6 +11,7 @@ import { getEstadoSuscripcion } from '../../services/planes'
 import './Dashboard.css'
 
 function Dashboard() {
+  const navigate = useNavigate()
   const { user, loading } = useAuthContext()
   const { isInstallable, isInstalled, install } = usePWAInstall()
   const { currentDateTime, timezone, dateFormat } = useDateTime()
