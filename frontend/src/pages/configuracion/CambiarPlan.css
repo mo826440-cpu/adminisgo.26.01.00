@@ -1,0 +1,25 @@
+.planes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.plan-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.plan-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.plan-actual {
+  border-color: var(--primary) !important;
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+@media (max-width: 768px) {
+  .planes-grid {
+    grid-template-columns: 1fr;
+  }
+}

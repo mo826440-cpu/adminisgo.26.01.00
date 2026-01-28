@@ -1,7 +1,7 @@
 # Checklist del Proyecto - Adminis Go
 
-**Versión del documento**: 1.1  
-**Última actualización**: 23/01/2026  
+**Versión del documento**: 1.2  
+**Última actualización**: 27/01/2026  
 **Estado del proyecto**: 🟡 Desarrollo Activo
 
 ---
@@ -182,6 +182,12 @@
     - [x] Productos en stock (placeholder) ✅
     - [x] Clientes totales (placeholder) ✅
     - [x] Stock bajo (placeholder) ✅
+  - [x] Visualización de plan actual: ✅
+    - [x] Badge con plan actual en header ✅
+    - [x] Card "Tu Plan Actual" con información detallada ✅
+    - [x] Mostrar límites de ventas y usuarios ✅
+    - [x] Mostrar período gratis si aplica ✅
+    - [x] Botón para cambiar plan (si es plan gratis) ✅
   - [ ] Gráfico simple (placeholder) (pendiente)
 
 ### 1.3 Módulo de Productos (MVP)
@@ -568,18 +574,40 @@
   - [ ] Notificar cuando vuelva online
   - [ ] Mostrar ventas pendientes de sincronizar
 
-### 2.11 Configuración Avanzada
+### 2.11 Sistema de Planes y Suscripciones
 
-- [ ] Configuración del comercio:
-  - [ ] Información completa
-  - [ ] Logo del comercio (subir/editar)
-  - [ ] Configuración de impuestos
-  - [ ] Configuración de moneda
-  - [ ] Formato de fechas
-- [ ] Configuración de impresión:
-  - [ ] Plantilla de ticket personalizable
-  - [ ] Impresora predeterminada
-  - [ ] Configuración de tamaño de papel
+- [x] Sistema de términos y condiciones: ✅
+  - [x] Componente FirmaCanvas para captura de firmas ✅
+  - [x] Componente TerminosYCondiciones con modal ✅
+  - [x] Integración en flujo de registro (SelectPlan y CompleteRegistration) ✅
+  - [x] Validación de scroll y checkbox antes de aceptar ✅
+  - [x] Guardado de consentimientos en base de datos ✅
+  - [x] Subida de firmas a Storage (con fallback a data URL) ✅
+  - [x] Manejo de errores de confirmación de email expirada ✅
+- [x] Visualización de plan actual: ✅
+  - [x] Mostrar plan en Dashboard ✅
+  - [x] Mostrar límites de ventas y usuarios ✅
+  - [x] Mostrar período gratis si aplica ✅
+- [x] Cambio de plan: ✅
+  - [x] Página "Cambiar Plan" creada ✅
+  - [x] Función para actualizar plan_id del comercio ✅
+  - [x] Botón en Dashboard para cambiar plan ✅
+  - [ ] Integración con pasarela de pago (Stripe/Mercado Pago) - **PENDIENTE**
+  - [ ] Gestión completa de suscripciones - **PENDIENTE**
+
+### 2.12 Configuración Avanzada
+
+- [x] Configuración del comercio: ✅
+  - [x] Información básica (nombre, dirección, teléfono, email, CUIT/RUT) ✅
+  - [ ] Logo del comercio (subir/editar) - **PENDIENTE**
+  - [ ] Configuración de impuestos - **PENDIENTE**
+  - [ ] Configuración de moneda - **PENDIENTE**
+  - [x] Formato de fechas ✅
+- [x] Configuración de impresión: ✅
+  - [x] Formato de impresión configurable (POS80, POS58, etc.) ✅
+  - [ ] Plantilla de ticket personalizable - **PENDIENTE**
+  - [ ] Impresora predeterminada - **PENDIENTE**
+  - [ ] Configuración de tamaño de papel - **PENDIENTE**
 - [ ] Configuración de notificaciones:
   - [ ] Alertas de stock bajo
   - [ ] Notificaciones de ventas

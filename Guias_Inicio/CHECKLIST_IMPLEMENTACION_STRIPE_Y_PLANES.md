@@ -147,6 +147,7 @@
 - [ ] Crear bucket `firmas` en Supabase Storage - **PENDIENTE: Configurar manualmente en Supabase Dashboard**
 - [ ] Configurar políticas de acceso para bucket `firmas` - **PENDIENTE: Configurar manualmente en Supabase Dashboard**
 - [ ] Crear carpetas: `firmas/terminos/` y `firmas/eliminacion/` - **Se crean automáticamente al subir**
+- [x] **NOTA**: El sistema funciona sin el bucket (usa data URL como fallback)
 
 ---
 
@@ -186,6 +187,8 @@
   - [x] Manejar comercio_id null durante el registro
   - [x] Obtener usuario autenticado correctamente
 - [x] Función `subirFirmaAStorage(firmaDataUrl, tipo, usuarioId)`
+  - [x] Fallback a data URL si bucket no existe
+  - [x] Corregir path duplicado (firmas/firmas/terminos → firmas/terminos)
 - [x] Función `obtenerConsentimientos(usuarioId)`
 - [x] Función `verificarConsentimientoActual(usuarioId)`
 
@@ -217,19 +220,24 @@
 - [x] Exportar firma como imagen (PNG)
 - [x] Estilos responsive
 - [x] Usar estilo actual de la app
+- [x] Manejo de errores de subida a Storage con fallback a data URL
 
 ### 3.2. Componente TerminosYCondiciones
 - [x] Crear `frontend/src/components/common/TerminosYCondiciones.jsx`
 - [x] Modal con términos y condiciones
 - [x] Scroll para leer términos
+- [x] Campo de términos más grande y legible (min-height: 400px, max-height: 500px)
 - [x] Checkbox "He leído y acepto"
 - [x] Integración con FirmaCanvas
 - [x] Botón "Aceptar" (solo habilitado si checkbox + firma)
 - [x] Versión de términos visible
+- [x] Validación de scroll hasta el final antes de aceptar
 
 ### 3.3. Actualizar flujo de registro
-- [ ] Modificar `Register.jsx` para incluir términos después de confirmar email
-  - **NOTA**: El flujo actual redirige a SelectPlan después de confirmar email, donde se manejan los términos
+- [x] Modificar `Register.jsx` para incluir términos después de confirmar email
+  - [x] **NOTA**: El flujo actual redirige a SelectPlan después de confirmar email, donde se manejan los términos
+  - [x] Manejo de errores de confirmación de email expirada en `AuthCallback.jsx`
+  - [x] Redirección automática desde `LandingPage.jsx` cuando hay errores de autenticación
 - [x] Modificar `SelectPlan.jsx` para mostrar términos para plan de pago
   - [x] Verificar consentimiento al cargar la página
   - [x] Mostrar términos cuando usuario selecciona plan de pago y hace clic en "Continuar"
@@ -328,15 +336,21 @@
 - [ ] Crear ruta `/configuracion/eliminar-cuenta`
 
 ### 5.2. Mi comercio
-- [ ] Crear `frontend/src/pages/configuracion/MiComercio.jsx`
-- [ ] Ver datos del comercio
-- [ ] Ver suscripción actual (plan, fecha próximo pago, etc.)
-- [ ] Botón "Cambiar plan"
-- [ ] Modal para cambiar plan (mensual ↔ anual)
-- [ ] Botón "Cancelar suscripción"
-- [ ] Modal de cancelación con advertencias
-- [ ] Ver historial de pagos
-- [ ] Opción "Actualizar método de pago"
+- [x] Ver datos del comercio (en `Configuracion.jsx`)
+- [x] Ver suscripción actual (plan, límites) en Dashboard
+  - [x] Card "Tu Plan Actual" con información del plan
+  - [x] Mostrar límites de ventas y usuarios
+  - [x] Mostrar período gratis si aplica
+- [x] Botón "Cambiar plan" en Dashboard (para plan gratis)
+- [x] Página "Cambiar Plan" (`/configuracion/cambiar-plan`)
+  - [x] Mostrar todos los planes disponibles
+  - [x] Indicar plan actual
+  - [x] Permitir cambiar de plan (actualiza plan_id directamente)
+- [ ] Modal para cambiar plan (mensual ↔ anual) - **PENDIENTE: Requiere integración con Stripe**
+- [ ] Botón "Cancelar suscripción" - **PENDIENTE: Requiere integración con Stripe**
+- [ ] Modal de cancelación con advertencias - **PENDIENTE: Requiere integración con Stripe**
+- [ ] Ver historial de pagos - **PENDIENTE: Requiere integración con Stripe**
+- [ ] Opción "Actualizar método de pago" - **PENDIENTE: Requiere integración con Stripe**
 
 ### 5.3. Usuarios adicionales
 - [ ] Crear `frontend/src/pages/configuracion/UsuariosAdicionales.jsx`
@@ -565,21 +579,33 @@
 
 ## ✅ Estado del Proyecto
 
-**Última actualización**: 2025-01-26
-**Versión del checklist**: 1.3
-**Estado general**: En desarrollo - Fase 3 (Componentes Frontend Base)
+**Última actualización**: 2025-01-27
+**Versión del checklist**: 1.4
+**Estado general**: En desarrollo - Fase 3 completada, Fase 5 parcialmente completada
 
 ### Progreso por Fase:
 - **Fase 0**: 0% - Pendiente (Requisitos legales y Stripe)
 - **Fase 1**: 90% - Casi completada (Base de datos)
-- **Fase 2**: 75% - En progreso (Servicios Backend)
-- **Fase 3**: 80% - En progreso (Componentes Frontend Base)
+- **Fase 2**: 80% - En progreso (Servicios Backend)
+  - ✅ Servicio de consentimientos completado con fallback
+  - ✅ Servicio de términos completado
+  - ✅ Servicio de planes completado
+- **Fase 3**: 100% - Completada (Componentes Frontend Base)
   - ✅ Componente FirmaCanvas completado
-  - ✅ Componente TerminosYCondiciones completado
+  - ✅ Componente TerminosYCondiciones completado (con mejoras de UX)
   - ✅ Integración en CompleteRegistration.jsx completada
   - ✅ Integración en SelectPlan.jsx para planes de pago completada
-  - ⏳ Pendiente: Verificar flujo completo y testing
-- **Fase 4-10**: 0% - Pendiente
+  - ✅ Manejo de errores de confirmación de email expirada
+  - ✅ Mejora del tamaño del campo de términos
+- **Fase 4**: 0% - Pendiente (Panel de Administración Global)
+- **Fase 5**: 40% - Parcialmente completada (Panel de Configuración de Comercio)
+  - ✅ Visualización de plan actual en Dashboard
+  - ✅ Página "Cambiar Plan" creada
+  - ✅ Función para actualizar plan_id del comercio
+  - ⏳ Pendiente: Integración con Stripe/Mercado Pago para pagos reales
+  - ⏳ Pendiente: Gestión completa de suscripciones
+- **Fase 6**: 0% - Pendiente (Integración con Stripe)
+- **Fase 7-10**: 0% - Pendiente
 
 ---
 

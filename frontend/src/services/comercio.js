@@ -93,3 +93,36 @@ export const updateComercio = async (datosComercio) => {
   }
 }
 
+/**
+ * Actualizar plan del comercio
+ */
+export const actualizarPlanComercio = async (planId) => {
+  try {
+    // Primero obtener el comercio para tener su ID
+    const { data: comercioActual, error: errorGet } = await supabase
+      .from('comercios')
+      .select('id')
+      .single()
+
+    if (errorGet) throw errorGet
+
+    if (!comercioActual || !comercioActual.id) {
+      throw new Error('No se encontró el comercio para actualizar')
+    }
+
+    // Actualizar el plan_id
+    const { data, error } = await supabase
+      .from('comercios')
+      .update({ plan_id: planId })
+      .eq('id', comercioActual.id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error al actualizar plan del comercio:', error)
+    return { data: null, error }
+  }
+}
+

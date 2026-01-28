@@ -155,6 +155,18 @@ function Dashboard() {
                 </Badge>
               </div>
               
+              {suscripcion.plan.tipo === 'gratis' && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <Button
+                    variant="primary"
+                    onClick={() => navigate('/configuracion/cambiar-plan')}
+                    fullWidth
+                  >
+                    ⬆️ Actualizar a Plan Pago
+                  </Button>
+                </div>
+              )}
+              
               {suscripcion.ventas && (
                 <div style={{ marginBottom: '0.75rem' }}>
                   <strong>Ventas este mes:</strong> {suscripcion.ventas.actuales}

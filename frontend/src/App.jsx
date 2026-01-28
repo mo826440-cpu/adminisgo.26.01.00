@@ -27,6 +27,7 @@ import VentasRapidas from './pages/ventas/VentasRapidas'
 import HistorialCajas from './pages/ventas/HistorialCajas'
 import VentaRapidaDetalle from './pages/ventas/VentaRapidaDetalle'
 import Configuracion from './pages/configuracion/Configuracion'
+import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
 import ComprasList from './pages/compras/ComprasList'
 import CompraForm from './pages/compras/CompraForm'
@@ -312,6 +313,16 @@ function App() {
               <ProtectedRoute>
                 <ErrorBoundary>
                   <Configuracion />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/configuracion/cambiar-plan" 
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <CambiarPlan />
                 </ErrorBoundary>
               </ProtectedRoute>
             } 
