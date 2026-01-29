@@ -174,7 +174,7 @@ function CambiarPlan() {
 
       if (preferenciaError) throw preferenciaError
 
-      // Usar sandbox_init_point si está disponible (modo test), sino usar init_point
+      // Test: sandboxInitPoint; Producción: solo initPoint (MP no devuelve sandbox con token APP_USR-)
       const checkoutUrl = preferenciaData?.sandboxInitPoint || preferenciaData?.initPoint
       
       if (checkoutUrl) {
