@@ -55,11 +55,14 @@ export default async function handler(req, res) {
 
     const preference = new Preference(client)
 
-    // URL base de la app: priorizar dominio de producción para back_urls y webhooks
+    // URL base de la app: back_urls y webhook deben apuntar al dominio real
     const host = req.headers.host || ''
-    const isProduction = host.includes('adminisgo.com')
+    const isProductionHost = host.includes('adminisgo.com')
+    const isProductionEnv = process.env.VERCEL_ENV === 'production'
     const appUrl = process.env.PUBLIC_APP_URL || process.env.VITE_PUBLIC_APP_URL ||
-      (isProduction ? `https://${host}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.adminisgo.com'))
+      (isProductionHost ? `https://${host}` : null) ||
+      (isProductionEnv ? 'https://www.adminisgo.com' : null) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.adminisgo.com')
 
     // Crear preferencia de pago
     const preferenceData = {
