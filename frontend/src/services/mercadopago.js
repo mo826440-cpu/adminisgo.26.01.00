@@ -28,7 +28,10 @@ export const crearPreferenciaPago = async (datos) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
-      throw new Error(errorData.error || 'Error al crear preferencia de pago')
+      const mensaje = errorData.details
+        ? `${errorData.error}: ${errorData.details}`
+        : (errorData.error || 'Error al crear preferencia de pago')
+      throw new Error(mensaje)
     }
 
     const data = await response.json()
