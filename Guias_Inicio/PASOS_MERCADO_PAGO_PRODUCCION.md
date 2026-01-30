@@ -71,6 +71,26 @@ Con eso, el webhook que actualiza la suscripción al recibir el pago aprobado fu
 
 ---
 
+## 7. Error PA_UNAUTHORIZED_RESULT_FROM_POLICIES (403)
+
+Si al crear la preferencia en producción ves **"At least one policy returned UNAUTHORIZED"** o **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** (403), Mercado Pago está rechazando la operación por políticas de la cuenta o de la aplicación, no por un error en tu código.
+
+**Qué revisar:**
+
+1. **Panel de desarrolladores**  
+   [developers.mercadopago.com](https://www.mercadopago.com.ar/developers/panel) → tu app **Adminis Go**.  
+   - Comprobá que la app esté habilitada para **producción** y que no haya avisos de "Activar para producción" o "Producto pendiente de aprobación".
+
+2. **Cuenta vendedor**  
+   Entrá a [www.mercadopago.com.ar](https://www.mercadopago.com.ar) con la cuenta que creó la app.  
+   - Verificá que estén completos: datos personales, identidad, datos fiscales y, si corresponde, cuenta bancaria para retiros.  
+   - Cualquier paso pendiente puede provocar este error.
+
+3. **Soporte de Mercado Pago**  
+   Si todo parece correcto, abrí un ticket en el [Centro de ayuda](https://www.mercadopago.com.ar/ayuda) o desde el panel de desarrolladores, indicando el código **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** y que estás creando preferencias en producción.
+
+---
+
 ## Resumen
 
 | Paso | Acción |
