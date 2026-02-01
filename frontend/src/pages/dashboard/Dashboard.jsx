@@ -291,17 +291,31 @@ function Dashboard() {
     return row.total || 0
   }
 
-  const maxValor = useMemo(() => Math.max(1, ...chartData.map(getValorEjeY)), [chartData, ejeY])
+  const maxValor = useMemo(() => Math.max(0, ...chartData.map(getValorEjeY)), [chartData, ejeY])
   const rangoYNum = parseFloat(rangoEjeY) || 5000
-  const maxEjeY = useMemo(
-    () => (ejeY === 'total' || ejeY === 'unidades' ? Math.ceil(maxValor / rangoYNum) * rangoYNum || rangoYNum : Math.ceil(maxValor)),
-    [maxValor, rangoYNum, ejeY]
-  )
+  // Eje Y: máximo = valor máximo de datos + un rango más (ej. máx $50.000 + rango $5.000 → eje hasta $55.000)
+  // Para unidades/cantidad/stock con valores pequeños usar escala entera (1, 2, 3...)
+  const maxEjeY = useMemo(() => {
+    if (ejeY === 'total') {
+      const base = Math.ceil(maxValor / rangoYNum) * rangoYNum
+      return (base <= maxValor ? base + rangoYNum : base) || rangoYNum
+    }
+    if (ejeY === 'unidades') {
+      if (maxValor <= 0) return 1
+      if (maxValor <= 100) return Math.ceil(maxValor) + 1
+      return Math.ceil(maxValor / rangoYNum) * rangoYNum + rangoYNum
+    }
+    if (ejeY === 'cantidad' || ejeY === 'stock') {
+      return Math.max(1, Math.ceil(maxValor)) + 1
+    }
+    return Math.max(1, Math.ceil(maxValor))
+  }, [maxValor, rangoYNum, ejeY])
   const pasosEjeY = useMemo(() => {
-    const step = ejeY === 'total' || ejeY === 'unidades' ? rangoYNum : Math.max(1, Math.ceil(maxEjeY / 5))
+    const isMoneda = ejeY === 'total' || (ejeY === 'unidades' && maxValor > 100)
+    const step = isMoneda ? rangoYNum : 1
     const n = Math.ceil(maxEjeY / step)
-    return Array.from({ length: n + 1 }, (_, i) => i * step)
-  }, [maxEjeY, rangoYNum, ejeY])
+    return Array.from({ length: n + 1 }, (_, i) => i * step).filter((v) => v <= maxEjeY)
+  }, [maxEjeY, rangoYNum, ejeY, maxValor])
 
   const getNombrePlan = (tipo) => {
     const nombres = { gratis: 'Plan Gratuito', pago: 'Plan Pago', basico: 'Plan Pago', personalizado: 'Plan Personalizado' }
@@ -499,9 +513,9 @@ function Dashboard() {
               <div className="chart-vertical-y-axis">
                 <span className="chart-vertical-y-title">Eje (Y)</span>
                 <div className="chart-vertical-y-ticks">
-                  {[...pasosEjeY].reverse().map((v) => (
+                  {pasosEjeY.map((v) => (
                     <span key={v} className="chart-vertical-y-tick">
-                      {ejeY === 'total' || ejeY === 'unidades' ? (v === 0 ? '$-' : formatearMoneda(v)) : v}
+                      {ejeY === 'total' || (ejeY === 'unidades' && maxValor > 100) ? (v === 0 ? '$-' : formatearMoneda(v)) : v}
                     </span>
                   ))}
                 </div>
@@ -511,20 +525,23 @@ function Dashboard() {
                   {chartData.map((row) => {
                     const valor = getValorEjeY(row)
                     const pct = maxEjeY ? (valor / maxEjeY) * 100 : 0
+                    const tooltipText = [row.labelFecha, ...etiquetasSeleccionadas.map((id) => `${axisOptions.find((o) => o.id === id)?.label || id}: ${formatLabelValor(row, id)}`)].join(' — ')
                     return (
                       <div key={row.key || row.labelFecha} className="chart-vertical-bar-wrap">
-                        <div className="chart-vertical-bar-labels">
-                          {etiquetasSeleccionadas.map((id) => (
-                            <span key={id} className="chart-vertical-bar-label">
-                              {formatLabelValor(row, id)}
-                            </span>
-                          ))}
+                        <div className="chart-vertical-bar-container" title={tooltipText}>
+                          <div className="chart-vertical-bar-tooltip" role="tooltip">
+                            <span className="chart-vertical-bar-tooltip-title">{row.labelFecha}</span>
+                            {etiquetasSeleccionadas.map((id) => (
+                              <span key={id} className="chart-vertical-bar-tooltip-line">
+                                {labelOptions.find((o) => o.id === id)?.label || id}: {formatLabelValor(row, id)}
+                              </span>
+                            ))}
+                          </div>
+                          <div
+                            className="chart-vertical-bar"
+                            style={{ height: `${pct}%` }}
+                          />
                         </div>
-                        <div
-                          className="chart-vertical-bar"
-                          style={{ height: `${pct}%` }}
-                          title={`${row.labelFecha}: ${ejeY === 'total' ? formatearMoneda(valor) : valor}`}
-                        />
                         <span className="chart-vertical-x-label">{row.labelFecha}</span>
                       </div>
                     )
