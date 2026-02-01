@@ -43,8 +43,9 @@ function Dashboard() {
   const [chartData, setChartData] = useState([])
   const [loadingChart, setLoadingChart] = useState(true)
   const [verticalChartCollapsed, setVerticalChartCollapsed] = useState(true)
+  const [horizontalChartCollapsed, setHorizontalChartCollapsed] = useState(true)
 
-  // Gráfico horizontal: Referencia, tabla, fechas (7 días por defecto), etiquetas, rango eje X
+  // Gráfico horizontal: Referencia (por defecto Clientes), fechas (7 días), etiquetas, rango eje X. Tabla se infiere: Proveedores -> compras, resto -> ventas
   const REFERENCIAS_H = [
     { id: 'categoria', label: 'Categorías' },
     { id: 'marca', label: 'Marcas' },
@@ -58,11 +59,11 @@ function Dashboard() {
     desde.setDate(desde.getDate() - 6)
     return { desde: desde.toISOString().slice(0, 10), hasta: hoy.toISOString().slice(0, 10) }
   }
-  const [refHorizontal, setRefHorizontal] = useState('categoria')
-  const [tablaHorizontal, setTablaHorizontal] = useState('ventas')
+  const [refHorizontal, setRefHorizontal] = useState('cliente')
   const [fechaDesdeH, setFechaDesdeH] = useState(() => getDefaultRango7Dias().desde)
   const [fechaHastaH, setFechaHastaH] = useState(() => getDefaultRango7Dias().hasta)
-  const [etiquetasHorizontal, setEtiquetasHorizontal] = useState(['fechaRango', 'total'])
+  // Etiquetas fijas del gráfico de referencias: siempre Fecha desde-hasta, $ Total, Cantidad operaciones
+  const ETIQUETAS_REFERENCIAS = ['fechaRango', 'total', 'cantidad']
   const [rangoEjeXHorizontal, setRangoEjeXHorizontal] = useState(10000)
   const [chartDataHorizontal, setChartDataHorizontal] = useState([])
   const [loadingChartHorizontal, setLoadingChartHorizontal] = useState(false)
@@ -500,6 +501,7 @@ function Dashboard() {
         if (!grupos[key]) grupos[key] = { key, label, total: 0, cantidad: 0, unidades: 0 }
         return grupos[key]
       }
+      const tablaHorizontal = refHorizontal === 'proveedor' ? 'compras' : 'ventas'
       if (tablaHorizontal === 'ventas') {
         const { data: lista } = await getVentasPorRangoFechas(desde, hasta)
         const ventas = lista || []
@@ -620,7 +622,7 @@ function Dashboard() {
     } finally {
       setLoadingChartHorizontal(false)
     }
-  }, [user, tablaHorizontal, refHorizontal, fechaDesdeH, fechaHastaH, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
+  }, [user, refHorizontal, fechaDesdeH, fechaHastaH, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
 
   useEffect(() => {
     if (!loading && user) cargarGraficoHorizontal()
@@ -636,17 +638,10 @@ function Dashboard() {
     cargarGraficoHorizontal()
   }
 
-  const toggleEtiquetaHorizontal = (id) => {
-    setEtiquetasHorizontal((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
-
-  const LABEL_OPTIONS_H = [
+  const LABEL_OPTIONS_REF = [
     { id: 'fechaRango', label: 'Fecha desde-hasta' },
     { id: 'total', label: '$ Total' },
-    { id: 'cantidad', label: 'Cantidad operaciones' },
-    { id: 'unidades', label: 'Unidades' }
+    { id: 'cantidad', label: 'Cantidad operaciones' }
   ]
 
   const maxEjeXHorizontal = useMemo(() => {
@@ -1063,8 +1058,19 @@ function Dashboard() {
           )}
         </div>
 
-        {/* Gráfico de barras horizontales */}
-        <Card title="Gráfico de Barras Horizontales" className="dashboard-card dashboard-chart-card">
+        {/* Gráfico de barras horizontales (colapsable) */}
+        <div className="dashboard-chart-vertical-wrapper">
+          <button
+            type="button"
+            className="dashboard-chart-toggle"
+            onClick={() => setHorizontalChartCollapsed((c) => !c)}
+            aria-expanded={!horizontalChartCollapsed}
+          >
+            <span className="dashboard-chart-toggle-title">Gráfico de Referencias</span>
+            <span className="dashboard-chart-toggle-icon" aria-hidden>{horizontalChartCollapsed ? '▶' : '▼'}</span>
+          </button>
+          {!horizontalChartCollapsed && (
+        <Card className="dashboard-card dashboard-chart-card">
           <div className="chart-config">
             <div className="chart-config-row">
               <label className="chart-config-label">Referencia:</label>
@@ -1077,18 +1083,6 @@ function Dashboard() {
                 {REFERENCIAS_H.map((opt) => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
-              </select>
-            </div>
-            <div className="chart-config-row">
-              <label className="chart-config-label">Tabla a analizar:</label>
-              <select
-                className="chart-config-input chart-config-select"
-                value={tablaHorizontal}
-                onChange={(e) => setTablaHorizontal(e.target.value)}
-                aria-label="Tabla a analizar"
-              >
-                <option value="ventas">Registro de ventas</option>
-                <option value="compras">Registro de compras</option>
               </select>
             </div>
             <div className="chart-config-row chart-config-fechas">
@@ -1111,21 +1105,6 @@ function Dashboard() {
                   className="chart-config-date"
                   aria-label="Fecha hasta"
                 />
-              </div>
-            </div>
-            <div className="chart-config-row">
-              <label className="chart-config-label">Información en etiquetas:</label>
-              <div className="chart-config-checkboxes">
-                {LABEL_OPTIONS_H.map((opt) => (
-                  <label key={opt.id} className="chart-config-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={etiquetasHorizontal.includes(opt.id)}
-                      onChange={() => toggleEtiquetaHorizontal(opt.id)}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
               </div>
             </div>
             <div className="chart-config-row chart-config-ejes">
@@ -1170,16 +1149,23 @@ function Dashboard() {
                 {chartDataHorizontal.map((row) => {
                   const valor = row.total || 0
                   const pct = maxEjeXHorizontal ? (valor / maxEjeXHorizontal) * 100 : 0
-                  const tooltipText = [row.label, ...etiquetasHorizontal.map((id) => `${LABEL_OPTIONS_H.find((o) => o.id === id)?.label || id}: ${formatLabelValorH(row, id)}`)].join(' — ')
+                  const tooltipLines = ETIQUETAS_REFERENCIAS.map((id) => `${LABEL_OPTIONS_REF.find((o) => o.id === id)?.label || id}: ${formatLabelValorH(row, id)}`)
                   return (
                     <div key={row.key} className="chart-horizontal-bar-row">
                       <span className="chart-horizontal-y-label-text" title={row.label}>{row.label}</span>
                       <div className="chart-horizontal-bar-cell-inner">
-                        <div
-                          className="chart-horizontal-bar-fill"
-                          style={{ width: `${pct}%` }}
-                          title={tooltipText}
-                        />
+                        <div className="chart-horizontal-bar-fill-wrap" style={{ width: `${pct}%` }}>
+                          <div className="chart-vertical-bar-tooltip" role="tooltip">
+                            <span className="chart-vertical-bar-tooltip-title">{row.label}</span>
+                            {ETIQUETAS_REFERENCIAS.map((id) => (
+                              <span key={id} className="chart-vertical-bar-tooltip-line">
+                                {LABEL_OPTIONS_REF.find((o) => o.id === id)?.label || id}: {formatLabelValorH(row, id)}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="chart-horizontal-bar-fill" />
+                        </div>
+                        <span className="chart-horizontal-bar-total-label">{formatearMoneda(row.total)}</span>
                       </div>
                     </div>
                   )
@@ -1192,6 +1178,8 @@ function Dashboard() {
             </div>
           )}
         </Card>
+          )}
+        </div>
       </div>
     </Layout>
   )

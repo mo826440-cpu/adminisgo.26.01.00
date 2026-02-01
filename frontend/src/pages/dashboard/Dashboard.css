@@ -268,18 +268,53 @@
 .chart-horizontal-bar-cell-inner {
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow: visible;
   min-height: 2rem;
   display: flex;
   align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.chart-horizontal-bar-fill-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 4px;
+}
+
+.chart-horizontal-bar-row:hover .chart-vertical-bar-tooltip {
+  opacity: 1;
+}
+
+.chart-horizontal-bar-fill-wrap .chart-vertical-bar-tooltip {
+  bottom: auto;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  left: 100%;
+  margin-bottom: 0;
+  margin-left: 0.35rem;
 }
 
 .chart-horizontal-bar-fill {
+  width: 100%;
   min-height: 100%;
   min-width: 4px;
   background: var(--color-primary);
   border-radius: var(--radius-sm);
   transition: width 0.3s ease;
+}
+
+.chart-horizontal-bar-total-label {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  white-space: nowrap;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .chart-horizontal-x-ticks {
