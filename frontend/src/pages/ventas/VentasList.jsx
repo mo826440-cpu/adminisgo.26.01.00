@@ -33,19 +33,19 @@ function VentasList() {
   }, [showActions])
   
   // Estados de filtros
-  // Inicializar con mes actual por defecto
-  const getInicioMes = () => {
+  // Por defecto: últimos 90 días (evita que al cambiar de mes no se vean ventas del mes anterior)
+  const getDefaultFechaDesde = () => {
     const ahora = new Date()
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    return inicioMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+    const desde = new Date(ahora)
+    desde.setDate(desde.getDate() - 90)
+    return desde.toISOString().split('T')[0]
   }
-  const getFinMes = () => {
+  const getDefaultFechaHasta = () => {
     const ahora = new Date()
-    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
-    return finMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+    return ahora.toISOString().split('T')[0]
   }
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getInicioMes())
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getFinMes())
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde())
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta())
   const [filtroBusqueda, setFiltroBusqueda] = useState('')
   const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('cliente') // cliente, facturacion, codigo_barras, codigo_interno
   const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
@@ -81,8 +81,8 @@ function VentasList() {
 
   // Función para limpiar todos los filtros y volver a valores por defecto
   const limpiarFiltros = () => {
-    setFiltroFechaDesde(getInicioMes())
-    setFiltroFechaHasta(getFinMes())
+    setFiltroFechaDesde(getDefaultFechaDesde())
+    setFiltroFechaHasta(getDefaultFechaHasta())
     setFiltroBusqueda('')
     setTipoFiltroBusqueda('cliente')
     setFiltroEstadoPago('todas')
