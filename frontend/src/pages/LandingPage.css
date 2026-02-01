@@ -257,6 +257,118 @@
   border-top: 1px solid var(--border-color);
 }
 
+/* ============================================
+   TEMA CLARO: más contraste en texto y botones
+   (solo cuando NO está activo tema oscuro)
+   ============================================ */
+html:not([data-theme="dark"]) .landing-hero .landing-title {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+html:not([data-theme="dark"]) .landing-hero .landing-subtitle,
+html:not([data-theme="dark"]) .landing-hero .landing-description {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+/* Hero: botones más visibles en tema claro */
+html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-primary {
+  background: #fff;
+  color: #1a1a2e !important;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-outline {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 2px solid #fff;
+}
+html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-outline:hover {
+  background: #fff;
+  color: var(--primary);
+}
+
+/* Features: texto más oscuro y tarjetas con borde visible */
+html:not([data-theme="dark"]) .landing-section-title {
+  color: #1a1a2e;
+}
+html:not([data-theme="dark"]) .landing-feature-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+html:not([data-theme="dark"]) .landing-feature-card h3 {
+  color: #1a1a2e;
+}
+html:not([data-theme="dark"]) .landing-feature-card p {
+  color: #495057;
+}
+
+/* Planes: tarjetas con borde claro y texto legible */
+html:not([data-theme="dark"]) .landing-plan-card {
+  background: #fff;
+  border: 2px solid #dee2e6;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+html:not([data-theme="dark"]) .landing-plan-featured {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+html:not([data-theme="dark"]) .landing-plan-card h3 {
+  color: #1a1a2e;
+}
+html:not([data-theme="dark"]) .landing-plan-price,
+html:not([data-theme="dark"]) .landing-plan-price span {
+  color: var(--primary);
+}
+html:not([data-theme="dark"]) .landing-plan-price-alt {
+  color: #495057;
+}
+html:not([data-theme="dark"]) .landing-plan-features li {
+  color: #212529;
+  border-bottom-color: #e9ecef;
+}
+/* Botones de planes: outline más visible en tema claro */
+html:not([data-theme="dark"]) .landing-plan-card .btn-outline {
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+html:not([data-theme="dark"]) .landing-plan-card .btn-outline:hover {
+  background: var(--primary);
+  color: #fff;
+}
+html:not([data-theme="dark"]) .landing-plan-card .btn-primary {
+  background: var(--primary);
+  color: #fff !important;
+  border: 2px solid var(--primary);
+  font-weight: 600;
+}
+
+/* CTA final: texto más visible */
+html:not([data-theme="dark"]) .landing-cta-section h2,
+html:not([data-theme="dark"]) .landing-cta-section p {
+  color: #fff;
+  opacity: 1;
+}
+html:not([data-theme="dark"]) .landing-cta-section .btn-primary {
+  background: #fff;
+  color: #1a1a2e !important;
+  border: 2px solid #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+html:not([data-theme="dark"]) .landing-cta-section .btn-outline {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+/* Footer: texto más oscuro */
+html:not([data-theme="dark"]) .landing-footer {
+  color: #495057;
+  border-top-color: #dee2e6;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .landing-title {

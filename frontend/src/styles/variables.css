@@ -7,6 +7,8 @@
   --color-primary: #667eea;
   --color-primary-light: #8fa3f0;
   --color-primary-dark: #4c63d2;
+  --primary: var(--color-primary);
+  --primary-dark: var(--color-primary-dark);
   --color-secondary: #764ba2;
   --color-accent: #f093fb;
   
