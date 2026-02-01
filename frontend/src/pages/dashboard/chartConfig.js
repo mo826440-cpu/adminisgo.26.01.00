@@ -1,11 +1,13 @@
 /**
  * Configuración de tablas y opciones para el gráfico del Dashboard
+ * filters: array de ids de filtros que aplican a esta tabla (categoria, marca, producto, cliente, proveedor, metodoPago)
  */
 
 export const TABLAS_CONFIG = {
   ventas: {
     id: 'ventas',
     label: 'Registro de ventas',
+    filters: ['categoria', 'marca', 'producto', 'cliente', 'metodoPago'],
     labelOptions: [
       { id: 'unidades', label: 'Unidades' },
       { id: 'total', label: '$ Total' },
@@ -22,6 +24,7 @@ export const TABLAS_CONFIG = {
   compras: {
     id: 'compras',
     label: 'Registro de compras',
+    filters: ['categoria', 'marca', 'producto', 'proveedor', 'metodoPago'],
     labelOptions: [
       { id: 'unidades', label: 'Unidades' },
       { id: 'total', label: '$ Total' },
@@ -38,6 +41,7 @@ export const TABLAS_CONFIG = {
   productos: {
     id: 'productos',
     label: 'Registro de productos',
+    filters: ['categoria', 'marca'],
     labelOptions: [
       { id: 'cantidad', label: 'Cantidad productos' },
       { id: 'stock', label: 'Stock total' }
@@ -53,6 +57,7 @@ export const TABLAS_CONFIG = {
   clientes: {
     id: 'clientes',
     label: 'Registro de clientes',
+    filters: [],
     labelOptions: [
       { id: 'cantidad', label: 'Cantidad' }
     ],
@@ -63,5 +68,15 @@ export const TABLAS_CONFIG = {
     usaFechas: true
   }
 }
+
+export const METODOS_PAGO = [
+  'Efectivo',
+  'Tarjeta de crédito',
+  'Tarjeta de débito',
+  'Transferencia',
+  'Cheque',
+  'Mercado Pago',
+  'Otro'
+]
 
 export const TABLAS_IDS = Object.keys(TABLAS_CONFIG)

@@ -11,7 +11,11 @@ import { getVentasPorRangoFechas } from '../../services/ventas'
 import { getComprasPorRangoFechas } from '../../services/compras'
 import { getProductos } from '../../services/productos'
 import { getClientesPorRangoFechas } from '../../services/clientes'
-import { TABLAS_CONFIG, TABLAS_IDS } from './chartConfig'
+import { getCategorias } from '../../services/categorias'
+import { getMarcas } from '../../services/marcas'
+import { getClientes } from '../../services/clientes'
+import { getProveedores } from '../../services/proveedores'
+import { TABLAS_CONFIG, TABLAS_IDS, METODOS_PAGO } from './chartConfig'
 import './Dashboard.css'
 
 const formatearMoneda = (valor) => {
@@ -43,15 +47,31 @@ function Dashboard() {
   const [tabla, setTabla] = useState('ventas')
   const [fechaDesde, setFechaDesde] = useState(() => getDefaultRango().desde)
   const [fechaHasta, setFechaHasta] = useState(() => getDefaultRango().hasta)
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState(['unidades', 'total'])
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState(['cantidad', 'total'])
   const [ejeX, setEjeX] = useState('fecha')
   const [rangoEjeX, setRangoEjeX] = useState(1)
   const [ejeY, setEjeY] = useState('total')
   const [rangoEjeY, setRangoEjeY] = useState(5000)
 
+  // Filtros (según tabla)
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroMarca, setFiltroMarca] = useState('')
+  const [filtroProducto, setFiltroProducto] = useState('')
+  const [filtroCliente, setFiltroCliente] = useState('')
+  const [filtroProveedor, setFiltroProveedor] = useState('')
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
+
+  // Opciones para los filtros (cargadas una vez)
+  const [opcionesCategorias, setOpcionesCategorias] = useState([])
+  const [opcionesMarcas, setOpcionesMarcas] = useState([])
+  const [opcionesProductos, setOpcionesProductos] = useState([])
+  const [opcionesClientes, setOpcionesClientes] = useState([])
+  const [opcionesProveedores, setOpcionesProveedores] = useState([])
+
   const configTabla = TABLAS_CONFIG[tabla] || TABLAS_CONFIG.ventas
   const labelOptions = configTabla.labelOptions || []
   const axisOptions = configTabla.axisOptions || []
+  const filtersTabla = configTabla.filters || []
   const usaFechas = configTabla.usaFechas !== false
 
   // Sincronizar ejes/etiquetas al cambiar tabla (mantener solo opciones válidas)
@@ -62,7 +82,9 @@ function Dashboard() {
     const labelIds = labelOptions.map((o) => o.id)
     setEtiquetasSeleccionadas((prev) => {
       const next = prev.filter((id) => labelIds.includes(id))
-      return next.length ? next : labelIds.slice(0, 2)
+      if (next.length) return next
+      if (labelIds.includes('cantidad') && labelIds.includes('total')) return ['cantidad', 'total']
+      return labelIds.slice(0, 2)
     })
   }, [tabla])
 
@@ -82,6 +104,30 @@ function Dashboard() {
       }
     }
     if (!loading && user) cargarSuscripcion()
+  }, [user, loading])
+
+  // Cargar opciones para filtros (categorías, marcas, productos, clientes, proveedores)
+  useEffect(() => {
+    const cargarOpciones = async () => {
+      if (!user) return
+      try {
+        const [cat, mar, prod, cli, prov] = await Promise.all([
+          getCategorias(),
+          getMarcas(),
+          getProductos(),
+          getClientes(),
+          getProveedores()
+        ])
+        setOpcionesCategorias(cat.data || [])
+        setOpcionesMarcas(mar.data || [])
+        setOpcionesProductos(prod.data || [])
+        setOpcionesClientes(cli.data || [])
+        setOpcionesProveedores(prov.data || [])
+      } catch (err) {
+        console.error('Error al cargar opciones de filtros:', err)
+      }
+    }
+    if (!loading && user) cargarOpciones()
   }, [user, loading])
 
   // Agregar por buckets de N días (rangoEjeX)
@@ -133,7 +179,12 @@ function Dashboard() {
 
       if (tabla === 'ventas') {
         const { data: lista } = await getVentasPorRangoFechas(desde, hasta)
-        const ventas = lista || []
+        let ventas = lista || []
+        if (filtroCliente) ventas = ventas.filter((v) => String(v.cliente_id || '') === filtroCliente)
+        if (filtroProducto) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => item.producto_id == filtroProducto))
+        if (filtroCategoria) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.categoria_id == filtroCategoria))
+        if (filtroMarca) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.marca_id == filtroMarca))
+        if (filtroMetodoPago) ventas = ventas.filter((v) => (v.venta_pagos || []).some((p) => p.metodo_pago === filtroMetodoPago))
         const porDia = {}
         let d = new Date(desde)
         d.setHours(0, 0, 0, 0)
@@ -169,7 +220,12 @@ function Dashboard() {
 
       if (tabla === 'compras') {
         const { data: lista } = await getComprasPorRangoFechas(desde, hasta)
-        const compras = lista || []
+        let compras = lista || []
+        if (filtroProveedor) compras = compras.filter((c) => String(c.proveedor_id || '') === filtroProveedor)
+        if (filtroProducto) compras = compras.filter((c) => (c.compra_items || []).some((item) => item.producto_id == filtroProducto))
+        if (filtroCategoria) compras = compras.filter((c) => (c.compra_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.categoria_id == filtroCategoria))
+        if (filtroMarca) compras = compras.filter((c) => (c.compra_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.marca_id == filtroMarca))
+        if (filtroMetodoPago) compras = compras.filter((c) => (c.compra_pagos || []).some((p) => p.metodo_pago === filtroMetodoPago))
         const porDia = {}
         let d = new Date(desde)
         d.setHours(0, 0, 0, 0)
@@ -233,7 +289,9 @@ function Dashboard() {
 
       if (tabla === 'productos') {
         const { data: productos } = await getProductos()
-        const lista = productos || []
+        let lista = productos || []
+        if (filtroCategoria) lista = lista.filter((p) => String(p.categoria_id || '') === filtroCategoria)
+        if (filtroMarca) lista = lista.filter((p) => String(p.marca_id || '') === filtroMarca)
         const agruparPor = ejeX === 'marca' ? 'marca_id' : 'categoria_id'
         const grupos = {}
         lista.forEach((p) => {
@@ -264,7 +322,14 @@ function Dashboard() {
     ejeX,
     rangoEjeX,
     usaFechas,
-    agregarPorFechas
+    agregarPorFechas,
+    filtroCategoria,
+    filtroMarca,
+    filtroProducto,
+    filtroCliente,
+    filtroProveedor,
+    filtroMetodoPago,
+    opcionesProductos
   ])
 
   useEffect(() => {
@@ -417,6 +482,107 @@ function Dashboard() {
                     aria-label="Fecha hasta"
                   />
                 </div>
+              </div>
+            )}
+
+            {filtersTabla.length > 0 && (
+              <div className="chart-config-row chart-config-filtros">
+                {filtersTabla.includes('categoria') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Categoría:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroCategoria}
+                      onChange={(e) => setFiltroCategoria(e.target.value)}
+                      aria-label="Filtrar por categoría"
+                    >
+                      <option value="">Todos</option>
+                      {opcionesCategorias.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {filtersTabla.includes('marca') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Marca:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroMarca}
+                      onChange={(e) => setFiltroMarca(e.target.value)}
+                      aria-label="Filtrar por marca"
+                    >
+                      <option value="">Todos</option>
+                      {opcionesMarcas.map((m) => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {filtersTabla.includes('producto') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Producto:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroProducto}
+                      onChange={(e) => setFiltroProducto(e.target.value)}
+                      aria-label="Filtrar por producto"
+                    >
+                      <option value="">Todos</option>
+                      {opcionesProductos.map((p) => (
+                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {filtersTabla.includes('cliente') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Cliente:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroCliente}
+                      onChange={(e) => setFiltroCliente(e.target.value)}
+                      aria-label="Filtrar por cliente"
+                    >
+                      <option value="">Todos</option>
+                      {opcionesClientes.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {filtersTabla.includes('proveedor') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Proveedor:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroProveedor}
+                      onChange={(e) => setFiltroProveedor(e.target.value)}
+                      aria-label="Filtrar por proveedor"
+                    >
+                      <option value="">Todos</option>
+                      {opcionesProveedores.map((p) => (
+                        <option key={p.id} value={p.id}>{p.nombre_razon_social}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {filtersTabla.includes('metodoPago') && (
+                  <div className="chart-config-filtro">
+                    <label className="chart-config-label">Métodos de pago:</label>
+                    <select
+                      className="chart-config-input chart-config-select chart-config-filtro-select"
+                      value={filtroMetodoPago}
+                      onChange={(e) => setFiltroMetodoPago(e.target.value)}
+                      aria-label="Filtrar por método de pago"
+                    >
+                      <option value="">Todos</option>
+                      {METODOS_PAGO.map((mp) => (
+                        <option key={mp} value={mp}>{mp}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 

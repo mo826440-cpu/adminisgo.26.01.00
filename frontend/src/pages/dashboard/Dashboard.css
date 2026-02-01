@@ -415,6 +415,29 @@
   width: 6rem;
 }
 
+.chart-config-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: flex-end;
+}
+
+.chart-config-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chart-config-filtro .chart-config-label {
+  min-width: auto;
+  margin-bottom: 0;
+}
+
+.chart-config-filtro-select {
+  min-width: 10rem;
+  max-width: 14rem;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

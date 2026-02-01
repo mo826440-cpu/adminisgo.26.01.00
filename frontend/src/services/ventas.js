@@ -263,7 +263,9 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         id,
         total,
         fecha_hora,
-        venta_items(cantidad)
+        cliente_id,
+        venta_items(producto_id, cantidad),
+        venta_pagos(metodo_pago)
       `)
       .is('deleted_at', null)
       .gte('fecha_hora', inicio.toISOString())
