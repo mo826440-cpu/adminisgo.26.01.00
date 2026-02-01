@@ -252,10 +252,10 @@
   - [x] Corregir manejo de comercio_id null durante el registro
 
 ### 3.4. Agregar enlaces legales
-- [ ] Agregar link a Política de Privacidad en footer de `LandingPage.jsx`
-- [ ] Agregar link a Términos y Condiciones en footer de `LandingPage.jsx`
-- [ ] Crear página `/privacidad` para mostrar política (con versionado)
-- [ ] Crear página `/terminos` para mostrar términos (versión pública, con versionado)
+- [x] Agregar link a Política de Privacidad en footer de `LandingPage.jsx` ✅
+- [x] Agregar link a Términos y Condiciones en footer de `LandingPage.jsx` ✅
+- [x] Crear página `/privacidad` para mostrar política (con versionado) ✅
+- [x] Crear página `/terminos` para mostrar términos (versión pública, con versionado) ✅
 - [ ] Agregar componente para mostrar política de privacidad en registro (similar a términos)
 
 ---

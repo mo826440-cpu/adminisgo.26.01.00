@@ -12,6 +12,8 @@ function Register() {
     password: '',
     confirmPassword: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
@@ -184,33 +186,77 @@ function Register() {
             <label className="form-label">
               Contraseña
             </label>
-            <input
-              type="password"
-              name="password"
-              className="form-control"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                className="form-control"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: '0.25rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className={showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'} style={{ fontSize: '1.25rem' }} />
+              </button>
+            </div>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label className="form-label">
               Confirmar Contraseña
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              className="form-control"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              placeholder="Repite la contraseña"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                className="form-control"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                placeholder="Repite la contraseña"
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: '0.25rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className={showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'} style={{ fontSize: '1.25rem' }} />
+              </button>
+            </div>
           </div>
 
           <button

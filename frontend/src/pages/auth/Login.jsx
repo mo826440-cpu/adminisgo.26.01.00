@@ -12,6 +12,7 @@ function Login() {
   const mensajeExito = location.state?.message
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -147,15 +148,38 @@ function Login() {
             <label className="form-label">
               Contraseña
             </label>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              placeholder="••••••••"
-            />
+            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                placeholder="••••••••"
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                style={{
+                  position: 'absolute',
+                  right: '0.5rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: '0.25rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className={showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'} style={{ fontSize: '1.25rem' }} />
+              </button>
+            </div>
           </div>
 
           <button

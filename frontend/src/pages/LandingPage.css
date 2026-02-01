@@ -257,6 +257,25 @@
   border-top: 1px solid var(--border-color);
 }
 
+.landing-footer-links {
+  margin-bottom: 0.75rem;
+}
+
+.landing-footer-links a {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: var(--font-size-small);
+}
+
+.landing-footer-links a:hover {
+  text-decoration: underline;
+}
+
+.landing-footer-sep {
+  margin: 0 0.5rem;
+  color: var(--text-secondary);
+}
+
 /* ============================================
    TEMA CLARO: más contraste en texto y botones
    (solo cuando NO está activo tema oscuro)

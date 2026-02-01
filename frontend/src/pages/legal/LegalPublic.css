@@ -1,0 +1,50 @@
+/* Páginas públicas de Términos y Política de Privacidad */
+.legal-public {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  padding: 2rem 1rem 4rem;
+}
+
+.legal-public-container {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.legal-public-back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: var(--font-size-small);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.legal-public-back:hover {
+  text-decoration: underline;
+}
+
+.legal-public-title {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.legal-public-version {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.legal-public-content {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.legal-public-error {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}

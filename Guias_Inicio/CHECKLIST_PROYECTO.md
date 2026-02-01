@@ -1009,7 +1009,7 @@
 
 **Progreso Total**: 🟨 ~30% (Fase 0 ~85%, Fase 1 ~65%, Fase 2 ~15%, Fase 5 ~60%)
 
-**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación, Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Pendientes: Landing page, Recuperación de contraseña, Testing MVP, Reportes
+**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación (incl. recuperación de contraseña, ícono ver contraseña), Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Landing con enlaces a Términos y Política de Privacidad. Pendientes: Testing MVP, Reportes
 
 ### Fechas Importantes
 

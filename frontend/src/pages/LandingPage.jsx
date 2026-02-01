@@ -252,6 +252,11 @@ function LandingPage() {
       {/* Footer */}
       <footer className="landing-footer">
         <div className="landing-container">
+          <div className="landing-footer-links">
+            <Link to="/terminos">Términos y Condiciones</Link>
+            <span className="landing-footer-sep">·</span>
+            <Link to="/privacidad">Política de Privacidad</Link>
+          </div>
           <p>&copy; 2026 Adminis Go. Todos los derechos reservados.</p>
         </div>
       </footer>

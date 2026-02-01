@@ -11,6 +11,8 @@ import AuthCallback from './pages/auth/AuthCallback'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import LandingPage from './pages/LandingPage'
+import TerminosPublic from './pages/legal/TerminosPublic'
+import PrivacidadPublic from './pages/legal/PrivacidadPublic'
 import Dashboard from './pages/dashboard/Dashboard'
 import ProductosList from './pages/productos/ProductosList'
 import ProductoForm from './pages/productos/ProductoForm'
@@ -406,6 +408,10 @@ function App() {
             } 
           />
           
+          {/* Páginas legales públicas (sin login) */}
+          <Route path="/terminos" element={<TerminosPublic />} />
+          <Route path="/privacidad" element={<PrivacidadPublic />} />
+
           {/* Ruta raíz: Landing Page */}
           <Route path="/" element={<LandingPage />} />
           </Routes>
