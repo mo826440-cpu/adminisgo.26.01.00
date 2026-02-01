@@ -64,9 +64,46 @@
   color: var(--text-secondary);
 }
 
-/* Gráfico de barras horizontales */
-.dashboard-chart-card {
+/* Panel vertical colapsable */
+.dashboard-chart-vertical-wrapper {
   margin-bottom: 2rem;
+}
+
+.dashboard-chart-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.dashboard-chart-toggle:hover {
+  background: var(--bg-tertiary);
+}
+
+.dashboard-chart-toggle-title {
+  flex: 1;
+}
+
+.dashboard-chart-toggle-icon {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Gráfico de barras verticales (card cuando está expandido) */
+.dashboard-chart-card {
+  margin-bottom: 0;
+  margin-top: 0.5rem;
 }
 
 /* Panel de configuración del gráfico */
@@ -115,6 +152,12 @@
   min-width: auto;
   display: block;
   margin-bottom: 0.25rem;
+}
+
+.chart-config-readonly {
+  font-size: var(--font-size-small);
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 /* Contenedor del gráfico horizontal */
@@ -196,6 +239,56 @@
 
 .chart-horizontal-bar-label-unidades {
   opacity: 0.95;
+}
+
+/* Gráfico horizontal: una fila por referencia (label Y + barra X) */
+.chart-horizontal-bars-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+
+.chart-horizontal-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 3fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chart-horizontal-y-label-text {
+  font-size: var(--font-size-small);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.chart-horizontal-bar-cell-inner {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  min-height: 2rem;
+  display: flex;
+  align-items: stretch;
+}
+
+.chart-horizontal-bar-fill {
+  min-height: 100%;
+  min-width: 4px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: width 0.3s ease;
+}
+
+.chart-horizontal-x-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  padding: 0 0 0 0;
+  margin-top: 0.25rem;
 }
 
 .chart-horizontal-x-axis {

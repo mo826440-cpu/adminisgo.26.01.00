@@ -42,6 +42,30 @@ function Dashboard() {
   const [loadingSuscripcion, setLoadingSuscripcion] = useState(true)
   const [chartData, setChartData] = useState([])
   const [loadingChart, setLoadingChart] = useState(true)
+  const [verticalChartCollapsed, setVerticalChartCollapsed] = useState(true)
+
+  // Gráfico horizontal: Referencia, tabla, fechas (7 días por defecto), etiquetas, rango eje X
+  const REFERENCIAS_H = [
+    { id: 'categoria', label: 'Categorías' },
+    { id: 'marca', label: 'Marcas' },
+    { id: 'cliente', label: 'Clientes' },
+    { id: 'proveedor', label: 'Proveedores' },
+    { id: 'producto', label: 'Productos' }
+  ]
+  const getDefaultRango7Dias = () => {
+    const hoy = new Date()
+    const desde = new Date(hoy)
+    desde.setDate(desde.getDate() - 6)
+    return { desde: desde.toISOString().slice(0, 10), hasta: hoy.toISOString().slice(0, 10) }
+  }
+  const [refHorizontal, setRefHorizontal] = useState('categoria')
+  const [tablaHorizontal, setTablaHorizontal] = useState('ventas')
+  const [fechaDesdeH, setFechaDesdeH] = useState(() => getDefaultRango7Dias().desde)
+  const [fechaHastaH, setFechaHastaH] = useState(() => getDefaultRango7Dias().hasta)
+  const [etiquetasHorizontal, setEtiquetasHorizontal] = useState(['fechaRango', 'total'])
+  const [rangoEjeXHorizontal, setRangoEjeXHorizontal] = useState(10000)
+  const [chartDataHorizontal, setChartDataHorizontal] = useState([])
+  const [loadingChartHorizontal, setLoadingChartHorizontal] = useState(false)
 
   // Estado del gráfico (valores por defecto según pedido)
   const [tabla, setTabla] = useState('ventas')
@@ -462,9 +486,182 @@ function Dashboard() {
     if (!loading && user) cargarGrafico()
   }, [user, loading, cargarGrafico])
 
+  // Cargar datos del gráfico horizontal (agrupar por referencia: categoría, marca, etc.)
+  const cargarGraficoHorizontal = useCallback(async () => {
+    if (!user) return
+    setLoadingChartHorizontal(true)
+    try {
+      const desde = new Date(fechaDesdeH)
+      const hasta = new Date(fechaHastaH)
+      desde.setHours(0, 0, 0, 0)
+      hasta.setHours(23, 59, 59, 999)
+      const grupos = {}
+      const getOrCreate = (key, label) => {
+        if (!grupos[key]) grupos[key] = { key, label, total: 0, cantidad: 0, unidades: 0 }
+        return grupos[key]
+      }
+      if (tablaHorizontal === 'ventas') {
+        const { data: lista } = await getVentasPorRangoFechas(desde, hasta)
+        const ventas = lista || []
+        ventas.forEach((v) => {
+          const total = parseFloat(v.total) || 0
+          const unidades = parseFloat(v.unidades_totales) || 0
+          if (refHorizontal === 'cliente') {
+            const key = v.cliente_id || 'sin'
+            const label = opcionesClientes.find((c) => c.id === key)?.nombre || 'Sin cliente'
+            const g = getOrCreate(key, label)
+            g.total += total
+            g.cantidad += 1
+            g.unidades += unidades
+            return
+          }
+          if (refHorizontal === 'proveedor') return // ventas no tienen proveedor
+          ;(v.venta_items || []).forEach((item) => {
+            const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+            const cant = parseFloat(item.cantidad) || 0
+            if (refHorizontal === 'categoria') {
+              const key = p?.categoria_id || 'sin'
+              const label = opcionesCategorias.find((c) => c.id === key)?.nombre || 'Sin categoría'
+              const g = getOrCreate(key, label)
+              g.total += (item.precio_unitario != null ? parseFloat(item.precio_unitario) * cant : 0) || (total / Math.max(1, (v.venta_items || []).length))
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(v.id)) { g._counted.add(v.id); g.cantidad += 1 }
+            } else if (refHorizontal === 'marca') {
+              const key = p?.marca_id || 'sin'
+              const label = opcionesMarcas.find((m) => m.id === key)?.nombre || 'Sin marca'
+              const g = getOrCreate(key, label)
+              g.total += (item.precio_unitario != null ? parseFloat(item.precio_unitario) * cant : 0) || (total / Math.max(1, (v.venta_items || []).length))
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(v.id)) { g._counted.add(v.id); g.cantidad += 1 }
+            } else if (refHorizontal === 'producto') {
+              const key = item.producto_id || 'sin'
+              const label = p?.nombre || 'Sin producto'
+              const g = getOrCreate(key, label)
+              g.total += (item.precio_unitario != null ? parseFloat(item.precio_unitario) * cant : 0) || (total / Math.max(1, (v.venta_items || []).length))
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(v.id)) { g._counted.add(v.id); g.cantidad += 1 }
+            }
+          })
+          if (refHorizontal === 'categoria' || refHorizontal === 'marca' || refHorizontal === 'producto') {
+            // ya sumado por items; para cantidad por venta podemos repartir en el loop de items
+          }
+        })
+        if (refHorizontal === 'categoria' || refHorizontal === 'marca' || refHorizontal === 'producto') {
+          ventas.forEach((v) => {
+            ;(v.venta_items || []).forEach((item) => {
+              const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+              let key, label
+              if (refHorizontal === 'categoria') { key = p?.categoria_id || 'sin'; label = opcionesCategorias.find((c) => c.id === key)?.nombre || 'Sin categoría' }
+              else if (refHorizontal === 'marca') { key = p?.marca_id || 'sin'; label = opcionesMarcas.find((m) => m.id === key)?.nombre || 'Sin marca' }
+              else { key = item.producto_id || 'sin'; label = p?.nombre || 'Sin producto' }
+              const g = grupos[key]
+              if (g && g._counted) g.cantidad = Array.from(g._counted).length
+            })
+          })
+        }
+      } else {
+        const { data: lista } = await getComprasPorRangoFechas(desde, hasta)
+        const compras = lista || []
+        compras.forEach((c) => {
+          const total = parseFloat(c.total) || 0
+          const unidades = parseFloat(c.unidades_totales) || 0
+          if (refHorizontal === 'proveedor') {
+            const key = c.proveedor_id || 'sin'
+            const label = opcionesProveedores.find((p) => p.id === key)?.nombre_razon_social || 'Sin proveedor'
+            const g = getOrCreate(key, label)
+            g.total += total
+            g.cantidad += 1
+            g.unidades += unidades
+            return
+          }
+          if (refHorizontal === 'cliente') return
+          ;(c.compra_items || []).forEach((item) => {
+            const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+            const cant = parseFloat(item.cantidad_solicitada) || 0
+            if (refHorizontal === 'categoria') {
+              const key = p?.categoria_id || 'sin'
+              const label = opcionesCategorias.find((c2) => c2.id === key)?.nombre || 'Sin categoría'
+              const g = getOrCreate(key, label)
+              g.total += total / Math.max(1, c.compra_items.length)
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(c.id)) { g._counted.add(c.id); g.cantidad += 1 }
+            } else if (refHorizontal === 'marca') {
+              const key = p?.marca_id || 'sin'
+              const label = opcionesMarcas.find((m) => m.id === key)?.nombre || 'Sin marca'
+              const g = getOrCreate(key, label)
+              g.total += total / Math.max(1, c.compra_items.length)
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(c.id)) { g._counted.add(c.id); g.cantidad += 1 }
+            } else if (refHorizontal === 'producto') {
+              const key = item.producto_id || 'sin'
+              const label = p?.nombre || 'Sin producto'
+              const g = getOrCreate(key, label)
+              g.total += total / Math.max(1, c.compra_items.length)
+              g.unidades += cant
+              if (!g._counted) g._counted = new Set()
+              if (!g._counted.has(c.id)) { g._counted.add(c.id); g.cantidad += 1 }
+            }
+          })
+        })
+      }
+      const rows = Object.values(grupos)
+        .filter((g) => g.key && g.key !== 'sin')
+        .map((g) => ({ key: g.key, label: g.label, total: g.total || 0, cantidad: (g._counted && g._counted.size) || g.cantidad || 0, unidades: g.unidades || 0 }))
+        .sort((a, b) => (b.total || 0) - (a.total || 0))
+      setChartDataHorizontal(rows)
+    } catch (err) {
+      console.error('Error al cargar gráfico horizontal:', err)
+      setChartDataHorizontal([])
+    } finally {
+      setLoadingChartHorizontal(false)
+    }
+  }, [user, tablaHorizontal, refHorizontal, fechaDesdeH, fechaHastaH, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
+
+  useEffect(() => {
+    if (!loading && user) cargarGraficoHorizontal()
+  }, [user, loading, cargarGraficoHorizontal])
+
   const handleAplicarFiltro = (e) => {
     e?.preventDefault()
     cargarGrafico()
+  }
+
+  const handleAplicarHorizontal = (e) => {
+    e?.preventDefault()
+    cargarGraficoHorizontal()
+  }
+
+  const toggleEtiquetaHorizontal = (id) => {
+    setEtiquetasHorizontal((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const LABEL_OPTIONS_H = [
+    { id: 'fechaRango', label: 'Fecha desde-hasta' },
+    { id: 'total', label: '$ Total' },
+    { id: 'cantidad', label: 'Cantidad operaciones' },
+    { id: 'unidades', label: 'Unidades' }
+  ]
+
+  const maxEjeXHorizontal = useMemo(() => {
+    const max = Math.max(0, ...chartDataHorizontal.map((r) => r.total || 0))
+    const rango = parseFloat(rangoEjeXHorizontal) || 10000
+    const base = Math.ceil(max / rango) * rango
+    return (base <= max ? base + rango : base) || rango
+  }, [chartDataHorizontal, rangoEjeXHorizontal])
+
+  const formatLabelValorH = (row, id) => {
+    if (id === 'fechaRango') return `${fechaDesdeH} — ${fechaHastaH}`
+    if (id === 'total') return formatearMoneda(row.total)
+    if (id === 'cantidad') return String(row.cantidad || 0)
+    if (id === 'unidades') return Number(row.unidades || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    return ''
   }
 
   const toggleEtiqueta = (id) => {
@@ -574,7 +771,18 @@ function Dashboard() {
           </div>
         </div>
 
-        <Card title="Gráfico de columnas verticales" className="dashboard-card dashboard-chart-card">
+        <div className="dashboard-chart-vertical-wrapper">
+          <button
+            type="button"
+            className="dashboard-chart-toggle"
+            onClick={() => setVerticalChartCollapsed((c) => !c)}
+            aria-expanded={!verticalChartCollapsed}
+          >
+            <span className="dashboard-chart-toggle-title">Gráfico de Barras Verticales (para análisis de ventas y compras)</span>
+            <span className="dashboard-chart-toggle-icon" aria-hidden>{verticalChartCollapsed ? '▶' : '▼'}</span>
+          </button>
+          {!verticalChartCollapsed && (
+        <Card className="dashboard-card dashboard-chart-card">
           <div className="chart-config">
             <div className="chart-config-row">
               <label className="chart-config-label">Tabla a analizar:</label>
@@ -848,6 +1056,138 @@ function Dashboard() {
                 <div className="chart-vertical-x-axis">
                   <span className="chart-vertical-x-title">Eje (X)</span>
                 </div>
+              </div>
+            </div>
+          )}
+        </Card>
+          )}
+        </div>
+
+        {/* Gráfico de barras horizontales */}
+        <Card title="Gráfico de Barras Horizontales" className="dashboard-card dashboard-chart-card">
+          <div className="chart-config">
+            <div className="chart-config-row">
+              <label className="chart-config-label">Referencia:</label>
+              <select
+                className="chart-config-input chart-config-select"
+                value={refHorizontal}
+                onChange={(e) => setRefHorizontal(e.target.value)}
+                aria-label="Referencia"
+              >
+                {REFERENCIAS_H.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="chart-config-row">
+              <label className="chart-config-label">Tabla a analizar:</label>
+              <select
+                className="chart-config-input chart-config-select"
+                value={tablaHorizontal}
+                onChange={(e) => setTablaHorizontal(e.target.value)}
+                aria-label="Tabla a analizar"
+              >
+                <option value="ventas">Registro de ventas</option>
+                <option value="compras">Registro de compras</option>
+              </select>
+            </div>
+            <div className="chart-config-row chart-config-fechas">
+              <div>
+                <label className="chart-config-label">Filtrar desde:</label>
+                <input
+                  type="date"
+                  value={fechaDesdeH}
+                  onChange={(e) => setFechaDesdeH(e.target.value)}
+                  className="chart-config-date"
+                  aria-label="Fecha desde"
+                />
+              </div>
+              <div>
+                <label className="chart-config-label">Hasta:</label>
+                <input
+                  type="date"
+                  value={fechaHastaH}
+                  onChange={(e) => setFechaHastaH(e.target.value)}
+                  className="chart-config-date"
+                  aria-label="Fecha hasta"
+                />
+              </div>
+            </div>
+            <div className="chart-config-row">
+              <label className="chart-config-label">Información en etiquetas:</label>
+              <div className="chart-config-checkboxes">
+                {LABEL_OPTIONS_H.map((opt) => (
+                  <label key={opt.id} className="chart-config-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={etiquetasHorizontal.includes(opt.id)}
+                      onChange={() => toggleEtiquetaHorizontal(opt.id)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="chart-config-row chart-config-ejes">
+              <div className="chart-config-eje">
+                <label className="chart-config-label">Eje (Y):</label>
+                <span className="chart-config-readonly">{REFERENCIAS_H.find((o) => o.id === refHorizontal)?.label || refHorizontal}</span>
+              </div>
+              <div className="chart-config-eje">
+                <label className="chart-config-label">Eje (X):</label>
+                <span className="chart-config-readonly">$ Total</span>
+              </div>
+              <div className="chart-config-eje">
+                <label className="chart-config-label chart-config-rango-label">Rango eje (X):</label>
+                <input
+                  type="number"
+                  min="1000"
+                  step={1000}
+                  value={rangoEjeXHorizontal}
+                  onChange={(e) => setRangoEjeXHorizontal(parseFloat(e.target.value) || 10000)}
+                  className="chart-config-input chart-config-rango"
+                  placeholder="10000"
+                />
+              </div>
+            </div>
+            <div className="chart-config-row">
+              <Button type="button" variant="primary" size="sm" onClick={handleAplicarHorizontal}>
+                Aplicar
+              </Button>
+            </div>
+          </div>
+
+          {loadingChartHorizontal ? (
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <Spinner size="md" />
+            </div>
+          ) : (
+            <div className="chart-horizontal-wrap">
+              <div className="chart-horizontal-x-axis">
+                <span className="chart-horizontal-x-title">Eje (X) $ Total</span>
+              </div>
+              <div className="chart-horizontal-content chart-horizontal-bars-layout">
+                {chartDataHorizontal.map((row) => {
+                  const valor = row.total || 0
+                  const pct = maxEjeXHorizontal ? (valor / maxEjeXHorizontal) * 100 : 0
+                  const tooltipText = [row.label, ...etiquetasHorizontal.map((id) => `${LABEL_OPTIONS_H.find((o) => o.id === id)?.label || id}: ${formatLabelValorH(row, id)}`)].join(' — ')
+                  return (
+                    <div key={row.key} className="chart-horizontal-bar-row">
+                      <span className="chart-horizontal-y-label-text" title={row.label}>{row.label}</span>
+                      <div className="chart-horizontal-bar-cell-inner">
+                        <div
+                          className="chart-horizontal-bar-fill"
+                          style={{ width: `${pct}%` }}
+                          title={tooltipText}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="chart-horizontal-x-ticks">
+                <span>$-</span>
+                <span>{formatearMoneda(maxEjeXHorizontal)}</span>
               </div>
             </div>
           )}
