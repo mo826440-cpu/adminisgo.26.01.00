@@ -75,7 +75,22 @@ Con eso, el webhook que actualiza la suscripción al recibir el pago aprobado fu
 
 Si al crear la preferencia en producción ves **"At least one policy returned UNAUTHORIZED"** o **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** (403), Mercado Pago está rechazando la operación por políticas de la cuenta o de la aplicación, no por un error en tu código.
 
-**Qué revisar:**
+**Causa más frecuente: onboarding de la app sin completar**
+
+En el **Detalle de Aplicación** de Adminis Go suele aparecer **"ETAPA 1 DE 5"** y un checklist:
+
+- ✔ Creá las cuentas de prueba  
+- ✔ Configurá tu integración  
+- **Realizá un pago de prueba** ← si este paso **no está marcado**, MP no habilita producción.
+
+**Qué hacer:**
+
+1. **Hacé un pago de prueba en sandbox** (con token TEST y comprador de prueba) desde tu app.
+2. En el panel de desarrolladores → **Adminis Go** → en "Probá tu integración" hacé clic en **"Ya hice la prueba"**.
+3. Completá las etapas que sigan (2 a 5) si las muestra.
+4. Después de eso, probá de nuevo en producción; el 403 debería desaparecer.
+
+**También revisar:**
 
 1. **Panel de desarrolladores**  
    [developers.mercadopago.com](https://www.mercadopago.com.ar/developers/panel) → tu app **Adminis Go**.  
@@ -83,11 +98,32 @@ Si al crear la preferencia en producción ves **"At least one policy returned UN
 
 2. **Cuenta vendedor**  
    Entrá a [www.mercadopago.com.ar](https://www.mercadopago.com.ar) con la cuenta que creó la app.  
-   - Verificá que estén completos: datos personales, identidad, datos fiscales y, si corresponde, cuenta bancaria para retiros.  
-   - Cualquier paso pendiente puede provocar este error.
+   - Verificá que estén completos: datos personales, identidad, datos fiscales y, si corresponde, cuenta bancaria para retiros.
 
 3. **Soporte de Mercado Pago**  
-   Si todo parece correcto, abrí un ticket en el [Centro de ayuda](https://www.mercadopago.com.ar/ayuda) o desde el panel de desarrolladores, indicando el código **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** y que estás creando preferencias en producción.
+   Si completaste el onboarding y el error sigue, abrí un ticket en el [Centro de ayuda](https://www.mercadopago.com.ar/ayuda) indicando **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** y que estás creando preferencias en producción.
+
+**URLs de redireccionamiento vacías (Configuraciones avanzadas)**
+
+Si en **Editar aplicación** → **Configuraciones avanzadas** el campo **"URLs de redireccionamiento"** está vacío y con borde rojo, completalo: Mercado Pago puede devolver **UNAUTHORIZED** hasta que la app tenga al menos una URL configurada.
+
+- Hacé clic en **"+ Agregar nueva URL"**.
+- Agregá la URL a la que volvés después del pago, por ejemplo:  
+  `https://www.adminisgo.com/configuracion/cambiar-plan`  
+  Si el panel permite varias, podés sumar también:  
+  `https://www.adminisgo.com`
+- No uses dominios de Mercado Libre (ej. `mercadolibre.com.ar`).
+- Guardá los cambios (**Guardar cambios**) y probá de nuevo crear la preferencia en producción.
+
+---
+
+**Si estás en ETAPA 4 DE 5: "Recibí un pago productivo"**
+
+En esa etapa Mercado Pago pide que **proceses al menos un pago real** para terminar de habilitar producción. A veces el 403 se levanta solo después de que MP detecte ese primer pago.
+
+- **Activar credenciales de producción** (si aún no lo hiciste): en **Credenciales de producción** completá **Industria**, **Sitio web** (ej. `https://www.adminisgo.com`), aceptá la Declaración de Privacidad y los Términos, reCAPTCHA y **Activar credenciales de producción**.
+- **Primer pago productivo:** intentá hacer un pago real mínimo (ej. desde otra cuenta o tarjeta) en adminisgo.com → Cambiar plan → Pagar con Mercado Pago. Si en algún momento el checkout deja de devolver 403 y el pago se procesa, MP suele registrar la etapa y el error no vuelve.
+- Si el 403 sigue impidiendo crear la preferencia (y por tanto no podés hacer ese primer pago), contactá a soporte de MP y explicá que necesitás completar “Recibí un pago productivo” pero la API devuelve **PA_UNAUTHORIZED_RESULT_FROM_POLICIES** al crear la preferencia.
 
 ---
 

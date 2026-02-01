@@ -8,6 +8,8 @@ import Register from './pages/auth/Register'
 import CompleteRegistration from './pages/auth/CompleteRegistration'
 import SelectPlan from './pages/auth/SelectPlan'
 import AuthCallback from './pages/auth/AuthCallback'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/dashboard/Dashboard'
 import ProductosList from './pages/productos/ProductosList'
@@ -47,6 +49,8 @@ function App() {
             {/* Rutas públicas */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route 
               path="/auth/callback" 
               element={

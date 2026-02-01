@@ -32,16 +32,26 @@ Al confirmar el email durante el registro, Supabase redirige a `adminisgo.com` (
 
 ### Paso 3: Configurar Redirect URLs
 
-En **Redirect URLs**, agrega **TODAS** las URLs que necesitas:
+En **Redirect URLs**, agrega las URLs que uses. Si trabajás y probás solo en **adminisgo.com** (deploy en Vercel), alcanza con las de producción:
 
+**Producción (adminisgo.com):**
+```
+https://adminisgo.com/**
+https://adminisgo.com/auth/callback
+https://adminisgo.com/auth/login
+https://adminisgo.com/reset-password
+```
+Si usás también `www`: `https://www.adminisgo.com/**` y las mismas rutas con `www`.
+
+**Desarrollo local (opcional):**
 ```
 http://localhost:5173/**
 http://localhost:5173/auth/callback
 http://localhost:5173/auth/login
-https://adminisgo.com/**
-https://adminisgo.com/auth/callback
-https://adminisgo.com/auth/login
+http://localhost:5173/reset-password
 ```
+
+**Nota**: `reset-password` es necesaria para el flujo de "Recuperar contraseña" (el usuario llega ahí desde el enlace del email). El código usa siempre `window.location.origin`, así que el enlace apunta al mismo dominio desde el que se pidió (adminisgo.com o localhost).
 
 **Formato**:
 - Usa `/**` para permitir todas las rutas bajo ese dominio

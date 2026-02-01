@@ -1,13 +1,15 @@
 // Página de Login
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { signIn } from '../../services/auth'
 import { getComercio } from '../../services/comercio'
 import { useAuthContext } from '../../context/AuthContext'
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, loading: authLoading } = useAuthContext()
+  const mensajeExito = location.state?.message
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -114,6 +116,11 @@ function Login() {
       }}>
         <h1 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Iniciar Sesión</h1>
 
+        {mensajeExito && (
+          <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
+            {mensajeExito}
+          </div>
+        )}
         {error && (
           <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
             {error}

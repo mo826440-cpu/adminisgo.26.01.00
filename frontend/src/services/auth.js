@@ -92,12 +92,14 @@ export const getSession = async () => {
 }
 
 /**
- * Recuperar contraseña (enviar email de recuperación)
+ * Recuperar contraseña (enviar email de recuperación).
+ * redirectTo usa siempre el origen actual (en adminisgo.com va a producción; si corrés en local, a localhost).
  */
 export const resetPassword = async (email) => {
   try {
+    const redirectTo = `${window.location.origin}/reset-password`
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo
     })
     if (error) throw error
     return { data, error: null }
