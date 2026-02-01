@@ -146,6 +146,48 @@ export const getCompras = async () => {
 }
 
 /**
+ * Compras en un rango de fechas (para gráfico) - con unidades por compra
+ * desde/hasta: objetos Date (se usa fecha_orden)
+ */
+export const getComprasPorRangoFechas = async (desde, hasta) => {
+  try {
+    const inicio = new Date(desde)
+    inicio.setHours(0, 0, 0, 0)
+    const fin = new Date(hasta)
+    fin.setHours(23, 59, 59, 999)
+    const fechaDesdeStr = inicio.toISOString().slice(0, 10)
+    const fechaHastaStr = fin.toISOString().slice(0, 10)
+    const { data, error } = await supabase
+      .from('compras')
+      .select(`
+        id,
+        total,
+        fecha_orden,
+        compra_items(cantidad_solicitada)
+      `)
+      .is('deleted_at', null)
+      .gte('fecha_orden', fechaDesdeStr)
+      .lte('fecha_orden', fechaHastaStr)
+      .order('fecha_orden', { ascending: true })
+
+    if (error) throw error
+
+    const comprasConUnidades = (data || []).map(compra => {
+      const unidades = (compra.compra_items || []).reduce(
+        (sum, item) => sum + (parseFloat(item.cantidad_solicitada) || 0),
+        0
+      )
+      return { ...compra, unidades_totales: unidades }
+    })
+
+    return { data: comprasConUnidades, error: null }
+  } catch (error) {
+    console.error('Error al obtener compras por rango:', error)
+    return { data: null, error }
+  }
+}
+
+/**
  * Obtener una compra por ID con sus items
  */
 export const getCompraById = async (id) => {

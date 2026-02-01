@@ -21,6 +21,31 @@ export const getClientes = async () => {
 }
 
 /**
+ * Clientes creados en un rango de fechas (para gráfico) - por created_at
+ */
+export const getClientesPorRangoFechas = async (desde, hasta) => {
+  try {
+    const inicio = new Date(desde)
+    inicio.setHours(0, 0, 0, 0)
+    const fin = new Date(hasta)
+    fin.setHours(23, 59, 59, 999)
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('id, created_at')
+      .eq('activo', true)
+      .gte('created_at', inicio.toISOString())
+      .lte('created_at', fin.toISOString())
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error('Error al obtener clientes por rango:', error)
+    return { data: null, error }
+  }
+}
+
+/**
  * Obtener un cliente por ID
  */
 export const getCliente = async (id) => {
