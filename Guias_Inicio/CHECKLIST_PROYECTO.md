@@ -188,7 +188,7 @@
     - [x] Mostrar límites de ventas y usuarios ✅
     - [x] Mostrar período gratis si aplica ✅
     - [x] Botón para cambiar plan (si es plan gratis) ✅
-  - [ ] Gráfico simple (placeholder) (pendiente)
+  - [x] Gráfico de ventas últimos 7 días ✅
 
 ### 1.3 Módulo de Productos (MVP)
 
@@ -1009,7 +1009,7 @@
 
 **Progreso Total**: 🟨 ~30% (Fase 0 ~85%, Fase 1 ~65%, Fase 2 ~15%, Fase 5 ~60%)
 
-**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación (incl. recuperación de contraseña, ícono ver contraseña), Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Landing con enlaces a Términos y Política de Privacidad. Pendientes: Testing MVP, Reportes
+**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación (incl. recuperación de contraseña, ícono ver contraseña), Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Landing con enlaces a Términos y Política de Privacidad. Cerrar sesión redirige a landing (navegador) o login (PWA). Dashboard con KPIs reales y gráfico ventas últimos 7 días. Pendientes: Testing MVP, Reportes
 
 ### Fechas Importantes
 

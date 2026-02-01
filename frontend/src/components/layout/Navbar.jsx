@@ -14,13 +14,22 @@ function Navbar({ onToggleSidebar }) {
       const { error } = await signOut()
       if (error) {
         console.error('Error al cerrar sesión:', error)
-        // Aún así redirigir al login
       }
-      navigate('/auth/login', { replace: true })
+      // Si está en la app instalada (PWA): ir a login. Si está en el navegador: ir a landing.
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        (window.navigator.standalone === true)
+      navigate(isStandalone ? '/auth/login' : '/', { replace: true })
     } catch (error) {
       console.error('Error al cerrar sesión:', error)
-      // Aún así redirigir al login
-      navigate('/auth/login', { replace: true })
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        (window.navigator.standalone === true)
+      navigate(isStandalone ? '/auth/login' : '/', { replace: true })
     }
   }
 

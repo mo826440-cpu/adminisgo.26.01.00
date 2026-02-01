@@ -185,6 +185,57 @@ export const getVentas = async () => {
   }
 }
 
+/**
+ * Resumen de ventas del día (cantidad y monto total) - para Dashboard
+ * Usa fecha/hora local del navegador.
+ */
+export const getResumenVentasDelDia = async () => {
+  try {
+    const now = new Date()
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    const { data, error } = await supabase
+      .from('ventas')
+      .select('id, total')
+      .is('deleted_at', null)
+      .gte('fecha_hora', startOfDay.toISOString())
+      .lte('fecha_hora', endOfDay.toISOString())
+
+    if (error) throw error
+    const lista = data || []
+    const cantidad = lista.length
+    const total = lista.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0)
+    return { data: { cantidad, total }, error: null }
+  } catch (error) {
+    console.error('Error al obtener resumen ventas del día:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Ventas de los últimos N días (para gráfico por día) - solo id, total, fecha_hora
+ */
+export const getVentasUltimosDias = async (dias = 7) => {
+  try {
+    const now = new Date()
+    const desde = new Date(now)
+    desde.setDate(desde.getDate() - dias)
+    desde.setHours(0, 0, 0, 0)
+    const { data, error } = await supabase
+      .from('ventas')
+      .select('id, total, fecha_hora')
+      .is('deleted_at', null)
+      .gte('fecha_hora', desde.toISOString())
+      .order('fecha_hora', { ascending: true })
+
+    if (error) throw error
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error('Error al obtener ventas últimos días:', error)
+    return { data: null, error }
+  }
+}
+
 const updateStockByDelta = async (productoId, delta) => {
   const { data: producto, error: errorProducto } = await supabase
     .from('productos')
