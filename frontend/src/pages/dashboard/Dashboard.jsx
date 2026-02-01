@@ -69,6 +69,15 @@ function Dashboard() {
   const [chartDataHorizontal, setChartDataHorizontal] = useState([])
   const [loadingChartHorizontal, setLoadingChartHorizontal] = useState(false)
 
+  // Gráfico de torta: Análisis por Métodos de Pago
+  const [pieChartCollapsed, setPieChartCollapsed] = useState(true)
+  const [tablaPie, setTablaPie] = useState('ventas') // ventas | compras
+  const [fechaDesdePie, setFechaDesdePie] = useState(() => getDefaultRango7Dias().desde)
+  const [fechaHastaPie, setFechaHastaPie] = useState(() => getDefaultRango7Dias().hasta)
+  const [opcionPie, setOpcionPie] = useState('totales') // totales = suma $ Total por método; deudas = suma $ Deuda + slice Deuda
+  const [chartDataPie, setChartDataPie] = useState([]) // [{ label, value }]
+  const [loadingChartPie, setLoadingChartPie] = useState(false)
+
   // Estado del gráfico (valores por defecto según pedido)
   const [tabla, setTabla] = useState('ventas')
   const [fechaDesde, setFechaDesde] = useState(() => getDefaultRango().desde)
@@ -635,6 +644,68 @@ function Dashboard() {
     if (!loading && user) cargarGraficoHorizontal()
   }, [user, loading, cargarGraficoHorizontal])
 
+  // Cargar datos del gráfico de torta (métodos de pago)
+  const cargarGraficoPie = useCallback(async () => {
+    if (!user) return
+    setLoadingChartPie(true)
+    try {
+      const desde = new Date(fechaDesdePie)
+      const hasta = new Date(fechaHastaPie)
+      desde.setHours(0, 0, 0, 0)
+      hasta.setHours(23, 59, 59, 999)
+      const grupos = {} // metodo_pago -> sum
+      const normalizarMetodo = (m) => (m && String(m).trim()) || 'Otro'
+
+      if (tablaPie === 'ventas') {
+        const { data: lista } = await getVentasPorRangoFechas(desde, hasta)
+        const ventas = lista || []
+        const filtradas = opcionPie === 'deudas' ? ventas.filter((v) => (parseFloat(v.monto_deuda) || 0) > 0.01) : ventas
+        let totalDeuda = 0
+        filtradas.forEach((v) => {
+          const pagos = v.venta_pagos || []
+          pagos.forEach((p) => {
+            const metodo = normalizarMetodo(p.metodo_pago)
+            const monto = parseFloat(p.monto_pagado) || 0
+            grupos[metodo] = (grupos[metodo] || 0) + monto
+          })
+          if (opcionPie === 'deudas') totalDeuda += parseFloat(v.monto_deuda) ?? Math.max(0, (parseFloat(v.total) || 0) - (parseFloat(v.monto_pagado) || 0))
+        })
+        if (opcionPie === 'deudas' && totalDeuda > 0.01) grupos['Deuda'] = totalDeuda
+      } else {
+        const { data: lista } = await getComprasPorRangoFechas(desde, hasta)
+        const compras = lista || []
+        const filtradas = opcionPie === 'deudas' ? compras.filter((c) => (parseFloat(c.monto_deuda) || 0) > 0.01) : compras
+        let totalDeuda = 0
+        filtradas.forEach((c) => {
+          const pagos = c.compra_pagos || []
+          pagos.forEach((p) => {
+            const metodo = normalizarMetodo(p.metodo_pago)
+            const monto = parseFloat(p.monto_pagado) || 0
+            grupos[metodo] = (grupos[metodo] || 0) + monto
+          })
+          if (opcionPie === 'deudas') totalDeuda += parseFloat(c.monto_deuda) ?? Math.max(0, (parseFloat(c.total) || 0) - (parseFloat(c.monto_pagado) || 0))
+        })
+        if (opcionPie === 'deudas' && totalDeuda > 0.01) grupos['Deuda'] = totalDeuda
+      }
+
+      const total = Object.values(grupos).reduce((s, n) => s + n, 0)
+      const rows = Object.entries(grupos)
+        .filter(([, val]) => val > 0.01)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value)
+      setChartDataPie(rows)
+    } catch (err) {
+      console.error('Error al cargar gráfico de métodos de pago:', err)
+      setChartDataPie([])
+    } finally {
+      setLoadingChartPie(false)
+    }
+  }, [user, tablaPie, fechaDesdePie, fechaHastaPie, opcionPie])
+
+  useEffect(() => {
+    if (!loading && user) cargarGraficoPie()
+  }, [user, loading, cargarGraficoPie])
+
   const handleAplicarFiltro = (e) => {
     e?.preventDefault()
     cargarGrafico()
@@ -643,6 +714,11 @@ function Dashboard() {
   const handleAplicarHorizontal = (e) => {
     e?.preventDefault()
     cargarGraficoHorizontal()
+  }
+
+  const handleAplicarPie = (e) => {
+    e?.preventDefault()
+    cargarGraficoPie()
   }
 
   const LABEL_OPTIONS_REF = [
@@ -781,7 +857,7 @@ function Dashboard() {
             onClick={() => setVerticalChartCollapsed((c) => !c)}
             aria-expanded={!verticalChartCollapsed}
           >
-            <span className="dashboard-chart-toggle-title">Gráfico de Barras Verticales (para análisis de ventas y compras)</span>
+            <span className="dashboard-chart-toggle-title">Gráfico de Ventas y Compras</span>
             <span className="dashboard-chart-toggle-icon" aria-hidden>{verticalChartCollapsed ? '▶' : '▼'}</span>
           </button>
           {!verticalChartCollapsed && (
@@ -1214,6 +1290,125 @@ function Dashboard() {
             </div>
           )}
         </Card>
+          )}
+        </div>
+
+        {/* Gráfico de torta: Análisis por Métodos de Pago (colapsable) */}
+        <div className="dashboard-chart-vertical-wrapper">
+          <button
+            type="button"
+            className="dashboard-chart-toggle"
+            onClick={() => setPieChartCollapsed((c) => !c)}
+            aria-expanded={!pieChartCollapsed}
+          >
+            <span className="dashboard-chart-toggle-title">Análisis por Métodos de Pago</span>
+            <span className="dashboard-chart-toggle-icon" aria-hidden>{pieChartCollapsed ? '▶' : '▼'}</span>
+          </button>
+          {!pieChartCollapsed && (
+            <Card className="dashboard-card dashboard-chart-card">
+              <div className="chart-config">
+                <div className="chart-config-row">
+                  <label className="chart-config-label">Tabla a analizar:</label>
+                  <select
+                    className="chart-config-input chart-config-select"
+                    value={tablaPie}
+                    onChange={(e) => setTablaPie(e.target.value)}
+                    aria-label="Tabla a analizar"
+                  >
+                    <option value="ventas">Ventas</option>
+                    <option value="compras">Compras</option>
+                  </select>
+                </div>
+                <div className="chart-config-row">
+                  <label className="chart-config-label">Opciones:</label>
+                  <select
+                    className="chart-config-input chart-config-select"
+                    value={opcionPie}
+                    onChange={(e) => setOpcionPie(e.target.value)}
+                    aria-label="Opciones"
+                  >
+                    <option value="totales">{tablaPie === 'ventas' ? 'Ventas' : 'Compras'} totales ($ Total)</option>
+                    <option value="deudas">{tablaPie === 'ventas' ? 'Ventas' : 'Compras'} con Deudas ($ Debe)</option>
+                  </select>
+                </div>
+                <div className="chart-config-row chart-config-fechas">
+                  <div>
+                    <label className="chart-config-label">Desde:</label>
+                    <input
+                      type="date"
+                      value={fechaDesdePie}
+                      onChange={(e) => setFechaDesdePie(e.target.value)}
+                      className="chart-config-date"
+                      aria-label="Fecha desde"
+                    />
+                  </div>
+                  <div>
+                    <label className="chart-config-label">Hasta:</label>
+                    <input
+                      type="date"
+                      value={fechaHastaPie}
+                      onChange={(e) => setFechaHastaPie(e.target.value)}
+                      className="chart-config-date"
+                      aria-label="Fecha hasta"
+                    />
+                  </div>
+                </div>
+                <div className="chart-config-row">
+                  <Button type="button" variant="primary" size="sm" onClick={handleAplicarPie}>
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+
+              {loadingChartPie ? (
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                  <Spinner size="md" />
+                </div>
+              ) : (
+                <div className="chart-pie-wrap">
+                  {chartDataPie.length === 0 ? (
+                    <p className="chart-pie-empty">No hay datos para el rango y opción seleccionados.</p>
+                  ) : (
+                    <>
+                      <div
+                        className="chart-pie-circle"
+                        style={{
+                          background: (() => {
+                            const total = chartDataPie.reduce((s, d) => s + d.value, 0)
+                            if (total <= 0) return 'var(--bg-secondary)'
+                            const PIE_COLORS = ['#4a90d9', '#7ed56f', '#f39c12', '#e74c3c', '#9b59b6', '#1abc9c', '#3498db', '#95a5a6']
+                            let accDeg = 0
+                            const parts = chartDataPie.map((d, i) => {
+                              const pct = (d.value / total) * 100
+                              const color = d.label === 'Deuda' ? '#95a5a6' : PIE_COLORS[i % PIE_COLORS.length]
+                              const startDeg = accDeg
+                              accDeg += (pct / 100) * 360
+                              return `${color} ${startDeg}deg ${accDeg}deg`
+                            })
+                            return `conic-gradient(${parts.join(', ')})`
+                          })()
+                        }}
+                        aria-hidden
+                      />
+                      <ul className="chart-pie-legend">
+                        {chartDataPie.map((d, i) => {
+                          const total = chartDataPie.reduce((s, x) => s + x.value, 0)
+                          const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0'
+                          return (
+                            <li key={d.label} className="chart-pie-legend-item">
+                              <span className="chart-pie-legend-color" style={{ backgroundColor: d.label === 'Deuda' ? '#95a5a6' : ['#4a90d9', '#7ed56f', '#f39c12', '#e74c3c', '#9b59b6', '#1abc9c', '#3498db', '#95a5a6'][i % 8] }} aria-hidden />
+                              <span className="chart-pie-legend-label">{d.label}</span>
+                              <span className="chart-pie-legend-value">{formatearMoneda(d.value)}</span>
+                              <span className="chart-pie-legend-pct">{pct}%</span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+            </Card>
           )}
         </div>
       </div>

@@ -168,7 +168,7 @@ export const getComprasPorRangoFechas = async (desde, hasta) => {
         proveedor_id,
         estado,
         compra_items(producto_id, cantidad_solicitada),
-        compra_pagos(metodo_pago)
+        compra_pagos(metodo_pago, monto_pagado)
       `)
       .is('deleted_at', null)
       .gte('fecha_orden', fechaDesdeStr)
