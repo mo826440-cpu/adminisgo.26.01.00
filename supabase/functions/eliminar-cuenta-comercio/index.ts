@@ -19,8 +19,9 @@ function jsonResponse(body: object, status: number) {
 }
 
 Deno.serve(async (req) => {
+  // Preflight: debe ser lo primero y devolver 200 para que el navegador acepte CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response('ok', { status: 200, headers: corsHeaders })
   }
 
   try {
