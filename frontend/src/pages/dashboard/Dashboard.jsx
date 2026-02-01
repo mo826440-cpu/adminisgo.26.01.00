@@ -60,7 +60,7 @@ function Dashboard() {
     return { desde: desde.toISOString().slice(0, 10), hasta: hoy.toISOString().slice(0, 10) }
   }
   const [refHorizontal, setRefHorizontal] = useState('cliente')
-  const [filtroSoloConDeuda, setFiltroSoloConDeuda] = useState('todos') // todos | solo_deuda (solo cuando Referencia = Cliente o Proveedor)
+  const [filtroClienteProveedor, setFiltroClienteProveedor] = useState('todos') // todos = todos con registros, barras $ Total; debe = solo estado Debe, barras $ Deuda
   const [fechaDesdeH, setFechaDesdeH] = useState(() => getDefaultRango7Dias().desde)
   const [fechaHastaH, setFechaHastaH] = useState(() => getDefaultRango7Dias().hasta)
   // Etiquetas fijas del gráfico de referencias: siempre Fecha desde-hasta, $ Total (o $ Deuda si Cliente/Proveedor), Cantidad operaciones
@@ -510,11 +510,12 @@ function Dashboard() {
           const total = parseFloat(v.total) || 0
           const unidades = parseFloat(v.unidades_totales) || 0
           if (refHorizontal === 'cliente') {
+            const deuda = parseFloat(v.monto_deuda) ?? Math.max(0, total - (parseFloat(v.monto_pagado) || 0))
+            if (filtroClienteProveedor === 'debe' && deuda <= 0.01) return
             const key = v.cliente_id || 'sin'
             const label = opcionesClientes.find((c) => c.id === key)?.nombre || 'Sin cliente'
             const g = getOrCreate(key, label)
-            const deuda = parseFloat(v.monto_deuda) ?? Math.max(0, total - (parseFloat(v.monto_pagado) || 0))
-            g.total += deuda
+            g.total += filtroClienteProveedor === 'debe' ? deuda : total
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -573,11 +574,12 @@ function Dashboard() {
           const total = parseFloat(c.total) || 0
           const unidades = parseFloat(c.unidades_totales) || 0
           if (refHorizontal === 'proveedor') {
+            const deuda = parseFloat(c.monto_deuda) ?? Math.max(0, total - (parseFloat(c.monto_pagado) || 0))
+            if (filtroClienteProveedor === 'debe' && deuda <= 0.01) return
             const key = c.proveedor_id || 'sin'
             const label = opcionesProveedores.find((p) => p.id === key)?.nombre_razon_social || 'Sin proveedor'
             const g = getOrCreate(key, label)
-            const deuda = parseFloat(c.monto_deuda) ?? Math.max(0, total - (parseFloat(c.monto_pagado) || 0))
-            g.total += deuda
+            g.total += filtroClienteProveedor === 'debe' ? deuda : total
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -614,13 +616,10 @@ function Dashboard() {
           })
         })
       }
-      let rows = Object.values(grupos)
+      const rows = Object.values(grupos)
         .filter((g) => g.key && g.key !== 'sin')
         .map((g) => ({ key: g.key, label: g.label, total: g.total || 0, cantidad: (g._counted && g._counted.size) || g.cantidad || 0, unidades: g.unidades || 0 }))
         .sort((a, b) => (b.total || 0) - (a.total || 0))
-      if ((refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroSoloConDeuda === 'solo_deuda') {
-        rows = rows.filter((r) => (r.total || 0) > 0.01)
-      }
       setChartDataHorizontal(rows)
     } catch (err) {
       console.error('Error al cargar gráfico horizontal:', err)
@@ -628,7 +627,7 @@ function Dashboard() {
     } finally {
       setLoadingChartHorizontal(false)
     }
-  }, [user, refHorizontal, fechaDesdeH, fechaHastaH, filtroSoloConDeuda, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
+  }, [user, refHorizontal, fechaDesdeH, fechaHastaH, filtroClienteProveedor, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
 
   useEffect(() => {
     if (!loading && user) cargarGraficoHorizontal()
@@ -1096,14 +1095,12 @@ function Dashboard() {
                 <label className="chart-config-label">Filtrar:</label>
                 <select
                   className="chart-config-input chart-config-select"
-                  value={filtroSoloConDeuda}
-                  onChange={(e) => setFiltroSoloConDeuda(e.target.value)}
-                  aria-label="Filtrar por deuda"
+                  value={filtroClienteProveedor}
+                  onChange={(e) => setFiltroClienteProveedor(e.target.value)}
+                  aria-label="Filtrar"
                 >
                   <option value="todos">Todos</option>
-                  <option value="solo_deuda">
-                    {refHorizontal === 'cliente' ? 'Solo clientes con deuda' : 'Solo proveedores a los que les debo'}
-                  </option>
+                  <option value="debe">Debe</option>
                 </select>
               </div>
             )}
@@ -1137,7 +1134,7 @@ function Dashboard() {
               <div className="chart-config-eje">
                 <label className="chart-config-label">Eje (X):</label>
                 <span className="chart-config-readonly">
-                  {refHorizontal === 'cliente' || refHorizontal === 'proveedor' ? '$ Deuda' : '$ Total'}
+                  {(refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroClienteProveedor === 'debe' ? '$ Deuda' : '$ Total'}
                 </span>
               </div>
               <div className="chart-config-eje">
@@ -1168,7 +1165,7 @@ function Dashboard() {
             <div className="chart-horizontal-wrap">
               <div className="chart-horizontal-x-axis">
                 <span className="chart-horizontal-x-title">
-                  Eje (X) {refHorizontal === 'cliente' || refHorizontal === 'proveedor' ? '$ Deuda' : '$ Total'}
+                  Eje (X) {(refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroClienteProveedor === 'debe' ? '$ Deuda' : '$ Total'}
                 </span>
               </div>
               <div className="chart-horizontal-content chart-horizontal-bars-layout">
@@ -1184,7 +1181,7 @@ function Dashboard() {
                           <div className="chart-vertical-bar-tooltip" role="tooltip">
                             <span className="chart-vertical-bar-tooltip-title">{row.label}</span>
                             {ETIQUETAS_REFERENCIAS.map((id) => {
-                              const labelText = (id === 'total' && (refHorizontal === 'cliente' || refHorizontal === 'proveedor'))
+                              const labelText = (id === 'total' && (refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroClienteProveedor === 'debe')
                                 ? '$ Deuda'
                                 : (LABEL_OPTIONS_REF.find((o) => o.id === id)?.label || id)
                               return (
