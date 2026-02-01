@@ -233,9 +233,17 @@
 }
 
 .table-actions {
-  display: flex; /* acciones en fila */
-  gap: 0.5rem; /* separacion */
-  flex-wrap: wrap; /* salto en chico */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-actions .btn,
+.table-actions a {
+  flex-shrink: 0;
+  display: inline-flex;
 }
 
 .table-info {
@@ -352,7 +360,9 @@
   }
   
   .table-actions {
-    justify-content: center; /* centra el botón de menú */
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
   }
   
   .registros-panel {
