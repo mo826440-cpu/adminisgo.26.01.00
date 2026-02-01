@@ -1,7 +1,7 @@
 # Checklist del Proyecto - Adminis Go
 
 **Versión del documento**: 1.2  
-**Última actualización**: 27/01/2026  
+**Última actualización**: 26/01/2026  
 **Estado del proyecto**: 🟡 Desarrollo Activo
 
 ---
@@ -189,6 +189,13 @@
     - [x] Mostrar período gratis si aplica ✅
     - [x] Botón para cambiar plan (si es plan gratis) ✅
   - [x] Gráfico de ventas últimos 7 días ✅
+  - [x] Módulo Dashboard completado (por ahora): ✅
+    - [x] Etiquetas para abrir gráficos: Ventas, Compras, Categorías, Marcas, Clientes, Proveedores, Productos, Métodos de Pago, Horarios ✅
+    - [x] Gráfico de Ventas y Compras (barras verticales, colapsable, tabla ventas/compras, filtros por fecha y estado) ✅
+    - [x] Gráfico de Referencias (barras horizontales, colapsable, por categorías/marcas/clientes/proveedores/productos, filtro Todos/Debe) ✅
+    - [x] Análisis por Métodos de Pago (gráfico de torta, colapsable, ventas/compras, totales o con deudas) ✅
+    - [x] Ventas por horario (gráfico de línea 0–23 hs, colapsable, filtro fecha desde-hasta) ✅
+    - [x] Todos los gráficos ocultos por defecto; se abren al hacer clic en etiqueta o en el título ✅
 
 ### 1.3 Módulo de Productos (MVP)
 
@@ -1009,7 +1016,7 @@
 
 **Progreso Total**: 🟨 ~30% (Fase 0 ~85%, Fase 1 ~65%, Fase 2 ~15%, Fase 5 ~60%)
 
-**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación (incl. recuperación de contraseña, ícono ver contraseña), Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Landing con enlaces a Términos y Política de Privacidad. Cerrar sesión redirige a landing (navegador) o login (PWA). Dashboard con KPIs reales y gráfico ventas últimos 7 días. Pendientes: Testing MVP, Reportes
+**Estado Actual**: 🟡 Desarrollo - MVP Core completado: Autenticación (incl. recuperación de contraseña, ícono ver contraseña), Productos, Clientes, Proveedores, Categorías, Marcas, POS/Ventas (lista, creación, edición), Compras (completo con pagos e impresión), Ventas Rápidas y Gestión de Caja, Configuración, PWA con actualización automática. Landing con enlaces a Términos y Política de Privacidad. Cerrar sesión redirige a landing (navegador) o login (PWA). **Dashboard**: KPIs reales, etiquetas (Ventas, Compras, Categorías, Marcas, Clientes, Proveedores, Productos, Métodos de Pago, Horarios) que abren gráficos colapsables: Gráfico de Ventas y Compras (barras verticales), Gráfico de Referencias (barras horizontales), Análisis por Métodos de Pago (torta), Ventas por horario (línea 0–23 hs). Pendientes: Testing MVP, Reportes
 
 ### Fechas Importantes
 
@@ -1035,6 +1042,7 @@
 - 
 
 **Cambios/Actualizaciones**:
+- 26/01/2026: Módulo Dashboard completado: gráficos Ventas y Compras, Referencias, Métodos de Pago, Ventas por horario; etiquetas para abrir cada uno; todos colapsables y ocultos por defecto
 - 23/01/2026: Implementado módulo completo de Compras con pagos e impresión
 - 23/01/2026: Implementado módulo de Ventas Rápidas y Gestión de Caja
 - 23/01/2026: Mejorado Service Worker con actualización automática
@@ -1089,9 +1097,14 @@ Algunas tareas dependen de otras:
 
 ---
 
-**Última actualización del checklist**: 23/01/2026  
-**Versión del documento**: 1.1  
+**Última actualización del checklist**: 26/01/2026  
+**Versión del documento**: 1.2  
 **Próxima revisión**: _______________
+
+**Cambios recientes (26/01/2026)**:
+- ✅ Módulo Dashboard completado: Gráfico de Ventas y Compras (barras verticales), Gráfico de Referencias (barras horizontales), Análisis por Métodos de Pago (torta), Ventas por horario (línea 0–23 hs)
+- ✅ Etiquetas en dashboard para abrir cada gráfico: Ventas, Compras, Categorías, Marcas, Clientes, Proveedores, Productos, Métodos de Pago, Horarios
+- ✅ Todos los gráficos colapsables y ocultos por defecto
 
 **Cambios recientes (23/01/2026)**:
 - ✅ Módulo de Compras completo implementado (lista, crear, editar, recibir, pagos múltiples, impresión)

@@ -1,67 +1,85 @@
 // Contexto de Autenticación
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { getCurrentUser, getSession, onAuthStateChange } from '../services/auth'
+import { getSession, onAuthStateChange } from '../services/auth'
+import { getUsuario, syncUsuarioInvitado } from '../services/usuarios'
 
 const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
+  const [usuario, setUsuario] = useState(null)
   const [loading, setLoading] = useState(true)
   const mountedRef = useRef(false)
 
+  const loadUsuario = async () => {
+    const { data, error } = await getUsuario()
+    if (error || !data) return null
+    return data
+  }
+
   useEffect(() => {
     mountedRef.current = true
-    
-    // Obtener sesión inicial
-    getSession().then(({ session, error }) => {
+
+    const initSession = async (sess) => {
+      if (!sess) {
+        setUsuario(null)
+        return
+      }
+      let u = await loadUsuario()
+      if (!u && sess.user?.user_metadata?.comercio_id != null) {
+        await syncUsuarioInvitado()
+        u = await loadUsuario()
+      }
+      if (mountedRef.current) setUsuario(u)
+    }
+
+    getSession().then(({ session: sess, error }) => {
       if (mountedRef.current) {
-        if (session) {
-          setSession(session)
-          setUser(session.user)
+        if (sess) {
+          setSession(sess)
+          setUser(sess.user)
+          initSession(sess)
         } else if (error) {
-          // Solo loguear el error, no cerrar sesión si hay token guardado
           console.error('Error al obtener sesión:', error)
         }
         setLoading(false)
       }
     })
 
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = onAuthStateChange((event, session) => {
+    const { data: { subscription } } = onAuthStateChange(async (event, sess) => {
       if (!mountedRef.current) return
-      
-      // Solo cerrar sesión si es explícitamente un SIGNED_OUT
+
       if (event === 'SIGNED_OUT') {
         setSession(null)
         setUser(null)
+        setUsuario(null)
         setLoading(false)
-      } else if (session) {
-        // Si hay sesión, actualizar siempre
-        setSession(session)
-        setUser(session.user)
-        setLoading(false)
+      } else if (sess) {
+        setSession(sess)
+        setUser(sess.user)
+        await initSession(sess)
+        if (mountedRef.current) setLoading(false)
       } else {
-        // Para eventos sin sesión (pueden ser errores temporales),
-        // mantener el estado actual en lugar de cerrar sesión
-        // Supabase manejará el refresco automático del token
         setLoading(false)
       }
     })
 
     return () => {
       mountedRef.current = false
-      if (subscription) {
-        subscription.unsubscribe()
-      }
+      if (subscription) subscription.unsubscribe()
     }
   }, [])
+
+  const isAdmin = usuario?.rol_nombre === 'dueño'
 
   const value = {
     user,
     session,
+    usuario,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isAdmin,
   }
 
   return (

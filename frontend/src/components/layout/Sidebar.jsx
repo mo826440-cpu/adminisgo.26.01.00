@@ -1,10 +1,12 @@
 // Componente Sidebar de navegación
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuthContext } from '../../context/AuthContext'
 import './Sidebar.css'
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
+  const { isAdmin } = useAuthContext()
   const [referenciasOpen, setReferenciasOpen] = useState(true)
 
   const isActive = (path) => {
@@ -76,12 +78,14 @@ function Sidebar({ isOpen, onClose }) {
           )}
         </div>
 
-        <Link 
-          to="/usuarios" 
-          className={`sidebar-item ${isActive('/usuarios') ? 'active' : ''}`}
-        >
-          👥 Usuarios
-        </Link>
+        {isAdmin && (
+          <Link 
+            to="/usuarios" 
+            className={`sidebar-item ${isActive('/usuarios') ? 'active' : ''}`}
+          >
+            👥 Usuarios
+          </Link>
+        )}
 
         <Link 
           to="/compras" 

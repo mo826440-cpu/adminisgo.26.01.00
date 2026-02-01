@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext'
 import { DateTimeProvider } from './context/DateTimeContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
+import { AdminRoute } from './components/common'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -33,6 +34,8 @@ import VentaRapidaDetalle from './pages/ventas/VentaRapidaDetalle'
 import Configuracion from './pages/configuracion/Configuracion'
 import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
+import UsuariosList from './pages/usuarios/UsuariosList'
+import UsuarioForm from './pages/usuarios/UsuarioForm'
 import ComprasList from './pages/compras/ComprasList'
 import CompraForm from './pages/compras/CompraForm'
 import CompraDetalle from './pages/compras/CompraDetalle'
@@ -334,13 +337,23 @@ function App() {
             } 
           />
           
-          {/* Rutas en desarrollo */}
+          {/* Módulo Usuarios (solo admin/dueño) */}
           <Route 
             path="/usuarios" 
             element={
-              <ProtectedRoute>
-                <EnDesarrollo modulo="Módulo de Usuarios" />
-              </ProtectedRoute>
+              <AdminRoute>
+                <ErrorBoundary>
+                  <UsuariosList />
+                </ErrorBoundary>
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/usuarios/nuevo" 
+            element={
+              <AdminRoute>
+                <UsuarioForm />
+              </AdminRoute>
             } 
           />
           <Route 

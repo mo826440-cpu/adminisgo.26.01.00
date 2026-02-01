@@ -1,0 +1,71 @@
+/* Lista de usuarios del comercio */
+.usuarios-list-container .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.usuarios-list-container .page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.usuarios-list-container .table-controls {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.usuarios-list-container .table-info {
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+}
+
+.usuarios-list-container .table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px);
+  position: relative;
+}
+
+.usuarios-list-container .table.table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.usuarios-list-container .table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.usuarios-list-container .table thead {
+  background-color: var(--bg-secondary);
+}
+
+.usuarios-list-container .table th,
+.usuarios-list-container .table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.usuarios-list-container .table th {
+  font-weight: 600;
+  border-bottom-width: 2px;
+}
+
+.usuarios-list-container .table tbody tr:hover {
+  background-color: var(--bg-secondary);
+}

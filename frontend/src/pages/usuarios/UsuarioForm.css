@@ -1,0 +1,62 @@
+/* Formulario invitar usuario */
+.usuario-form-container .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.usuario-form-container .page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.usuario-form-container .page-header .text-secondary {
+  margin: 0.25rem 0 0;
+  max-width: 560px;
+}
+
+.usuario-form {
+  max-width: 640px;
+}
+
+.usuario-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .usuario-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.usuario-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.usuario-form .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.usuario-form .form-group .form-control {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.usuario-form .form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}

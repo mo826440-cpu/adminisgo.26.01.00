@@ -494,31 +494,30 @@
 ## 11. Dashboard y Analytics
 
 ### 11.1 Panel Principal (Dashboard)
+
+#### Implementado actualmente
 - **KPIs principales**: 
-  - Ventas del día/mes/año
-  - Ventas comparadas con período anterior
-  - Cantidad de ventas
-  - Ticket promedio
-  - Ganancia bruta
-  - Clientes nuevos
-  - Productos con stock bajo
-- **Gráficos**: 
-  - Ventas por día/semana/mes (línea)
-  - Productos más vendidos (barras)
-  - Métodos de pago (torta)
-  - Comparativa de períodos
-- **Actividad reciente**: 
-  - Últimas ventas
-  - Últimas compras
-  - Productos agregados recientemente
-- **Alertas y notificaciones**: 
+  - Ventas del día
+  - Productos en stock
+  - Clientes totales
   - Stock bajo
-  - Ventas pendientes
-  - Tareas pendientes
+- **Etiquetas para abrir gráficos**: Ventas, Compras, Categorías, Marcas, Clientes, Proveedores, Productos, Métodos de Pago, Horarios (al hacer clic se abre el gráfico correspondiente con la opción por defecto).
+- **Gráficos** (todos colapsables y ocultos por defecto; se abren al hacer clic en el título o en la etiqueta):
+  - **Gráfico de Ventas y Compras**: Barras verticales. Tabla a analizar: Registro de ventas / Registro de compras. Filtros por fecha, eje X (Fecha/Estado), eje Y ($ Total, Cantidad, Unidades), filtros por categoría, marca, producto, cliente/proveedor, método de pago.
+  - **Gráfico de Referencias**: Barras horizontales. Referencia: Categorías, Marcas, Clientes, Proveedores, Productos. Para Cliente/Proveedor: filtro Todos (barras $ Total) o Debe (barras $ Deuda). Filtro por fecha. Rango eje X.
+  - **Análisis por Métodos de Pago**: Gráfico de torta. Tabla: Ventas o Compras. Opciones: totales ($ Total por método) o con deudas ($ Debe + slice Deuda). Filtro por fecha (por defecto últimos 7 días).
+  - **Ventas por horario**: Gráfico de línea (0–23 hs). Muestra $ Total y cantidad de operaciones por hora. Filtro desde-hasta (por defecto últimos 7 días).
+- **Visualización de plan actual**: Badge con plan, Card "Tu Plan Actual", límites, período gratis, botón para cambiar plan (si es gratis).
+
+#### Pendiente / roadmap
+- **KPIs ampliados**: Ventas del mes/año, comparativa con período anterior, ticket promedio, ganancia bruta, clientes nuevos.
+- **Gráficos adicionales**: Top productos más vendidos, comparativa mes a mes.
+- **Actividad reciente**: Últimas ventas, últimas compras, productos agregados.
+- **Alertas**: Stock bajo, ventas pendientes, tareas pendientes.
 
 ### 11.2 Filtros del Dashboard
-- **Rango de fechas**: Hoy, esta semana, este mes, personalizado
-- **Cambiar período**: Comparar con período anterior
+- **Rango de fechas**: En cada gráfico: desde-hasta (por defecto últimos 7 días donde aplica).
+- **Cambiar período**: Comparar con período anterior (pendiente).
 
 ### 11.3 Analytics Avanzados (Planes Pro/Premium)
 - **Predicciones**: Ventas proyectadas

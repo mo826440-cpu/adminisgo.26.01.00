@@ -559,7 +559,17 @@ Crear una solución única, moderna y accesible que permita a los dueños de com
 
 ### 4.10 Dashboard y Analytics
 
-#### Panel Principal (Dashboard)
+#### Implementado actualmente (módulo Dashboard)
+- **KPIs principales**: Ventas del día, Productos en stock, Clientes totales, Stock bajo.
+- **Etiquetas para abrir gráficos**: Ventas, Compras, Categorías, Marcas, Clientes, Proveedores, Productos, Métodos de Pago, Horarios (al hacer clic se abre el gráfico correspondiente).
+- **Gráficos** (colapsables, ocultos por defecto):
+  - **Gráfico de Ventas y Compras**: Barras verticales; tabla ventas/compras; filtros por fecha, eje X (Fecha/Estado), eje Y ($ Total, Cantidad, Unidades).
+  - **Gráfico de Referencias**: Barras horizontales; por categorías, marcas, clientes, proveedores o productos; filtro Todos/Debe para cliente/proveedor; filtro por fecha.
+  - **Análisis por Métodos de Pago**: Gráfico de torta; ventas o compras; totales o con deudas; filtro por fecha (últimos 7 días por defecto).
+  - **Ventas por horario**: Gráfico de línea (0–23 hs); $ Total y operaciones por hora; filtro desde-hasta (últimos 7 días por defecto).
+- **Plan actual**: Badge, Card "Tu Plan Actual", límites, período gratis, botón cambiar plan.
+
+#### Panel Principal (Dashboard) – roadmap
 - **KPIs principales** (cards grandes):
   - Ventas del día/mes/año
   - Ventas comparadas con período anterior (% de cambio)
@@ -570,10 +580,9 @@ Crear una solución única, moderna y accesible que permita a los dueños de com
   - Productos con stock bajo
   - Valor del inventario
 
-- **Gráficos**:
-  - Ventas por día/semana/mes (gráfico de línea)
+- **Gráficos adicionales** (pendientes):
+  - Ventas por día/semana/mes (gráfico de línea ampliado)
   - Productos más vendidos (gráfico de barras)
-  - Métodos de pago (gráfico de torta)
   - Comparativa de períodos (gráfico combinado)
   - Tendencias de ventas
 
