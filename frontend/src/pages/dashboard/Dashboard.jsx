@@ -78,6 +78,13 @@ function Dashboard() {
   const [chartDataPie, setChartDataPie] = useState([]) // [{ label, value }]
   const [loadingChartPie, setLoadingChartPie] = useState(false)
 
+  // Gráfico de línea: Ventas por horario (0–23 hs)
+  const [horariosChartCollapsed, setHorariosChartCollapsed] = useState(true)
+  const [fechaDesdeHorarios, setFechaDesdeHorarios] = useState(() => getDefaultRango7Dias().desde)
+  const [fechaHastaHorarios, setFechaHastaHorarios] = useState(() => getDefaultRango7Dias().hasta)
+  const [chartDataHorarios, setChartDataHorarios] = useState([]) // [{ hour, label, total, cantidad }] 24 items
+  const [loadingChartHorarios, setLoadingChartHorarios] = useState(false)
+
   // Estado del gráfico (valores por defecto según pedido)
   const [tabla, setTabla] = useState('ventas')
   const [fechaDesde, setFechaDesde] = useState(() => getDefaultRango().desde)
@@ -706,6 +713,38 @@ function Dashboard() {
     if (!loading && user) cargarGraficoPie()
   }, [user, loading, cargarGraficoPie])
 
+  // Cargar datos del gráfico de línea (ventas por horario 0–23 hs)
+  const cargarGraficoHorarios = useCallback(async () => {
+    if (!user) return
+    setLoadingChartHorarios(true)
+    try {
+      const desde = new Date(fechaDesdeHorarios)
+      const hasta = new Date(fechaHastaHorarios)
+      desde.setHours(0, 0, 0, 0)
+      hasta.setHours(23, 59, 59, 999)
+      const { data: lista } = await getVentasPorRangoFechas(desde, hasta)
+      const ventas = lista || []
+      const slots = Array.from({ length: 24 }, (_, h) => ({ hour: h, label: `${h} hs`, total: 0, cantidad: 0 }))
+      ventas.forEach((v) => {
+        const hora = new Date(v.fecha_hora).getHours()
+        if (hora >= 0 && hora < 24) {
+          slots[hora].total += parseFloat(v.total) || 0
+          slots[hora].cantidad += 1
+        }
+      })
+      setChartDataHorarios(slots)
+    } catch (err) {
+      console.error('Error al cargar gráfico por horarios:', err)
+      setChartDataHorarios(Array.from({ length: 24 }, (_, h) => ({ hour: h, label: `${h} hs`, total: 0, cantidad: 0 })))
+    } finally {
+      setLoadingChartHorarios(false)
+    }
+  }, [user, fechaDesdeHorarios, fechaHastaHorarios])
+
+  useEffect(() => {
+    if (!loading && user) cargarGraficoHorarios()
+  }, [user, loading, cargarGraficoHorarios])
+
   const handleAplicarFiltro = (e) => {
     e?.preventDefault()
     cargarGrafico()
@@ -721,12 +760,18 @@ function Dashboard() {
     cargarGraficoPie()
   }
 
+  const handleAplicarHorarios = (e) => {
+    e?.preventDefault()
+    cargarGraficoHorarios()
+  }
+
   // Abrir gráfico vertical (Ventas y Compras) con tabla seleccionada
   const openGraficoVentasCompras = (tablaValor) => {
     setTabla(tablaValor)
     setVerticalChartCollapsed(false)
     setHorizontalChartCollapsed(true)
     setPieChartCollapsed(true)
+    setHorariosChartCollapsed(true)
   }
 
   // Abrir gráfico horizontal (Referencias) con referencia seleccionada
@@ -735,6 +780,7 @@ function Dashboard() {
     setVerticalChartCollapsed(true)
     setHorizontalChartCollapsed(false)
     setPieChartCollapsed(true)
+    setHorariosChartCollapsed(true)
   }
 
   // Abrir gráfico de torta (Métodos de Pago)
@@ -742,6 +788,15 @@ function Dashboard() {
     setVerticalChartCollapsed(true)
     setHorizontalChartCollapsed(true)
     setPieChartCollapsed(false)
+    setHorariosChartCollapsed(true)
+  }
+
+  // Abrir gráfico de línea (Ventas por horario)
+  const openGraficoHorarios = () => {
+    setVerticalChartCollapsed(true)
+    setHorizontalChartCollapsed(true)
+    setPieChartCollapsed(true)
+    setHorariosChartCollapsed(false)
   }
 
   const LABEL_OPTIONS_REF = [
@@ -897,6 +952,9 @@ function Dashboard() {
           </button>
           <button type="button" className="dashboard-chart-link" onClick={openGraficoMetodosPago}>
             Métodos de Pago
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={openGraficoHorarios}>
+            Horarios
           </button>
         </div>
 
@@ -1340,6 +1398,141 @@ function Dashboard() {
             </div>
           )}
         </Card>
+          )}
+        </div>
+
+        {/* Gráfico de línea: Ventas por horario (colapsable) */}
+        <div className="dashboard-chart-vertical-wrapper">
+          <button
+            type="button"
+            className="dashboard-chart-toggle"
+            onClick={() => setHorariosChartCollapsed((c) => !c)}
+            aria-expanded={!horariosChartCollapsed}
+          >
+            <span className="dashboard-chart-toggle-title">Ventas por horario</span>
+            <span className="dashboard-chart-toggle-icon" aria-hidden>{horariosChartCollapsed ? '▶' : '▼'}</span>
+          </button>
+          {!horariosChartCollapsed && (
+            <Card className="dashboard-card dashboard-chart-card">
+              <div className="chart-config">
+                <div className="chart-config-row chart-config-fechas">
+                  <div>
+                    <label className="chart-config-label">Desde:</label>
+                    <input
+                      type="date"
+                      value={fechaDesdeHorarios}
+                      onChange={(e) => setFechaDesdeHorarios(e.target.value)}
+                      className="chart-config-date"
+                      aria-label="Fecha desde"
+                    />
+                  </div>
+                  <div>
+                    <label className="chart-config-label">Hasta:</label>
+                    <input
+                      type="date"
+                      value={fechaHastaHorarios}
+                      onChange={(e) => setFechaHastaHorarios(e.target.value)}
+                      className="chart-config-date"
+                      aria-label="Fecha hasta"
+                    />
+                  </div>
+                </div>
+                <div className="chart-config-row">
+                  <Button type="button" variant="primary" size="sm" onClick={handleAplicarHorarios}>
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+
+              {loadingChartHorarios ? (
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                  <Spinner size="md" />
+                </div>
+              ) : (
+                <div className="chart-line-horarios-wrap">
+                  <p className="chart-line-horarios-desc">
+                    Ventas por hora (0–23 hs) en el rango {fechaDesdeHorarios} — {fechaHastaHorarios}. Cada punto: $ Total y cantidad de operaciones.
+                  </p>
+                  <div className="chart-line-horarios-svg-wrap">
+                    {(() => {
+                      const data = chartDataHorarios
+                      const maxTotal = Math.max(1, ...data.map((d) => d.total || 0))
+                      const padLeft = 48
+                      const padRight = 24
+                      const padTop = 28
+                      const padBottom = 44
+                      const w = 800
+                      const h = 240
+                      const chartW = w - padLeft - padRight
+                      const chartH = h - padTop - padBottom
+                      const x = (hour) => padLeft + (hour / 23) * chartW
+                      const y = (total) => padTop + chartH - (total / maxTotal) * chartH
+                      const pointsLine = data.map((d) => `${x(d.hour)},${y(d.total || 0)}`).join(' ')
+                      const pointsPoly = `${padLeft},${padTop + chartH} ${pointsLine} ${padLeft + chartW},${padTop + chartH}`
+                      return (
+                        <svg className="chart-line-horarios-svg" viewBox={`0 0 ${w} ${h}`} aria-hidden>
+                          <defs>
+                            <linearGradient id="chart-line-horarios-gradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          {/* Área bajo la línea */}
+                          <polygon
+                            fill="url(#chart-line-horarios-gradient)"
+                            points={pointsPoly}
+                          />
+                          {/* Línea */}
+                          <polyline
+                            fill="none"
+                            stroke="var(--color-primary)"
+                            strokeWidth="2"
+                            points={pointsLine}
+                          />
+                          {/* Puntos y etiquetas hora */}
+                          {data.map((d) => (
+                            <g key={d.hour}>
+                              <circle
+                                cx={x(d.hour)}
+                                cy={y(d.total || 0)}
+                                r="4"
+                                fill="var(--color-primary)"
+                                className="chart-line-horarios-point"
+                              />
+                              <text
+                                x={x(d.hour)}
+                                y={h - 8}
+                                textAnchor="middle"
+                                className="chart-line-horarios-x-label"
+                              >
+                                {d.hour} hs
+                              </text>
+                              <title>
+                                {d.label}: {formatearMoneda(d.total)} — {d.cantidad || 0} operaciones
+                              </title>
+                            </g>
+                          ))}
+                        </svg>
+                      )
+                    })()}
+                  </div>
+                  <ul className="chart-line-horarios-legend">
+                    {chartDataHorarios
+                      .filter((d) => (d.total || 0) > 0)
+                      .map((d) => (
+                        <li key={d.hour} className="chart-line-horarios-legend-item">
+                          <span className="chart-line-horarios-legend-hour">{d.label}</span>
+                          <span className="chart-line-horarios-legend-total">{formatearMoneda(d.total)}</span>
+                          <span className="chart-line-horarios-legend-cantidad">{d.cantidad || 0} operaciones</span>
+                        </li>
+                      ))}
+                  </ul>
+                  {chartDataHorarios.every((d) => !(d.total > 0)) && (
+                    <p className="chart-line-horarios-empty">No hay ventas en el rango de fechas seleccionado.</p>
+                  )}
+                </div>
+              )}
+            </Card>
           )}
         </div>
 

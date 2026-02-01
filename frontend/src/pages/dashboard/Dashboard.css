@@ -381,6 +381,76 @@
   color: var(--text-secondary);
 }
 
+/* Gráfico de línea: Ventas por horario (0–23 hs) */
+.chart-line-horarios-wrap {
+  padding: 1rem 0;
+  min-height: 200px;
+}
+
+.chart-line-horarios-desc {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.chart-line-horarios-svg-wrap {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 1rem;
+}
+
+.chart-line-horarios-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-line-horarios-svg .chart-line-horarios-point {
+  cursor: pointer;
+}
+
+.chart-line-horarios-svg .chart-line-horarios-x-label {
+  font-size: 10px;
+  fill: var(--text-secondary);
+}
+
+.chart-line-horarios-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  font-size: var(--font-size-small);
+}
+
+.chart-line-horarios-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-line-horarios-legend-hour {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  min-width: 3rem;
+}
+
+.chart-line-horarios-legend-total {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.chart-line-horarios-legend-cantidad {
+  color: var(--text-secondary);
+}
+
+.chart-line-horarios-empty {
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+}
+
 /* Gráfico de torta: Análisis por Métodos de Pago */
 .chart-pie-wrap {
   display: flex;
