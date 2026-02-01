@@ -1,25 +1,62 @@
 # Eliminar cuenta y CORS
 
+## 0. "No veo ninguna función cargada" en Supabase
+
+Si en **Supabase Dashboard** → **Edge Functions** no aparece ninguna función, **ninguna está desplegada**. La app llama a la URL pero no hay función en el proyecto, por eso falla (404 / CORS). Hay que desplegar desde tu PC con la **Supabase CLI**.
+
+### Desplegar por primera vez (paso a paso)
+
+**No hace falta instalar Supabase CLI.** Se usa con `npx` desde la raíz del proyecto (tenés que tener Node.js instalado).
+
+1. **Abrir PowerShell** y ir a la **raíz del proyecto** (donde está la carpeta `supabase`):
+   ```powershell
+   cd c:\adminisgo.26.01.00
+   ```
+
+2. **Iniciar sesión en Supabase** (se abrirá el navegador):
+   ```powershell
+   npx supabase login
+   ```
+
+3. **Vincular el proyecto** (Reference ID: `luaxxiedrxexrpeludyo`):
+   ```powershell
+   npx supabase link --project-ref luaxxiedrxexrpeludyo
+   ```
+   Si pide contraseña de la base de datos: Dashboard → **Project Settings** → **Database** → **Database password**.
+
+4. **Desplegar la función**:
+   ```powershell
+   npx supabase functions deploy eliminar-cuenta-comercio
+   ```
+
+5. **Comprobar**: En Supabase Dashboard → **Edge Functions** debería aparecer **eliminar-cuenta-comercio**.
+
+6. **Opcional – otras funciones**:
+   ```powershell
+   npx supabase functions deploy create-comercio-user
+   npx supabase functions deploy sync-usuario-invite
+   ```
+
+### Nota sobre la instalación
+
+- **No usar** `npm install -g supabase`: Supabase ya no permite instalar la CLI como módulo global.
+- Usar siempre **`npx supabase`** desde la carpeta del proyecto (donde está la carpeta `supabase`).
+- Si no tenés Node.js: instalalo desde https://nodejs.org (LTS).
+
+---
+
 ## 1. Error "Failed to fetch" al eliminar cuenta (CORS)
 
-El mensaje **"Response to preflight request doesn't pass access control check: It does not have HTTP ok status"** significa que la petición OPTIONS a la Edge Function no está devolviendo un 200. Hay que **desplegar de nuevo** la función y, si hace falta, revisar configuración en Supabase.
+El mensaje **"Response to preflight request doesn't pass access control check: It does not have HTTP ok status"** puede ser porque (1) la función no está desplegada (ver sección 0) o (2) el preflight OPTIONS no devuelve 200 (ver abajo).
 
 ### Pasos obligatorios
 
-1. **Configurar `verify_jwt = false` para esta función**  
-   En `supabase/config.toml` está definido `[functions.eliminar-cuenta-comercio]` con `verify_jwt = false`. Así el gateway **no** exige JWT en la petición OPTIONS (preflight); si no, OPTIONS devuelve 401 y el navegador bloquea por CORS. La función sigue comprobando el JWT y el rol (dueño) dentro del código.
+1. **Confirmar que la función está desplegada**: En Supabase Dashboard → **Edge Functions** tiene que aparecer **eliminar-cuenta-comercio**. Si no está, seguí la sección 0.
 
-2. **Volver a desplegar la función** (desde la raíz del proyecto, con Supabase CLI):
+2. **Configurar `verify_jwt = false`**  
+   En `supabase/config.toml` está definido `[functions.eliminar-cuenta-comercio]` con `verify_jwt = false`. Así el gateway no exige JWT en OPTIONS. Después de tocar `config.toml`, volvé a desplegar: `supabase functions deploy eliminar-cuenta-comercio`.
 
-   ```bash
-   supabase login
-   supabase link --project-ref luaxxiedrxexrpeludyo
-   supabase functions deploy eliminar-cuenta-comercio
-   ```
-
-3. **Comprobar que la función existe**: En Supabase Dashboard → **Edge Functions** → debe aparecer `eliminar-cuenta-comercio`. Si no está, el preflight puede dar 404.
-
-4. **Probar la función**: En Edge Functions → `eliminar-cuenta-comercio` → pestaña "Logs". Desde la app, intentá "Eliminar cuenta" y revisá si aparecen peticiones (OPTIONS y POST) y si hay errores.
+3. **Comprobar en Logs**: En Edge Functions → `eliminar-cuenta-comercio` → pestaña "Logs". Intentá "Eliminar cuenta" en la app y revisá si aparecen peticiones (OPTIONS y POST) y si hay errores.
 
 ### Si después de desplegar sigue el CORS
 
