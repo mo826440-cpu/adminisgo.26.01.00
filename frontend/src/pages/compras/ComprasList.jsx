@@ -31,23 +31,23 @@ function ComprasList() {
     setTextoBotonFiltros(showActions ? 'Ocultar filtros' : 'Mostrar filtros')
   }, [showActions])
   
-  // Estados de filtros
-  // Inicializar con mes actual por defecto
-  const getInicioMes = () => {
+  // Estados de filtros (por defecto: últimos 90 días, igual que ventas)
+  const getDefaultFechaDesde = () => {
     const ahora = new Date()
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    return inicioMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+    const desde = new Date(ahora)
+    desde.setDate(desde.getDate() - 90)
+    return desde.toISOString().split('T')[0]
   }
-  const getFinMes = () => {
+  const getDefaultFechaHasta = () => {
     const ahora = new Date()
-    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
-    return finMes.toISOString().split('T')[0] // formato YYYY-MM-DD
+    return ahora.toISOString().split('T')[0]
   }
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getInicioMes())
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getFinMes())
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde())
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta())
   const [filtroBusqueda, setFiltroBusqueda] = useState('')
   const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('proveedor') // proveedor, numero_orden
-  const [filtroEstado, setFiltroEstado] = useState('todas') // todas, pendiente, recibida, cancelada
+  const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
+  const [filtroEstado, setFiltroEstado] = useState('todas') // todas, pendiente, recibida, cancelada (RECIBO)
 
   useEffect(() => {
     loadCompras()
@@ -76,14 +76,15 @@ function ComprasList() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstado])
+  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago, filtroEstado])
 
   // Función para limpiar todos los filtros y volver a valores por defecto
   const limpiarFiltros = () => {
-    setFiltroFechaDesde(getInicioMes())
-    setFiltroFechaHasta(getFinMes())
+    setFiltroFechaDesde(getDefaultFechaDesde())
+    setFiltroFechaHasta(getDefaultFechaHasta())
     setFiltroBusqueda('')
     setTipoFiltroBusqueda('proveedor')
+    setFiltroEstadoPago('todas')
     setFiltroEstado('todas')
   }
 
@@ -135,25 +136,48 @@ function ComprasList() {
     })
   }, [filtroBusqueda, tipoFiltroBusqueda])
 
-  // Filtrar compras por estado
+  // Filtrar compras por estado de pago (pagado / debe)
+  const filtrarPorEstadoPago = useCallback((compras) => {
+    if (filtroEstadoPago === 'todas') return compras
+    
+    return compras.filter(compra => {
+      const montoPagado = parseFloat(compra.monto_pagado || 0)
+      const total = parseFloat(compra.total || 0)
+      const tieneDeuda = total - montoPagado > 0.01
+      if (filtroEstadoPago === 'pagadas') return !tieneDeuda
+      if (filtroEstadoPago === 'con_deuda') return tieneDeuda
+      return true
+    })
+  }, [filtroEstadoPago])
+
+  // Filtrar compras por estado de recibo (recibida / pendiente)
   const filtrarPorEstado = useCallback((compras) => {
     if (filtroEstado === 'todas') return compras
-    
     return compras.filter(compra => compra.estado === filtroEstado)
   }, [filtroEstado])
 
   // Aplicar todos los filtros
   const filteredCompras = filtrarPorEstado(
-    filtrarPorBusqueda(
-      filtrarPorFecha(compras)
+    filtrarPorEstadoPago(
+      filtrarPorBusqueda(
+        filtrarPorFecha(compras)
+      )
     )
   )
 
-  // Calcular indicadores
+  // Calcular indicadores (similares a ventas: totales, pagadas, con deuda)
   const indicadores = {
     totales: filteredCompras.length,
-    pendientes: filteredCompras.filter(c => c.estado === 'pendiente').length,
-    recibidas: filteredCompras.filter(c => c.estado === 'recibida').length
+    pagadas: filteredCompras.filter(c => {
+      const montoPagado = parseFloat(c.monto_pagado || 0)
+      const total = parseFloat(c.total || 0)
+      return total - montoPagado <= 0.01
+    }).length,
+    conDeuda: filteredCompras.filter(c => {
+      const montoPagado = parseFloat(c.monto_pagado || 0)
+      const total = parseFloat(c.total || 0)
+      return total - montoPagado > 0.01
+    }).length
   }
 
   // Calcular paginación
@@ -255,12 +279,12 @@ function ComprasList() {
               <div className="indicador-valor">{indicadores.totales}</div>
             </Card>
             <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº COMPRAS PENDIENTES</div>
-              <div className="indicador-valor">{indicadores.pendientes}</div>
+              <div className="indicador-label">Nº COMPRAS PAGAS</div>
+              <div className="indicador-valor">{indicadores.pagadas}</div>
             </Card>
             <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº COMPRAS RECIBIDAS</div>
-              <div className="indicador-valor">{indicadores.recibidas}</div>
+              <div className="indicador-label">Nº COMPRAS CON DEUDA</div>
+              <div className="indicador-valor">{indicadores.conDeuda}</div>
             </Card>
           </div>
         </div>
@@ -347,17 +371,30 @@ function ComprasList() {
                   />
                 </div>
                 
-                <div className="filtro-estado">
+                <div className="filtro-estado-pago">
                   <label>FILTRO DE REGISTROS POR:</label>
+                  <select 
+                    value={filtroEstadoPago} 
+                    onChange={(e) => setFiltroEstadoPago(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="todas">TODAS LAS COMPRAS</option>
+                    <option value="pagadas">COMPRAS PAGAS</option>
+                    <option value="con_deuda">COMPRAS QUE FALTAN PAGAR</option>
+                  </select>
+                </div>
+                
+                <div className="filtro-estado">
+                  <label>FILTRO POR RECIBO:</label>
                   <select 
                     value={filtroEstado} 
                     onChange={(e) => setFiltroEstado(e.target.value)}
                     className="form-control"
                   >
-                    <option value="todas">TODAS LAS COMPRAS</option>
-                    <option value="pendiente">COMPRAS PENDIENTES</option>
-                    <option value="recibida">COMPRAS RECIBIDAS</option>
-                    <option value="cancelada">COMPRAS CANCELADAS</option>
+                    <option value="todas">TODOS</option>
+                    <option value="pendiente">PENDIENTE</option>
+                    <option value="recibida">RECIBIDA</option>
+                    <option value="cancelada">CANCELADA</option>
                   </select>
                 </div>
               </div>
@@ -400,44 +437,42 @@ function ComprasList() {
                 <table className="table table-sticky-header">
                   <thead>
                     <tr>
-                      <th>FECHA ORDEN</th>
-                      <th className="hide-mobile">Nº ORDEN</th>
+                      <th>FECHA</th>
+                      <th className="hide-mobile">FACTURACIÓN / Nº ORDEN</th>
                       <th>PROVEEDOR</th>
                       <th className="hide-mobile">UNIDADES</th>
                       <th className="hide-mobile">$TOTAL</th>
+                      <th className="hide-mobile">$PAGADO</th>
+                      <th className="hide-mobile">$DEUDA</th>
                       <th>ESTADO</th>
-                      <th>PAGO</th>
+                      <th>RECIBO</th>
                       <th>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedCompras.map((compra) => {
+                      const montoPagado = parseFloat(compra.monto_pagado || 0)
+                      const total = parseFloat(compra.total || 0)
+                      const deuda = compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - montoPagado)
+                      const estadoPago = total <= 0 || montoPagado >= total ? 'pagado' : 'debe'
                       return (
                         <tr key={compra.id}>
                           <td>{formatearFecha(compra.fecha_orden)}</td>
                           <td className="hide-mobile">{compra.numero_orden || '-'}</td>
                           <td>{compra.proveedores?.nombre_razon_social || '-'}</td>
-                          <td className="hide-mobile">{compra.unidades_totales || 0}</td>
+                          <td className="hide-mobile">{compra.unidades_totales ?? 0}</td>
                           <td className="hide-mobile">{formatearMoneda(compra.total)}</td>
+                          <td className="hide-mobile">{formatearMoneda(compra.monto_pagado)}</td>
+                          <td className="hide-mobile">{formatearMoneda(deuda)}</td>
+                          <td>
+                            <Badge variant={estadoPago === 'pagado' ? 'success' : 'warning'}>
+                              {estadoPago === 'pagado' ? 'Pagado' : 'Debe'}
+                            </Badge>
+                          </td>
                           <td>
                             <Badge variant={obtenerVariantEstado(compra.estado)}>
                               {obtenerTextoEstado(compra.estado)}
                             </Badge>
-                          </td>
-                          <td>
-                            {(() => {
-                              const montoPagado = parseFloat(compra.monto_pagado || 0)
-                              const total = parseFloat(compra.total || 0)
-                              const deuda = total - montoPagado
-                              
-                              if (montoPagado >= total) {
-                                return <Badge variant="success">Pagado</Badge>
-                              } else if (montoPagado > 0) {
-                                return <Badge variant="warning">Deuda: {formatearMoneda(deuda)}</Badge>
-                              } else {
-                                return <Badge variant="danger">Sin pago</Badge>
-                              }
-                            })()}
                           </td>
                           <td>
                             <div className="table-actions">
