@@ -316,24 +316,25 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* Configuraciones (solo admin/dueño) */}
           <Route 
             path="/configuraciones" 
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <ErrorBoundary>
                   <Configuracion />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </AdminRoute>
             } 
           />
           <Route 
             path="/configuracion/cambiar-plan" 
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <ErrorBoundary>
                   <CambiarPlan />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </AdminRoute>
             } 
           />
           

@@ -113,3 +113,35 @@
   }
 }
 
+/* Sección eliminar cuenta */
+.config-section-danger .card-header,
+.config-section-danger .card-title {
+  color: var(--color-danger);
+}
+
+.eliminar-cuenta-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.eliminar-cuenta-section p {
+  margin: 0;
+}
+
+.eliminar-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.eliminar-checkbox input[type="checkbox"] {
+  margin-top: 0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-danger);
+}
+

@@ -115,12 +115,14 @@ function Sidebar({ isOpen, onClose }) {
           📈 Reportes
         </Link>
 
-        <Link 
-          to="/configuraciones" 
-          className={`sidebar-item ${isActive('/configuraciones') ? 'active' : ''}`}
-        >
-          ⚙️ Configuraciones
-        </Link>
+        {isAdmin && (
+          <Link 
+            to="/configuraciones" 
+            className={`sidebar-item ${isActive('/configuraciones') ? 'active' : ''}`}
+          >
+            ⚙️ Configuraciones
+          </Link>
+        )}
 
         <Link 
           to="/mantenimiento" 

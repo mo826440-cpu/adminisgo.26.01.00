@@ -141,6 +141,39 @@ export const syncUsuarioInvitado = async () => {
 }
 
 /**
+ * Eliminar cuenta del comercio (solo dueño).
+ * Elimina todos los usuarios del comercio en Auth y luego el comercio (CASCADE borra el resto).
+ * Llamar desde Configuraciones; después hacer signOut y redirigir.
+ */
+export const eliminarCuentaComercio = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error('Debes iniciar sesión')
+    }
+
+    const url = `${import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')}/functions/v1/eliminar-cuenta-comercio`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({}),
+    })
+
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(json?.error || `Error ${res.status}`)
+    }
+    return { data: json, error: null }
+  } catch (error) {
+    console.error('Error al eliminar cuenta:', error)
+    return { data: null, error }
+  }
+}
+
+/**
  * Actualizar información del usuario actual
  */
 export const updateUsuario = async (datosUsuario) => {

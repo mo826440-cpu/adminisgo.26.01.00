@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
 import { getComercio, updateComercio } from '../../services/comercio'
-import { getUsuario, updateUsuario } from '../../services/usuarios'
-import { updatePassword } from '../../services/auth'
+import { getUsuario, updateUsuario, eliminarCuentaComercio } from '../../services/usuarios'
+import { updatePassword, signOut } from '../../services/auth'
 import { getEstadoSuscripcion } from '../../services/planes'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
@@ -55,6 +55,12 @@ function Configuracion() {
   // Estado de suscripción (Tu plan actual)
   const [suscripcion, setSuscripcion] = useState(null)
   const [loadingSuscripcion, setLoadingSuscripcion] = useState(true)
+
+  // Eliminar cuenta (solo admin)
+  const [eliminarAceptado, setEliminarAceptado] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
+  const [showEliminarModal, setShowEliminarModal] = useState(false)
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -259,6 +265,26 @@ function Configuracion() {
   const handleFormatoImpresionChange = (newFormato) => {
     setFormatoImpresion(newFormato)
     localStorage.setItem('formatoImpresion', newFormato)
+  }
+
+  const handleEliminarCuenta = async () => {
+    if (!eliminarAceptado) {
+      setError('Debés aceptar que se eliminarán todos los datos y tu cuenta de forma permanente.')
+      return
+    }
+    setEliminando(true)
+    setError(null)
+    try {
+      const { error: err } = await eliminarCuentaComercio()
+      if (err) throw err
+      await signOut()
+      navigate('/', { replace: true })
+      window.location.reload()
+    } catch (err) {
+      setError(err?.message || 'Error al eliminar la cuenta')
+    } finally {
+      setEliminando(false)
+    }
   }
 
   if (loading) {
@@ -562,7 +588,68 @@ function Configuracion() {
             </div>
           </div>
         </Card>
+
+        {/* Eliminar cuenta (solo dueño) */}
+        <Card title="Eliminar cuenta" className="config-section config-section-danger">
+          <div className="eliminar-cuenta-section">
+            <p className="text-secondary">
+              Esta acción es <strong>irreversible</strong>. Se eliminarán todos los datos del comercio (productos, ventas, compras, clientes, proveedores, etc.) y todas las cuentas de usuarios asociadas a este comercio, incluyendo la tuya.
+            </p>
+            <label className="eliminar-checkbox">
+              <input
+                type="checkbox"
+                checked={eliminarAceptado}
+                onChange={(e) => setEliminarAceptado(e.target.checked)}
+              />
+              <span>Acepto que se eliminarán todos los datos del comercio y mi cuenta de forma permanente.</span>
+            </label>
+            <div className="form-actions">
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setShowEliminarModal(true)}
+                disabled={!eliminarAceptado || eliminando}
+                loading={eliminando}
+              >
+                Eliminar cuenta
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {/* Modal de confirmación eliminar cuenta */}
+      <Modal
+        isOpen={showEliminarModal}
+        onClose={() => setShowEliminarModal(false)}
+        title="¿Eliminar cuenta?"
+        closeOnOverlayClick={!eliminando}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowEliminarModal(false)}
+              disabled={eliminando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                setShowEliminarModal(false)
+                await handleEliminarCuenta()
+              }}
+              loading={eliminando}
+              disabled={eliminando}
+            >
+              Sí, eliminar todo
+            </Button>
+          </>
+        }
+      >
+        <p>Se eliminarán todos los datos del comercio y todas las cuentas asociadas. No podés deshacer esta acción.</p>
+        <p><strong>¿Estás seguro?</strong></p>
+      </Modal>
 
       {/* Modal de Cambio de Contraseña */}
       <Modal
