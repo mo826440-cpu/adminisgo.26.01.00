@@ -1,0 +1,8 @@
+# Configuración del proyecto Supabase (Edge Functions, etc.)
+# Ver: https://supabase.com/docs/guides/functions/function-configuration
+
+# Sin verificación JWT en el gateway para esta función.
+# El preflight OPTIONS no envía Authorization; si el gateway exige JWT, devuelve 401 y falla CORS.
+# Esta función verifica el JWT y el rol (dueño) dentro del código, así que es seguro.
+[functions.eliminar-cuenta-comercio]
+verify_jwt = false

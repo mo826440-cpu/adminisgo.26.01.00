@@ -6,7 +6,10 @@ El mensaje **"Response to preflight request doesn't pass access control check: I
 
 ### Pasos obligatorios
 
-1. **Volver a desplegar la función** (desde la carpeta del proyecto, con Supabase CLI):
+1. **Configurar `verify_jwt = false` para esta función**  
+   En `supabase/config.toml` está definido `[functions.eliminar-cuenta-comercio]` con `verify_jwt = false`. Así el gateway **no** exige JWT en la petición OPTIONS (preflight); si no, OPTIONS devuelve 401 y el navegador bloquea por CORS. La función sigue comprobando el JWT y el rol (dueño) dentro del código.
+
+2. **Volver a desplegar la función** (desde la raíz del proyecto, con Supabase CLI):
 
    ```bash
    supabase login
@@ -14,9 +17,9 @@ El mensaje **"Response to preflight request doesn't pass access control check: I
    supabase functions deploy eliminar-cuenta-comercio
    ```
 
-2. **Comprobar que la función existe**: En Supabase Dashboard → **Edge Functions** → debe aparecer `eliminar-cuenta-comercio`. Si no está, el preflight puede dar 404.
+3. **Comprobar que la función existe**: En Supabase Dashboard → **Edge Functions** → debe aparecer `eliminar-cuenta-comercio`. Si no está, el preflight puede dar 404.
 
-3. **Probar la función**: En Edge Functions → `eliminar-cuenta-comercio` → pestaña "Logs". Desde la app, intentá "Eliminar cuenta" y revisá si aparecen peticiones (OPTIONS y POST) y si hay errores.
+4. **Probar la función**: En Edge Functions → `eliminar-cuenta-comercio` → pestaña "Logs". Desde la app, intentá "Eliminar cuenta" y revisá si aparecen peticiones (OPTIONS y POST) y si hay errores.
 
 ### Si después de desplegar sigue el CORS
 
