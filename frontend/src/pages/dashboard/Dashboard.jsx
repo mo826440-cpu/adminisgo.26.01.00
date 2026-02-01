@@ -721,6 +721,29 @@ function Dashboard() {
     cargarGraficoPie()
   }
 
+  // Abrir gráfico vertical (Ventas y Compras) con tabla seleccionada
+  const openGraficoVentasCompras = (tablaValor) => {
+    setTabla(tablaValor)
+    setVerticalChartCollapsed(false)
+    setHorizontalChartCollapsed(true)
+    setPieChartCollapsed(true)
+  }
+
+  // Abrir gráfico horizontal (Referencias) con referencia seleccionada
+  const openGraficoReferencias = (refValor) => {
+    setRefHorizontal(refValor)
+    setVerticalChartCollapsed(true)
+    setHorizontalChartCollapsed(false)
+    setPieChartCollapsed(true)
+  }
+
+  // Abrir gráfico de torta (Métodos de Pago)
+  const openGraficoMetodosPago = () => {
+    setVerticalChartCollapsed(true)
+    setHorizontalChartCollapsed(true)
+    setPieChartCollapsed(false)
+  }
+
   const LABEL_OPTIONS_REF = [
     { id: 'fechaRango', label: 'Fecha desde-hasta' },
     { id: 'total', label: '$ Total' },
@@ -848,6 +871,33 @@ function Dashboard() {
             )}
             {isInstalled && <Badge variant="success">App instalada</Badge>}
           </div>
+        </div>
+
+        <div className="dashboard-chart-links">
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoVentasCompras('ventas')}>
+            Ventas
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoVentasCompras('compras')}>
+            Compras
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoReferencias('categoria')}>
+            Categorías
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoReferencias('marca')}>
+            Marcas
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoReferencias('cliente')}>
+            Clientes
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoReferencias('proveedor')}>
+            Proveedores
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={() => openGraficoReferencias('producto')}>
+            Productos
+          </button>
+          <button type="button" className="dashboard-chart-link" onClick={openGraficoMetodosPago}>
+            Métodos de Pago
+          </button>
         </div>
 
         <div className="dashboard-chart-vertical-wrapper">
