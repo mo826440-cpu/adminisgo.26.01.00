@@ -80,13 +80,14 @@ export const invitarUsuario = async (payload) => {
     if (!session?.access_token) {
       throw new Error('Debes iniciar sesión')
     }
+    const token = session.access_token
 
     const url = `${import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')}/functions/v1/create-comercio-user`
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         email: payload.email?.trim(),
