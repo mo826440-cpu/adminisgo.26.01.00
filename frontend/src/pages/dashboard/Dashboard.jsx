@@ -15,7 +15,7 @@ import { getCategorias } from '../../services/categorias'
 import { getMarcas } from '../../services/marcas'
 import { getClientes } from '../../services/clientes'
 import { getProveedores } from '../../services/proveedores'
-import { TABLAS_CONFIG, TABLAS_IDS, METODOS_PAGO } from './chartConfig'
+import { TABLAS_CONFIG, TABLAS_IDS_CHART, METODOS_PAGO } from './chartConfig'
 import './Dashboard.css'
 
 const formatearMoneda = (valor) => {
@@ -75,6 +75,11 @@ function Dashboard() {
   const axisOptions = configTabla.axisOptions || []
   const filtersTabla = configTabla.filters || []
   const usaFechas = configTabla.usaFechas !== false
+
+  // Si la tabla actual no está en las opciones del gráfico (solo ventas/compras), usar ventas
+  useEffect(() => {
+    if (!TABLAS_IDS_CHART.includes(tabla)) setTabla('ventas')
+  }, [tabla])
 
   // Sincronizar ejes/etiquetas al cambiar tabla (mantener solo opciones válidas)
   useEffect(() => {
@@ -579,7 +584,7 @@ function Dashboard() {
                 onChange={(e) => setTabla(e.target.value)}
                 aria-label="Tabla a analizar"
               >
-                {TABLAS_IDS.map((id) => (
+                {TABLAS_IDS_CHART.map((id) => (
                   <option key={id} value={id}>
                     {TABLAS_CONFIG[id].label}
                   </option>

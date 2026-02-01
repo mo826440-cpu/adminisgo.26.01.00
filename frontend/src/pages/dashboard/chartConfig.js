@@ -102,3 +102,5 @@ export const METODOS_PAGO = [
 ]
 
 export const TABLAS_IDS = Object.keys(TABLAS_CONFIG)
+/** Tablas que se muestran en "Tabla a analizar" del gráfico del Dashboard (solo ventas y compras) */
+export const TABLAS_IDS_CHART = ['ventas', 'compras']
