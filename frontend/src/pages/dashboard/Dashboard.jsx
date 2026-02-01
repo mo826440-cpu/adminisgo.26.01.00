@@ -60,9 +60,10 @@ function Dashboard() {
     return { desde: desde.toISOString().slice(0, 10), hasta: hoy.toISOString().slice(0, 10) }
   }
   const [refHorizontal, setRefHorizontal] = useState('cliente')
+  const [filtroSoloConDeuda, setFiltroSoloConDeuda] = useState('todos') // todos | solo_deuda (solo cuando Referencia = Cliente o Proveedor)
   const [fechaDesdeH, setFechaDesdeH] = useState(() => getDefaultRango7Dias().desde)
   const [fechaHastaH, setFechaHastaH] = useState(() => getDefaultRango7Dias().hasta)
-  // Etiquetas fijas del gráfico de referencias: siempre Fecha desde-hasta, $ Total, Cantidad operaciones
+  // Etiquetas fijas del gráfico de referencias: siempre Fecha desde-hasta, $ Total (o $ Deuda si Cliente/Proveedor), Cantidad operaciones
   const ETIQUETAS_REFERENCIAS = ['fechaRango', 'total', 'cantidad']
   const [rangoEjeXHorizontal, setRangoEjeXHorizontal] = useState(10000)
   const [chartDataHorizontal, setChartDataHorizontal] = useState([])
@@ -512,7 +513,8 @@ function Dashboard() {
             const key = v.cliente_id || 'sin'
             const label = opcionesClientes.find((c) => c.id === key)?.nombre || 'Sin cliente'
             const g = getOrCreate(key, label)
-            g.total += total
+            const deuda = parseFloat(v.monto_deuda) ?? Math.max(0, total - (parseFloat(v.monto_pagado) || 0))
+            g.total += deuda
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -574,7 +576,8 @@ function Dashboard() {
             const key = c.proveedor_id || 'sin'
             const label = opcionesProveedores.find((p) => p.id === key)?.nombre_razon_social || 'Sin proveedor'
             const g = getOrCreate(key, label)
-            g.total += total
+            const deuda = parseFloat(c.monto_deuda) ?? Math.max(0, total - (parseFloat(c.monto_pagado) || 0))
+            g.total += deuda
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -611,10 +614,13 @@ function Dashboard() {
           })
         })
       }
-      const rows = Object.values(grupos)
+      let rows = Object.values(grupos)
         .filter((g) => g.key && g.key !== 'sin')
         .map((g) => ({ key: g.key, label: g.label, total: g.total || 0, cantidad: (g._counted && g._counted.size) || g.cantidad || 0, unidades: g.unidades || 0 }))
         .sort((a, b) => (b.total || 0) - (a.total || 0))
+      if ((refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroSoloConDeuda === 'solo_deuda') {
+        rows = rows.filter((r) => (r.total || 0) > 0.01)
+      }
       setChartDataHorizontal(rows)
     } catch (err) {
       console.error('Error al cargar gráfico horizontal:', err)
@@ -622,7 +628,7 @@ function Dashboard() {
     } finally {
       setLoadingChartHorizontal(false)
     }
-  }, [user, refHorizontal, fechaDesdeH, fechaHastaH, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
+  }, [user, refHorizontal, fechaDesdeH, fechaHastaH, filtroSoloConDeuda, opcionesCategorias, opcionesMarcas, opcionesProductos, opcionesClientes, opcionesProveedores])
 
   useEffect(() => {
     if (!loading && user) cargarGraficoHorizontal()
@@ -1085,6 +1091,22 @@ function Dashboard() {
                 ))}
               </select>
             </div>
+            {(refHorizontal === 'cliente' || refHorizontal === 'proveedor') && (
+              <div className="chart-config-row">
+                <label className="chart-config-label">Filtrar:</label>
+                <select
+                  className="chart-config-input chart-config-select"
+                  value={filtroSoloConDeuda}
+                  onChange={(e) => setFiltroSoloConDeuda(e.target.value)}
+                  aria-label="Filtrar por deuda"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="solo_deuda">
+                    {refHorizontal === 'cliente' ? 'Solo clientes con deuda' : 'Solo proveedores a los que les debo'}
+                  </option>
+                </select>
+              </div>
+            )}
             <div className="chart-config-row chart-config-fechas">
               <div>
                 <label className="chart-config-label">Filtrar desde:</label>
@@ -1114,7 +1136,9 @@ function Dashboard() {
               </div>
               <div className="chart-config-eje">
                 <label className="chart-config-label">Eje (X):</label>
-                <span className="chart-config-readonly">$ Total</span>
+                <span className="chart-config-readonly">
+                  {refHorizontal === 'cliente' || refHorizontal === 'proveedor' ? '$ Deuda' : '$ Total'}
+                </span>
               </div>
               <div className="chart-config-eje">
                 <label className="chart-config-label chart-config-rango-label">Rango eje (X):</label>
@@ -1143,7 +1167,9 @@ function Dashboard() {
           ) : (
             <div className="chart-horizontal-wrap">
               <div className="chart-horizontal-x-axis">
-                <span className="chart-horizontal-x-title">Eje (X) $ Total</span>
+                <span className="chart-horizontal-x-title">
+                  Eje (X) {refHorizontal === 'cliente' || refHorizontal === 'proveedor' ? '$ Deuda' : '$ Total'}
+                </span>
               </div>
               <div className="chart-horizontal-content chart-horizontal-bars-layout">
                 {chartDataHorizontal.map((row) => {
@@ -1157,11 +1183,16 @@ function Dashboard() {
                         <div className="chart-horizontal-bar-fill-wrap" style={{ width: `${pct}%` }}>
                           <div className="chart-vertical-bar-tooltip" role="tooltip">
                             <span className="chart-vertical-bar-tooltip-title">{row.label}</span>
-                            {ETIQUETAS_REFERENCIAS.map((id) => (
-                              <span key={id} className="chart-vertical-bar-tooltip-line">
-                                {LABEL_OPTIONS_REF.find((o) => o.id === id)?.label || id}: {formatLabelValorH(row, id)}
-                              </span>
-                            ))}
+                            {ETIQUETAS_REFERENCIAS.map((id) => {
+                              const labelText = (id === 'total' && (refHorizontal === 'cliente' || refHorizontal === 'proveedor'))
+                                ? '$ Deuda'
+                                : (LABEL_OPTIONS_REF.find((o) => o.id === id)?.label || id)
+                              return (
+                                <span key={id} className="chart-vertical-bar-tooltip-line">
+                                  {labelText}: {formatLabelValorH(row, id)}
+                                </span>
+                              )
+                            })}
                           </div>
                           <div className="chart-horizontal-bar-fill" />
                         </div>
