@@ -12,12 +12,7 @@ export const TABLAS_CONFIG = {
       { id: 'fechaRango', label: 'Fecha desde, Hasta', defaultSelected: true },
       { id: 'total', label: '$ Costo', defaultSelected: true },
       { id: 'cantidad', label: 'Cantidad operaciones', defaultSelected: true },
-      { id: 'unidades', label: 'Unidades', defaultSelected: false },
-      { id: 'categoria', label: 'Categoría', defaultSelected: false },
-      { id: 'marca', label: 'Marca', defaultSelected: false },
-      { id: 'producto', label: 'Producto', defaultSelected: false },
-      { id: 'cliente', label: 'Cliente', defaultSelected: false },
-      { id: 'metodoPago', label: 'Método de pago', defaultSelected: false }
+      { id: 'unidades', label: 'Unidades', defaultSelected: false }
     ],
     axisOptionsX: [
       { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
@@ -45,12 +40,7 @@ export const TABLAS_CONFIG = {
       { id: 'fechaRango', label: 'Fecha desde, Hasta', defaultSelected: true },
       { id: 'total', label: '$ Costo', defaultSelected: true },
       { id: 'cantidad', label: 'Cantidad operaciones', defaultSelected: true },
-      { id: 'unidades', label: 'Unidades', defaultSelected: false },
-      { id: 'categoria', label: 'Categoría', defaultSelected: false },
-      { id: 'marca', label: 'Marca', defaultSelected: false },
-      { id: 'producto', label: 'Producto', defaultSelected: false },
-      { id: 'cliente', label: 'Proveedor', defaultSelected: false },
-      { id: 'metodoPago', label: 'Método de pago', defaultSelected: false }
+      { id: 'unidades', label: 'Unidades', defaultSelected: false }
     ],
     axisOptionsX: [
       { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },

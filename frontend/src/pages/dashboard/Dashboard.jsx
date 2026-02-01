@@ -215,10 +215,11 @@ function Dashboard() {
           ventas.forEach((v) => {
             const totalVenta = parseFloat(v.total) || 0
             const pagado = parseFloat(v.monto_pagado) || 0
+            const deuda = parseFloat(v.monto_deuda) || 0
             const key = totalVenta <= 0 || pagado >= totalVenta ? 'pagado' : 'debe'
             const label = key === 'pagado' ? 'Pagado' : 'Debe'
             if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0, categorias: new Set(), marcas: new Set(), productos: new Set(), clientes: new Set(), metodosPago: new Set() }
-            porEstado[key].total += totalVenta
+            porEstado[key].total += key === 'debe' ? deuda : totalVenta
             porEstado[key].unidades += parseFloat(v.unidades_totales) || 0
             porEstado[key].cantidad += 1
             ;(v.venta_items || []).forEach((item) => {
@@ -301,10 +302,11 @@ function Dashboard() {
           compras.forEach((c) => {
             const totalCompra = parseFloat(c.total) || 0
             const pagado = parseFloat(c.monto_pagado) || 0
+            const deuda = parseFloat(c.monto_deuda) || 0
             const key = totalCompra <= 0 || pagado >= totalCompra ? 'pagado' : 'debe'
             const label = key === 'pagado' ? 'Pagado' : 'Debe'
             if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0, categorias: new Set(), marcas: new Set(), productos: new Set(), proveedores: new Set(), metodosPago: new Set() }
-            porEstado[key].total += totalCompra
+            porEstado[key].total += key === 'debe' ? deuda : totalCompra
             porEstado[key].unidades += parseFloat(c.unidades_totales) || 0
             porEstado[key].cantidad += 1
             ;(c.compra_items || []).forEach((item) => {
