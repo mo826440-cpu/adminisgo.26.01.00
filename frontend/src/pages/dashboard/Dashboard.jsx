@@ -51,7 +51,7 @@ function Dashboard() {
   const [ejeX, setEjeX] = useState('fecha')
   const [rangoEjeX, setRangoEjeX] = useState(1)
   const [ejeY, setEjeY] = useState('total')
-  const [rangoEjeY, setRangoEjeY] = useState(5000)
+  const [rangoEjeY, setRangoEjeY] = useState(10000)
 
   // Filtros (según tabla)
   const [filtroCategoria, setFiltroCategoria] = useState('')
@@ -184,7 +184,23 @@ function Dashboard() {
         if (filtroProducto) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => item.producto_id == filtroProducto))
         if (filtroCategoria) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.categoria_id == filtroCategoria))
         if (filtroMarca) ventas = ventas.filter((v) => (v.venta_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.marca_id == filtroMarca))
-        if (filtroMetodoPago) ventas = ventas.filter((v) => (v.venta_pagos || []).some((p) => p.metodo_pago === filtroMetodoPago))
+        if (filtroMetodoPago) {
+          const metodoNorm = String(filtroMetodoPago).trim().toLowerCase()
+          ventas = ventas.filter((v) => (v.venta_pagos || []).some((p) => String(p.metodo_pago || '').trim().toLowerCase() === metodoNorm))
+        }
+        if (ejeX === 'estado') {
+          const porEstado = {}
+          ventas.forEach((v) => {
+            const key = String(v.estado || 'sin_estado').toLowerCase()
+            const label = (v.estado && v.estado.charAt(0).toUpperCase() + v.estado.slice(1).toLowerCase()) || 'Sin estado'
+            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0 }
+            porEstado[key].total += parseFloat(v.total) || 0
+            porEstado[key].unidades += parseFloat(v.unidades_totales) || 0
+            porEstado[key].cantidad += 1
+          })
+          setChartData(Object.values(porEstado).sort((a, b) => (a.labelFecha || '').localeCompare(b.labelFecha || '')))
+          return
+        }
         const porDia = {}
         let d = new Date(desde)
         d.setHours(0, 0, 0, 0)
@@ -202,10 +218,7 @@ function Dashboard() {
           d.setDate(d.getDate() + 1)
         }
         ventas.forEach((v) => {
-          const key =
-            ejeX === 'fecha'
-              ? new Date(v.fecha_hora).toISOString().slice(0, 10)
-              : new Date(v.fecha_hora).toISOString().slice(0, 10)
+          const key = new Date(v.fecha_hora).toISOString().slice(0, 10)
           if (porDia[key]) {
             porDia[key].total += parseFloat(v.total) || 0
             porDia[key].unidades += parseFloat(v.unidades_totales) || 0
@@ -225,7 +238,23 @@ function Dashboard() {
         if (filtroProducto) compras = compras.filter((c) => (c.compra_items || []).some((item) => item.producto_id == filtroProducto))
         if (filtroCategoria) compras = compras.filter((c) => (c.compra_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.categoria_id == filtroCategoria))
         if (filtroMarca) compras = compras.filter((c) => (c.compra_items || []).some((item) => opcionesProductos.find((p) => p.id === item.producto_id)?.marca_id == filtroMarca))
-        if (filtroMetodoPago) compras = compras.filter((c) => (c.compra_pagos || []).some((p) => p.metodo_pago === filtroMetodoPago))
+        if (filtroMetodoPago) {
+          const metodoNorm = String(filtroMetodoPago).trim().toLowerCase()
+          compras = compras.filter((c) => (c.compra_pagos || []).some((p) => String(p.metodo_pago || '').trim().toLowerCase() === metodoNorm))
+        }
+        if (ejeX === 'estado') {
+          const porEstado = {}
+          compras.forEach((c) => {
+            const key = String(c.estado || 'sin_estado').toLowerCase()
+            const label = (c.estado && c.estado.charAt(0).toUpperCase() + c.estado.slice(1).toLowerCase()) || 'Sin estado'
+            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0 }
+            porEstado[key].total += parseFloat(c.total) || 0
+            porEstado[key].unidades += parseFloat(c.unidades_totales) || 0
+            porEstado[key].cantidad += 1
+          })
+          setChartData(Object.values(porEstado).sort((a, b) => (a.labelFecha || '').localeCompare(b.labelFecha || '')))
+          return
+        }
         const porDia = {}
         let d = new Date(desde)
         d.setHours(0, 0, 0, 0)
@@ -357,7 +386,7 @@ function Dashboard() {
   }
 
   const maxValor = useMemo(() => Math.max(0, ...chartData.map(getValorEjeY)), [chartData, ejeY])
-  const rangoYNum = parseFloat(rangoEjeY) || 5000
+  const rangoYNum = parseFloat(rangoEjeY) || 10000
   // Eje Y: máximo = valor máximo de datos + un rango más (ej. máx $50.000 + rango $5.000 → eje hasta $55.000)
   // Para unidades/cantidad/stock con valores pequeños usar escala entera (1, 2, 3...)
   const maxEjeY = useMemo(() => {
@@ -654,7 +683,7 @@ function Dashboard() {
                       min="1"
                       step={axisOptions.find((o) => o.id === ejeY)?.rangeType === 'moneda' ? 1000 : 1}
                       value={rangoEjeY}
-                      onChange={(e) => setRangoEjeY(parseFloat(e.target.value) || 5000)}
+                      onChange={(e) => setRangoEjeY(parseFloat(e.target.value) || 10000)}
                       className="chart-config-input chart-config-rango"
                       placeholder={axisOptions.find((o) => o.id === ejeY)?.rangePlaceholder}
                     />

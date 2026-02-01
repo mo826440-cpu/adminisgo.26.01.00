@@ -14,8 +14,9 @@ export const TABLAS_CONFIG = {
       { id: 'cantidad', label: 'Cantidad (operaciones)' }
     ],
     axisOptions: [
-      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (ej: 1, 5)' },
-      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 5000)' },
+      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
+      { id: 'estado', label: 'Estado', rangeType: null, rangePlaceholder: 'Todos los estados' },
+      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 10000)' },
       { id: 'unidades', label: 'Unidades', rangeType: 'numero', rangePlaceholder: 'agrupación' },
       { id: 'cantidad', label: 'Cantidad', rangeType: 'numero', rangePlaceholder: 'agrupación' }
     ],
@@ -31,8 +32,9 @@ export const TABLAS_CONFIG = {
       { id: 'cantidad', label: 'Cantidad (operaciones)' }
     ],
     axisOptions: [
-      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (ej: 1, 5)' },
-      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 5000)' },
+      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
+      { id: 'estado', label: 'Estado', rangeType: null, rangePlaceholder: 'Todos los estados' },
+      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 10000)' },
       { id: 'unidades', label: 'Unidades', rangeType: 'numero', rangePlaceholder: 'agrupación' },
       { id: 'cantidad', label: 'Cantidad', rangeType: 'numero', rangePlaceholder: 'agrupación' }
     ],
