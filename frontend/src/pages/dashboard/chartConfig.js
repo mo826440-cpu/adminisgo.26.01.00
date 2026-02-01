@@ -9,9 +9,24 @@ export const TABLAS_CONFIG = {
     label: 'Registro de ventas',
     filters: ['categoria', 'marca', 'producto', 'cliente', 'metodoPago'],
     labelOptions: [
-      { id: 'unidades', label: 'Unidades' },
-      { id: 'total', label: '$ Total' },
-      { id: 'cantidad', label: 'Cantidad (operaciones)' }
+      { id: 'fechaRango', label: 'Fecha desde, Hasta', defaultSelected: true },
+      { id: 'total', label: '$ Costo', defaultSelected: true },
+      { id: 'cantidad', label: 'Cantidad operaciones', defaultSelected: true },
+      { id: 'unidades', label: 'Unidades', defaultSelected: false },
+      { id: 'categoria', label: 'Categoría', defaultSelected: false },
+      { id: 'marca', label: 'Marca', defaultSelected: false },
+      { id: 'producto', label: 'Producto', defaultSelected: false },
+      { id: 'cliente', label: 'Cliente', defaultSelected: false },
+      { id: 'metodoPago', label: 'Método de pago', defaultSelected: false }
+    ],
+    axisOptionsX: [
+      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
+      { id: 'estado', label: 'Estado', rangeType: null, rangePlaceholder: 'Todos los estados' }
+    ],
+    axisOptionsY: [
+      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 10000)' },
+      { id: 'cantidad', label: 'Cantidad (operaciones)', rangeType: 'numero', rangePlaceholder: 'agrupación' },
+      { id: 'unidades', label: 'Unidades', rangeType: 'numero', rangePlaceholder: 'agrupación' }
     ],
     axisOptions: [
       { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
@@ -27,9 +42,24 @@ export const TABLAS_CONFIG = {
     label: 'Registro de compras',
     filters: ['categoria', 'marca', 'producto', 'proveedor', 'metodoPago'],
     labelOptions: [
-      { id: 'unidades', label: 'Unidades' },
-      { id: 'total', label: '$ Total' },
-      { id: 'cantidad', label: 'Cantidad (operaciones)' }
+      { id: 'fechaRango', label: 'Fecha desde, Hasta', defaultSelected: true },
+      { id: 'total', label: '$ Costo', defaultSelected: true },
+      { id: 'cantidad', label: 'Cantidad operaciones', defaultSelected: true },
+      { id: 'unidades', label: 'Unidades', defaultSelected: false },
+      { id: 'categoria', label: 'Categoría', defaultSelected: false },
+      { id: 'marca', label: 'Marca', defaultSelected: false },
+      { id: 'producto', label: 'Producto', defaultSelected: false },
+      { id: 'cliente', label: 'Proveedor', defaultSelected: false },
+      { id: 'metodoPago', label: 'Método de pago', defaultSelected: false }
+    ],
+    axisOptionsX: [
+      { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },
+      { id: 'estado', label: 'Estado', rangeType: null, rangePlaceholder: 'Todos los estados' }
+    ],
+    axisOptionsY: [
+      { id: 'total', label: '$ Total', rangeType: 'moneda', rangePlaceholder: 'escala (ej: 10000)' },
+      { id: 'cantidad', label: 'Cantidad (operaciones)', rangeType: 'numero', rangePlaceholder: 'agrupación' },
+      { id: 'unidades', label: 'Unidades', rangeType: 'numero', rangePlaceholder: 'agrupación' }
     ],
     axisOptions: [
       { id: 'fecha', label: 'Fecha', rangeType: 'dias', rangePlaceholder: 'días por columna (1 por defecto)' },

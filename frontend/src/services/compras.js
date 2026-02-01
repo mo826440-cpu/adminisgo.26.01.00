@@ -162,6 +162,7 @@ export const getComprasPorRangoFechas = async (desde, hasta) => {
       .select(`
         id,
         total,
+        monto_pagado,
         fecha_orden,
         proveedor_id,
         estado,

@@ -262,6 +262,7 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
       .select(`
         id,
         total,
+        monto_pagado,
         fecha_hora,
         cliente_id,
         estado,

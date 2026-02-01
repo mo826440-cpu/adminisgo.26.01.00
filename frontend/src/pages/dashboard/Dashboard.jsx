@@ -47,7 +47,7 @@ function Dashboard() {
   const [tabla, setTabla] = useState('ventas')
   const [fechaDesde, setFechaDesde] = useState(() => getDefaultRango().desde)
   const [fechaHasta, setFechaHasta] = useState(() => getDefaultRango().hasta)
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState(['cantidad', 'total'])
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState(['fechaRango', 'total', 'cantidad'])
   const [ejeX, setEjeX] = useState('fecha')
   const [rangoEjeX, setRangoEjeX] = useState(1)
   const [ejeY, setEjeY] = useState('total')
@@ -70,19 +70,24 @@ function Dashboard() {
 
   const configTabla = TABLAS_CONFIG[tabla] || TABLAS_CONFIG.ventas
   const labelOptions = configTabla.labelOptions || []
+  const axisOptionsX = configTabla.axisOptionsX || configTabla.axisOptions || []
+  const axisOptionsY = configTabla.axisOptionsY || configTabla.axisOptions || []
   const axisOptions = configTabla.axisOptions || []
   const filtersTabla = configTabla.filters || []
   const usaFechas = configTabla.usaFechas !== false
 
   // Sincronizar ejes/etiquetas al cambiar tabla (mantener solo opciones válidas)
   useEffect(() => {
-    const axisIds = axisOptions.map((o) => o.id)
-    if (axisIds.length && !axisIds.includes(ejeX)) setEjeX(axisIds[0])
-    if (axisIds.length && !axisIds.includes(ejeY)) setEjeY(axisIds[axisIds.length > 1 ? 1 : 0])
+    const idsX = axisOptionsX.map((o) => o.id)
+    const idsY = axisOptionsY.map((o) => o.id)
+    if (idsX.length && !idsX.includes(ejeX)) setEjeX(idsX[0])
+    if (idsY.length && !idsY.includes(ejeY)) setEjeY(idsY[idsY.length > 1 ? 1 : 0])
     const labelIds = labelOptions.map((o) => o.id)
+    const defaultLabelIds = labelOptions.filter((o) => o.defaultSelected).map((o) => o.id)
     setEtiquetasSeleccionadas((prev) => {
       const next = prev.filter((id) => labelIds.includes(id))
       if (next.length) return next
+      if (defaultLabelIds.length) return defaultLabelIds
       if (labelIds.includes('cantidad') && labelIds.includes('total')) return ['cantidad', 'total']
       return labelIds.slice(0, 2)
     })
@@ -130,12 +135,25 @@ function Dashboard() {
     if (!loading && user) cargarOpciones()
   }, [user, loading])
 
+  // Unificar arrays/Set de etiquetas al fusionar buckets
+  const mergeLabelSets = (bucket, porDia, chunk, field) => {
+    const out = new Set()
+    chunk.forEach((k) => {
+      const d = porDia[k]
+      const arr = d?.[field]
+      if (Array.isArray(arr)) arr.forEach((x) => out.add(x))
+      else if (arr instanceof Set) arr.forEach((x) => out.add(x))
+    })
+    return out.size ? Array.from(out) : []
+  }
+
   // Agregar por buckets de N días (rangoEjeX)
   const agregarPorFechas = useCallback(
     (porDia, rangoDias) => {
       const fechas = Object.keys(porDia).sort()
       if (fechas.length === 0) return []
       const buckets = []
+      const labelFields = ['categorias', 'marcas', 'productos', 'clientes', 'proveedores', 'metodosPago']
       for (let i = 0; i < fechas.length; i += rangoDias) {
         const chunk = fechas.slice(i, i + rangoDias)
         const first = porDia[chunk[0]]
@@ -157,6 +175,10 @@ function Dashboard() {
             bucket.unidades += d.unidades || 0
             bucket.cantidad += d.cantidad || 0
           }
+        })
+        labelFields.forEach((field) => {
+          const merged = mergeLabelSets(bucket, porDia, chunk, field)
+          if (merged.length) bucket[field] = merged
         })
         buckets.push(bucket)
       }
@@ -191,14 +213,30 @@ function Dashboard() {
         if (ejeX === 'estado') {
           const porEstado = {}
           ventas.forEach((v) => {
-            const key = String(v.estado || 'sin_estado').toLowerCase()
-            const label = (v.estado && v.estado.charAt(0).toUpperCase() + v.estado.slice(1).toLowerCase()) || 'Sin estado'
-            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0 }
-            porEstado[key].total += parseFloat(v.total) || 0
+            const totalVenta = parseFloat(v.total) || 0
+            const pagado = parseFloat(v.monto_pagado) || 0
+            const key = totalVenta <= 0 || pagado >= totalVenta ? 'pagado' : 'debe'
+            const label = key === 'pagado' ? 'Pagado' : 'Debe'
+            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0, categorias: new Set(), marcas: new Set(), productos: new Set(), clientes: new Set(), metodosPago: new Set() }
+            porEstado[key].total += totalVenta
             porEstado[key].unidades += parseFloat(v.unidades_totales) || 0
             porEstado[key].cantidad += 1
+            ;(v.venta_items || []).forEach((item) => {
+              const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+              const cat = opcionesCategorias.find((c) => c.id === p?.categoria_id)
+              if (cat?.nombre) porEstado[key].categorias.add(cat.nombre)
+              const marca = opcionesMarcas.find((m) => m.id === p?.marca_id)
+              if (marca?.nombre) porEstado[key].marcas.add(marca.nombre)
+              if (p?.nombre) porEstado[key].productos.add(p.nombre)
+            })
+            const cli = opcionesClientes.find((c) => c.id === v.cliente_id)
+            if (cli?.nombre) porEstado[key].clientes.add(cli.nombre)
+            ;(v.venta_pagos || []).forEach((p) => { const mp = String(p.metodo_pago || '').trim(); if (mp) porEstado[key].metodosPago.add(mp) })
           })
-          setChartData(Object.values(porEstado).sort((a, b) => (a.labelFecha || '').localeCompare(b.labelFecha || '')))
+          const orden = { pagado: 0, debe: 1 }
+          const rows = Object.values(porEstado).sort((a, b) => (orden[a.key] ?? 2) - (orden[b.key] ?? 2))
+          rows.forEach((r) => { r.categorias = Array.from(r.categorias); r.marcas = Array.from(r.marcas); r.productos = Array.from(r.productos); r.clientes = Array.from(r.clientes); r.metodosPago = Array.from(r.metodosPago) })
+          setChartData(rows)
           return
         }
         const porDia = {}
@@ -213,7 +251,12 @@ function Dashboard() {
             total: 0,
             unidades: 0,
             cantidad: 0,
-            labelFecha: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            labelFecha: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            categorias: new Set(),
+            marcas: new Set(),
+            productos: new Set(),
+            clientes: new Set(),
+            metodosPago: new Set()
           }
           d.setDate(d.getDate() + 1)
         }
@@ -223,6 +266,17 @@ function Dashboard() {
             porDia[key].total += parseFloat(v.total) || 0
             porDia[key].unidades += parseFloat(v.unidades_totales) || 0
             porDia[key].cantidad += 1
+            ;(v.venta_items || []).forEach((item) => {
+              const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+              const cat = opcionesCategorias.find((c) => c.id === p?.categoria_id)
+              if (cat?.nombre) porDia[key].categorias.add(cat.nombre)
+              const marca = opcionesMarcas.find((m) => m.id === p?.marca_id)
+              if (marca?.nombre) porDia[key].marcas.add(marca.nombre)
+              if (p?.nombre) porDia[key].productos.add(p.nombre)
+            })
+            const cli = opcionesClientes.find((c) => c.id === v.cliente_id)
+            if (cli?.nombre) porDia[key].clientes.add(cli.nombre)
+            ;(v.venta_pagos || []).forEach((p) => { const mp = String(p.metodo_pago || '').trim(); if (mp) porDia[key].metodosPago.add(mp) })
           }
         })
         const rangoDias = Math.max(1, parseInt(rangoEjeX, 10) || 1)
@@ -245,14 +299,30 @@ function Dashboard() {
         if (ejeX === 'estado') {
           const porEstado = {}
           compras.forEach((c) => {
-            const key = String(c.estado || 'sin_estado').toLowerCase()
-            const label = (c.estado && c.estado.charAt(0).toUpperCase() + c.estado.slice(1).toLowerCase()) || 'Sin estado'
-            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0 }
-            porEstado[key].total += parseFloat(c.total) || 0
+            const totalCompra = parseFloat(c.total) || 0
+            const pagado = parseFloat(c.monto_pagado) || 0
+            const key = totalCompra <= 0 || pagado >= totalCompra ? 'pagado' : 'debe'
+            const label = key === 'pagado' ? 'Pagado' : 'Debe'
+            if (!porEstado[key]) porEstado[key] = { key, labelFecha: label, total: 0, unidades: 0, cantidad: 0, categorias: new Set(), marcas: new Set(), productos: new Set(), proveedores: new Set(), metodosPago: new Set() }
+            porEstado[key].total += totalCompra
             porEstado[key].unidades += parseFloat(c.unidades_totales) || 0
             porEstado[key].cantidad += 1
+            ;(c.compra_items || []).forEach((item) => {
+              const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+              const cat = opcionesCategorias.find((c2) => c2.id === p?.categoria_id)
+              if (cat?.nombre) porEstado[key].categorias.add(cat.nombre)
+              const marca = opcionesMarcas.find((m) => m.id === p?.marca_id)
+              if (marca?.nombre) porEstado[key].marcas.add(marca.nombre)
+              if (p?.nombre) porEstado[key].productos.add(p.nombre)
+            })
+            const prov = opcionesProveedores.find((p) => p.id === c.proveedor_id)
+            if (prov?.nombre_razon_social) porEstado[key].proveedores.add(prov.nombre_razon_social)
+            ;(c.compra_pagos || []).forEach((p) => { const mp = String(p.metodo_pago || '').trim(); if (mp) porEstado[key].metodosPago.add(mp) })
           })
-          setChartData(Object.values(porEstado).sort((a, b) => (a.labelFecha || '').localeCompare(b.labelFecha || '')))
+          const orden = { pagado: 0, debe: 1 }
+          const rows = Object.values(porEstado).sort((a, b) => (orden[a.key] ?? 2) - (orden[b.key] ?? 2))
+          rows.forEach((r) => { r.categorias = Array.from(r.categorias); r.marcas = Array.from(r.marcas); r.productos = Array.from(r.productos); r.proveedores = Array.from(r.proveedores); r.metodosPago = Array.from(r.metodosPago) })
+          setChartData(rows)
           return
         }
         const porDia = {}
@@ -267,7 +337,12 @@ function Dashboard() {
             total: 0,
             unidades: 0,
             cantidad: 0,
-            labelFecha: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            labelFecha: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            categorias: new Set(),
+            marcas: new Set(),
+            productos: new Set(),
+            proveedores: new Set(),
+            metodosPago: new Set()
           }
           d.setDate(d.getDate() + 1)
         }
@@ -277,6 +352,17 @@ function Dashboard() {
             porDia[key].total += parseFloat(c.total) || 0
             porDia[key].unidades += parseFloat(c.unidades_totales) || 0
             porDia[key].cantidad += 1
+            ;(c.compra_items || []).forEach((item) => {
+              const p = opcionesProductos.find((pr) => pr.id === item.producto_id)
+              const cat = opcionesCategorias.find((c2) => c2.id === p?.categoria_id)
+              if (cat?.nombre) porDia[key].categorias.add(cat.nombre)
+              const marca = opcionesMarcas.find((m) => m.id === p?.marca_id)
+              if (marca?.nombre) porDia[key].marcas.add(marca.nombre)
+              if (p?.nombre) porDia[key].productos.add(p.nombre)
+            })
+            const prov = opcionesProveedores.find((p) => p.id === c.proveedor_id)
+            if (prov?.nombre_razon_social) porDia[key].proveedores.add(prov.nombre_razon_social)
+            ;(c.compra_pagos || []).forEach((p) => { const mp = String(p.metodo_pago || '').trim(); if (mp) porDia[key].metodosPago.add(mp) })
           }
         })
         const rangoDias = Math.max(1, parseInt(rangoEjeX, 10) || 1)
@@ -358,7 +444,11 @@ function Dashboard() {
     filtroCliente,
     filtroProveedor,
     filtroMetodoPago,
-    opcionesProductos
+    opcionesProductos,
+    opcionesCategorias,
+    opcionesMarcas,
+    opcionesClientes,
+    opcionesProveedores
   ])
 
   useEffect(() => {
@@ -421,10 +511,16 @@ function Dashboard() {
   }
 
   const formatLabelValor = (row, id) => {
+    if (id === 'fechaRango') return `${fechaDesde} — ${fechaHasta}`
     if (id === 'total') return formatearMoneda(row.total)
     if (id === 'unidades') return Number(row.unidades || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
     if (id === 'cantidad') return String(row.cantidad || 0)
     if (id === 'stock') return String(row.stock != null ? row.stock : 0)
+    if (id === 'categoria') return (row.categorias && row.categorias.length) ? row.categorias.join(', ') : '—'
+    if (id === 'marca') return (row.marcas && row.marcas.length) ? row.marcas.join(', ') : '—'
+    if (id === 'producto') return (row.productos && row.productos.length) ? row.productos.join(', ') : '—'
+    if (id === 'cliente') return (row.clientes && row.clientes.length) ? row.clientes.join(', ') : (row.proveedores && row.proveedores.length) ? row.proveedores.join(', ') : '—'
+    if (id === 'metodoPago') return (row.metodosPago && row.metodosPago.length) ? row.metodosPago.join(', ') : '—'
     return ''
   }
 
@@ -640,23 +736,23 @@ function Dashboard() {
                   onChange={(e) => setEjeX(e.target.value)}
                   aria-label="Eje X"
                 >
-                  {axisOptions.map((opt) => (
+                  {axisOptionsX.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {opt.label}
                     </option>
                   ))}
                 </select>
-                {axisOptions.find((o) => o.id === ejeX)?.rangeType && (
+                {axisOptionsX.find((o) => o.id === ejeX)?.rangeType && (
                   <>
                     <label className="chart-config-label chart-config-rango-label">Rango eje (X):</label>
                     <input
                       type="number"
                       min="1"
-                      step={axisOptions.find((o) => o.id === ejeX)?.rangeType === 'moneda' ? 1000 : 1}
+                      step={axisOptionsX.find((o) => o.id === ejeX)?.rangeType === 'moneda' ? 1000 : 1}
                       value={rangoEjeX}
                       onChange={(e) => setRangoEjeX(parseFloat(e.target.value) || 1)}
                       className="chart-config-input chart-config-rango"
-                      placeholder={axisOptions.find((o) => o.id === ejeX)?.rangePlaceholder}
+                      placeholder={axisOptionsX.find((o) => o.id === ejeX)?.rangePlaceholder}
                     />
                   </>
                 )}
@@ -669,23 +765,23 @@ function Dashboard() {
                   onChange={(e) => setEjeY(e.target.value)}
                   aria-label="Eje Y"
                 >
-                  {axisOptions.map((opt) => (
+                  {axisOptionsY.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {opt.label}
                     </option>
                   ))}
                 </select>
-                {axisOptions.find((o) => o.id === ejeY)?.rangeType && (
+                {axisOptionsY.find((o) => o.id === ejeY)?.rangeType && (
                   <>
                     <label className="chart-config-label chart-config-rango-label">Rango eje (Y):</label>
                     <input
                       type="number"
                       min="1"
-                      step={axisOptions.find((o) => o.id === ejeY)?.rangeType === 'moneda' ? 1000 : 1}
+                      step={axisOptionsY.find((o) => o.id === ejeY)?.rangeType === 'moneda' ? 1000 : 1}
                       value={rangoEjeY}
                       onChange={(e) => setRangoEjeY(parseFloat(e.target.value) || 10000)}
                       className="chart-config-input chart-config-rango"
-                      placeholder={axisOptions.find((o) => o.id === ejeY)?.rangePlaceholder}
+                      placeholder={axisOptionsY.find((o) => o.id === ejeY)?.rangePlaceholder}
                     />
                   </>
                 )}
@@ -720,7 +816,7 @@ function Dashboard() {
                   {chartData.map((row) => {
                     const valor = getValorEjeY(row)
                     const pct = maxEjeY ? (valor / maxEjeY) * 100 : 0
-                    const tooltipText = [row.labelFecha, ...etiquetasSeleccionadas.map((id) => `${axisOptions.find((o) => o.id === id)?.label || id}: ${formatLabelValor(row, id)}`)].join(' — ')
+                    const tooltipText = [row.labelFecha, ...etiquetasSeleccionadas.map((id) => `${labelOptions.find((o) => o.id === id)?.label || id}: ${formatLabelValor(row, id)}`)].join(' — ')
                     return (
                       <div key={row.key || row.labelFecha} className="chart-vertical-bar-wrap">
                         <div className="chart-vertical-bar-container" title={tooltipText}>
