@@ -499,7 +499,7 @@ function Dashboard() {
       hasta.setHours(23, 59, 59, 999)
       const grupos = {}
       const getOrCreate = (key, label) => {
-        if (!grupos[key]) grupos[key] = { key, label, total: 0, cantidad: 0, unidades: 0 }
+        if (!grupos[key]) grupos[key] = { key, label, total: 0, cantidad: 0, unidades: 0, deuda: 0 }
         return grupos[key]
       }
       const tablaHorizontal = refHorizontal === 'proveedor' ? 'compras' : 'ventas'
@@ -516,6 +516,7 @@ function Dashboard() {
             const label = opcionesClientes.find((c) => c.id === key)?.nombre || 'Sin cliente'
             const g = getOrCreate(key, label)
             g.total += filtroClienteProveedor === 'debe' ? deuda : total
+            g.deuda = (g.deuda || 0) + deuda
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -580,6 +581,7 @@ function Dashboard() {
             const label = opcionesProveedores.find((p) => p.id === key)?.nombre_razon_social || 'Sin proveedor'
             const g = getOrCreate(key, label)
             g.total += filtroClienteProveedor === 'debe' ? deuda : total
+            g.deuda = (g.deuda || 0) + deuda
             g.cantidad += 1
             g.unidades += unidades
             return
@@ -618,7 +620,7 @@ function Dashboard() {
       }
       const rows = Object.values(grupos)
         .filter((g) => g.key && g.key !== 'sin')
-        .map((g) => ({ key: g.key, label: g.label, total: g.total || 0, cantidad: (g._counted && g._counted.size) || g.cantidad || 0, unidades: g.unidades || 0 }))
+        .map((g) => ({ key: g.key, label: g.label, total: g.total || 0, cantidad: (g._counted && g._counted.size) || g.cantidad || 0, unidades: g.unidades || 0, deuda: g.deuda ?? 0 }))
         .sort((a, b) => (b.total || 0) - (a.total || 0))
       setChartDataHorizontal(rows)
     } catch (err) {
@@ -659,6 +661,7 @@ function Dashboard() {
   const formatLabelValorH = (row, id) => {
     if (id === 'fechaRango') return `${fechaDesdeH} — ${fechaHastaH}`
     if (id === 'total') return formatearMoneda(row.total)
+    if (id === 'deuda') return formatearMoneda(row.deuda ?? 0)
     if (id === 'cantidad') return String(row.cantidad || 0)
     if (id === 'unidades') return Number(row.unidades || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
     return ''
@@ -1190,6 +1193,11 @@ function Dashboard() {
                                 </span>
                               )
                             })}
+                            {(refHorizontal === 'cliente' || refHorizontal === 'proveedor') && filtroClienteProveedor === 'todos' && (
+                              <span className="chart-vertical-bar-tooltip-line">
+                                $ Deuda: {formatLabelValorH(row, 'deuda')}
+                              </span>
+                            )}
                           </div>
                           <div className="chart-horizontal-bar-fill" />
                         </div>
