@@ -1,41 +1,39 @@
+// @ts-nocheck — Edge Function para Deno; Cursor no tiene tipos de Deno, se desactiva el chequeo aquí.
 // Edge Function: Eliminar cuenta y comercio (solo dueño)
 // Elimina todos los usuarios del comercio en Auth y luego el comercio (CASCADE borra el resto).
 
-// Para que Cursor/TypeScript reconozca Deno (el IDE no usa tipos de Deno por defecto)
-declare const Deno: {
-  env: { get(key: string): string | undefined }
-  serve(handler: (req: Request) => Response | Promise<Response>): void
-}
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
+const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+}
+
+function jsonResponse(body: object, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders })
   }
 
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Falta cabecera Authorization' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Falta cabecera Authorization' }, 401)
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      return new Response(
-        JSON.stringify({ error: 'Configuración del servidor incompleta' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Configuración del servidor incompleta' }, 500)
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
@@ -43,10 +41,7 @@ Deno.serve(async (req) => {
     })
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'No autorizado' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'No autorizado' }, 401)
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
@@ -57,18 +52,12 @@ Deno.serve(async (req) => {
       .single()
 
     if (usuarioError || !usuario) {
-      return new Response(
-        JSON.stringify({ error: 'Usuario sin comercio asociado' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Usuario sin comercio asociado' }, 403)
     }
 
     const rolNombre = (usuario as { roles?: { nombre: string } }).roles?.nombre
     if (rolNombre !== 'dueño') {
-      return new Response(
-        JSON.stringify({ error: 'Solo el dueño puede eliminar la cuenta del comercio' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: 'Solo el dueño puede eliminar la cuenta del comercio' }, 403)
     }
 
     const comercioId = usuario.comercio_id as number
@@ -79,10 +68,25 @@ Deno.serve(async (req) => {
       .eq('comercio_id', comercioId)
 
     if (listError) {
-      return new Response(
-        JSON.stringify({ error: listError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: listError.message }, 500)
+    }
+
+    // Borrar en orden para no violar FKs: primero tablas que referencian usuarios/comercio
+    const tablesToDeleteByComercio = [
+      'ventas',           // CASCADE borra venta_items
+      'compras',          // CASCADE borra compra_items
+      'movimientos_inventario',
+      'historial_cajas',
+      'ventas_rapidas',
+    ] as const
+    for (const table of tablesToDeleteByComercio) {
+      const { error: delErr } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .eq('comercio_id', comercioId)
+      if (delErr) {
+        return jsonResponse({ error: `Error al borrar ${table}: ${delErr.message}` }, 500)
+      }
     }
 
     const userIds = (usuariosDelComercio || []).map((u) => u.id as string)
@@ -96,20 +100,13 @@ Deno.serve(async (req) => {
       .eq('id', comercioId)
 
     if (deleteComercioError) {
-      return new Response(
-        JSON.stringify({ error: deleteComercioError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return jsonResponse({ error: deleteComercioError.message }, 500)
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Cuenta y datos del comercio eliminados' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return jsonResponse({ success: true, message: 'Cuenta y datos del comercio eliminados' }, 200)
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e?.message || 'Error interno' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return jsonResponse({ error: (e as Error)?.message || 'Error interno' }, 500)
   }
 })
+
+export {}
