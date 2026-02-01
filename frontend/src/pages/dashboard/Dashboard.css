@@ -394,6 +394,7 @@
 }
 
 .chart-line-horarios-svg-wrap {
+  position: relative;
   width: 100%;
   max-width: 800px;
   margin: 0 auto 1rem;
@@ -409,11 +410,45 @@
   cursor: pointer;
 }
 
-.chart-line-horarios-svg .chart-line-horarios-x-label {
-  font-size: 10px;
+.chart-line-horarios-svg .chart-vertical-x-label {
   fill: var(--text-secondary);
 }
 
+/* Overlay para tooltips al hover (mismo formato que Ventas-Compras) */
+.chart-line-horarios-points-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.chart-line-horarios-point-hit {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  margin-top: -14px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.chart-line-horarios-point-hit .chart-vertical-bar-tooltip {
+  bottom: 100%;
+  left: 50%;
+  top: auto;
+  transform: translateX(-50%) translateY(0);
+  margin-bottom: 0.35rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chart-line-horarios-point-hit:hover .chart-vertical-bar-tooltip {
+  opacity: 1;
+}
+
+/* Leyenda con mismo formato que Ventas-Compras (tooltip-style) */
 .chart-line-horarios-legend {
   list-style: none;
   margin: 0;
@@ -421,28 +456,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1.5rem;
-  font-size: var(--font-size-small);
 }
 
 .chart-line-horarios-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: block;
 }
 
-.chart-line-horarios-legend-hour {
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  min-width: 3rem;
-}
-
-.chart-line-horarios-legend-total {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-}
-
-.chart-line-horarios-legend-cantidad {
-  color: var(--text-secondary);
+.chart-line-horarios-legend-tooltip {
+  position: static;
+  opacity: 1;
+  display: inline-block;
+  transform: none;
+  margin: 0;
+  white-space: normal;
 }
 
 .chart-line-horarios-empty {

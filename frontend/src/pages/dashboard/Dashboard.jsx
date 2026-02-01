@@ -1451,7 +1451,7 @@ function Dashboard() {
               ) : (
                 <div className="chart-line-horarios-wrap">
                   <p className="chart-line-horarios-desc">
-                    Ventas por hora (0–23 hs) en el rango {fechaDesdeHorarios} — {fechaHastaHorarios}. Cada punto: $ Total y cantidad de operaciones.
+                    Ventas por hora (0–23 hs) en el rango {fechaDesdeHorarios} — {fechaHastaHorarios}.
                   </p>
                   <div className="chart-line-horarios-svg-wrap">
                     {(() => {
@@ -1470,49 +1470,49 @@ function Dashboard() {
                       const pointsLine = data.map((d) => `${x(d.hour)},${y(d.total || 0)}`).join(' ')
                       const pointsPoly = `${padLeft},${padTop + chartH} ${pointsLine} ${padLeft + chartW},${padTop + chartH}`
                       return (
-                        <svg className="chart-line-horarios-svg" viewBox={`0 0 ${w} ${h}`} aria-hidden>
-                          <defs>
-                            <linearGradient id="chart-line-horarios-gradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          {/* Área bajo la línea */}
-                          <polygon
-                            fill="url(#chart-line-horarios-gradient)"
-                            points={pointsPoly}
-                          />
-                          {/* Línea */}
-                          <polyline
-                            fill="none"
-                            stroke="var(--color-primary)"
-                            strokeWidth="2"
-                            points={pointsLine}
-                          />
-                          {/* Puntos y etiquetas hora */}
-                          {data.map((d) => (
-                            <g key={d.hour}>
-                              <circle
-                                cx={x(d.hour)}
-                                cy={y(d.total || 0)}
-                                r="4"
-                                fill="var(--color-primary)"
-                                className="chart-line-horarios-point"
-                              />
-                              <text
-                                x={x(d.hour)}
-                                y={h - 8}
-                                textAnchor="middle"
-                                className="chart-line-horarios-x-label"
+                        <>
+                          <svg className="chart-line-horarios-svg" viewBox={`0 0 ${w} ${h}`} aria-hidden>
+                            <defs>
+                              <linearGradient id="chart-line-horarios-gradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            <polygon fill="url(#chart-line-horarios-gradient)" points={pointsPoly} />
+                            <polyline fill="none" stroke="var(--color-primary)" strokeWidth="2" points={pointsLine} />
+                            {data.map((d) => (
+                              <g key={d.hour}>
+                                <circle cx={x(d.hour)} cy={y(d.total || 0)} r="4" fill="var(--color-primary)" className="chart-line-horarios-point" />
+                                <text x={x(d.hour)} y={h - 8} textAnchor="middle" className="chart-vertical-x-label">
+                                  {d.hour} hs
+                                </text>
+                              </g>
+                            ))}
+                          </svg>
+                          <div className="chart-line-horarios-points-overlay">
+                            {data.map((d) => (
+                              <div
+                                key={d.hour}
+                                className="chart-line-horarios-point-hit"
+                                style={{
+                                  left: `${(x(d.hour) / w) * 100}%`,
+                                  top: `${(y(d.total || 0) / h) * 100}%`
+                                }}
+                                role="img"
+                                aria-label={`${d.label}: ${formatearMoneda(d.total)}, ${d.cantidad || 0} operaciones`}
                               >
-                                {d.hour} hs
-                              </text>
-                              <title>
-                                {d.label}: {formatearMoneda(d.total)} — {d.cantidad || 0} operaciones
-                              </title>
-                            </g>
-                          ))}
-                        </svg>
+                                <div className="chart-vertical-bar-tooltip" role="tooltip">
+                                  <span className="chart-vertical-bar-tooltip-title">{d.label}</span>
+                                  <span className="chart-vertical-bar-tooltip-line">
+                                    Fecha desde-hasta: {fechaDesdeHorarios} — {fechaHastaHorarios}
+                                  </span>
+                                  <span className="chart-vertical-bar-tooltip-line">$ Total: {formatearMoneda(d.total)}</span>
+                                  <span className="chart-vertical-bar-tooltip-line">Cantidad operaciones: {d.cantidad || 0}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
                       )
                     })()}
                   </div>
@@ -1521,9 +1521,14 @@ function Dashboard() {
                       .filter((d) => (d.total || 0) > 0)
                       .map((d) => (
                         <li key={d.hour} className="chart-line-horarios-legend-item">
-                          <span className="chart-line-horarios-legend-hour">{d.label}</span>
-                          <span className="chart-line-horarios-legend-total">{formatearMoneda(d.total)}</span>
-                          <span className="chart-line-horarios-legend-cantidad">{d.cantidad || 0} operaciones</span>
+                          <div className="chart-vertical-bar-tooltip chart-line-horarios-legend-tooltip">
+                            <span className="chart-vertical-bar-tooltip-title">{d.label}</span>
+                            <span className="chart-vertical-bar-tooltip-line">
+                              Fecha desde-hasta: {fechaDesdeHorarios} — {fechaHastaHorarios}
+                            </span>
+                            <span className="chart-vertical-bar-tooltip-line">$ Total: {formatearMoneda(d.total)}</span>
+                            <span className="chart-vertical-bar-tooltip-line">Cantidad operaciones: {d.cantidad || 0}</span>
+                          </div>
                         </li>
                       ))}
                   </ul>
