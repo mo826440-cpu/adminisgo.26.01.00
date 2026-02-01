@@ -1,10 +1,12 @@
 // Página de Configuración
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Button, Input, Alert, Spinner, Modal } from '../../components/common'
+import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
 import { getComercio, updateComercio } from '../../services/comercio'
 import { getUsuario, updateUsuario } from '../../services/usuarios'
 import { updatePassword } from '../../services/auth'
+import { getEstadoSuscripcion } from '../../services/planes'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import './Configuracion.css'
@@ -50,6 +52,11 @@ function Configuracion() {
     return localStorage.getItem('formatoImpresion') || 'pos80'
   })
 
+  // Estado de suscripción (Tu plan actual)
+  const [suscripcion, setSuscripcion] = useState(null)
+  const [loadingSuscripcion, setLoadingSuscripcion] = useState(true)
+  const navigate = useNavigate()
+
   useEffect(() => {
     loadData()
     // Aplicar tema al cargar usando data-theme attribute
@@ -59,6 +66,33 @@ function Configuracion() {
       document.documentElement.removeAttribute('data-theme')
     }
   }, [tema])
+
+  // Cargar estado de suscripción
+  useEffect(() => {
+    const cargarSuscripcion = async () => {
+      if (!user) return
+      setLoadingSuscripcion(true)
+      try {
+        const { data, error } = await getEstadoSuscripcion()
+        if (error) console.error('Error al obtener suscripción:', error)
+        else setSuscripcion(data)
+      } catch (err) {
+        console.error('Error al cargar suscripción:', err)
+      } finally {
+        setLoadingSuscripcion(false)
+      }
+    }
+    if (user) cargarSuscripcion()
+  }, [user])
+
+  const getNombrePlan = (tipo) => {
+    const nombres = { gratis: 'Plan Gratuito', pago: 'Plan Pago', basico: 'Plan Pago', personalizado: 'Plan Personalizado' }
+    return nombres[tipo] || tipo || 'Sin plan'
+  }
+  const getColorPlan = (tipo) => {
+    const colores = { gratis: 'info', pago: 'primary', basico: 'primary', personalizado: 'warning' }
+    return colores[tipo] || 'secondary'
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -258,6 +292,60 @@ function Configuracion() {
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}
           </Alert>
+        )}
+
+        {/* Tu Plan Actual */}
+        {!loadingSuscripcion && suscripcion?.plan && (
+          <Card title="Tu Plan Actual" className="config-section">
+            <div style={{ marginBottom: '1rem' }}>
+              <Badge variant={getColorPlan(suscripcion.plan.tipo)} style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
+                {getNombrePlan(suscripcion.plan.tipo)}
+              </Badge>
+            </div>
+            {suscripcion.plan.tipo === 'gratis' && (
+              <div style={{ marginBottom: '1rem' }}>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate('/configuracion/cambiar-plan')}
+                  fullWidth
+                >
+                  ⬆️ Actualizar a Plan Pago
+                </Button>
+              </div>
+            )}
+            {suscripcion.ventas && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong>Ventas este mes:</strong> {suscripcion.ventas.actuales}
+                {!suscripcion.ventas.ilimitado && suscripcion.ventas.limite && (
+                  <span className="text-secondary"> / {suscripcion.ventas.limite}</span>
+                )}
+                {suscripcion.ventas.ilimitado && (
+                  <Badge variant="success" style={{ marginLeft: '0.5rem' }}>Ilimitadas</Badge>
+                )}
+              </div>
+            )}
+            {suscripcion.usuarios && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong>Usuarios:</strong> {suscripcion.usuarios.actuales}
+                {!suscripcion.usuarios.ilimitado && suscripcion.usuarios.limite && (
+                  <span className="text-secondary"> / {suscripcion.usuarios.limite}</span>
+                )}
+                {suscripcion.usuarios.ilimitado && (
+                  <Badge variant="success" style={{ marginLeft: '0.5rem' }}>Ilimitados</Badge>
+                )}
+              </div>
+            )}
+            {suscripcion.periodo_gratis?.activo && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>⏰ <strong>Período gratis activo</strong></p>
+                {suscripcion.periodo_gratis.dias_restantes !== null && (
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {suscripcion.periodo_gratis.dias_restantes} días restantes
+                  </p>
+                )}
+              </div>
+            )}
+          </Card>
         )}
 
         {/* Información del Comercio */}
