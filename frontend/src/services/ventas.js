@@ -213,7 +213,7 @@ export const getResumenVentasDelDia = async () => {
 }
 
 /**
- * Ventas de los últimos N días (para gráfico por día) - solo id, total, fecha_hora
+ * Ventas de los últimos N días (para gráfico por día) - id, total, fecha_hora y unidades por venta
  */
 export const getVentasUltimosDias = async (dias = 7) => {
   try {
@@ -223,15 +223,63 @@ export const getVentasUltimosDias = async (dias = 7) => {
     desde.setHours(0, 0, 0, 0)
     const { data, error } = await supabase
       .from('ventas')
-      .select('id, total, fecha_hora')
+      .select(`
+        id,
+        total,
+        fecha_hora,
+        venta_items(cantidad)
+      `)
       .is('deleted_at', null)
       .gte('fecha_hora', desde.toISOString())
       .order('fecha_hora', { ascending: true })
 
     if (error) throw error
-    return { data: data || [], error: null }
+
+    const ventasConUnidades = (data || []).map(venta => {
+      const unidades = (venta.venta_items || []).reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
+      return { ...venta, unidades_totales: unidades }
+    })
+
+    return { data: ventasConUnidades, error: null }
   } catch (error) {
     console.error('Error al obtener ventas últimos días:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Ventas en un rango de fechas (para gráfico) - con unidades por venta
+ * desde/hasta: objetos Date (se usan inicio del día y fin del día)
+ */
+export const getVentasPorRangoFechas = async (desde, hasta) => {
+  try {
+    const inicio = new Date(desde)
+    inicio.setHours(0, 0, 0, 0)
+    const fin = new Date(hasta)
+    fin.setHours(23, 59, 59, 999)
+    const { data, error } = await supabase
+      .from('ventas')
+      .select(`
+        id,
+        total,
+        fecha_hora,
+        venta_items(cantidad)
+      `)
+      .is('deleted_at', null)
+      .gte('fecha_hora', inicio.toISOString())
+      .lte('fecha_hora', fin.toISOString())
+      .order('fecha_hora', { ascending: true })
+
+    if (error) throw error
+
+    const ventasConUnidades = (data || []).map(venta => {
+      const unidades = (venta.venta_items || []).reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
+      return { ...venta, unidades_totales: unidades }
+    })
+
+    return { data: ventasConUnidades, error: null }
+  } catch (error) {
+    console.error('Error al obtener ventas por rango:', error)
     return { data: null, error }
   }
 }

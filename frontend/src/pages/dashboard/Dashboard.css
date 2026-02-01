@@ -64,46 +64,167 @@
   color: var(--text-secondary);
 }
 
-/* Gráfico de barras - últimos 7 días */
+/* Gráfico de barras horizontales */
 .dashboard-chart-card {
   margin-bottom: 2rem;
 }
 
-.dashboard-chart {
+/* Panel de configuración del gráfico */
+.chart-config {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.chart-config-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
-  min-height: 180px;
+}
+
+.chart-config-label {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  min-width: 8rem;
+}
+
+.chart-config-input,
+.chart-config-date {
+  max-width: 12rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-small);
+}
+
+.chart-config-fechas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.chart-config-fechas .chart-config-label {
+  min-width: auto;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Contenedor del gráfico horizontal */
+.chart-horizontal-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 1rem 0;
 }
 
-.dashboard-chart-bar-wrap {
-  flex: 1;
+.chart-horizontal-y-label {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.chart-horizontal-content {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: var(--bg-primary);
+}
+
+.chart-horizontal-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 120px;
+}
+
+.chart-horizontal-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
   align-items: center;
-  min-width: 0;
+  gap: 0.75rem;
 }
 
-.dashboard-chart-bar {
+.chart-horizontal-date {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chart-horizontal-bar-cell {
+  position: relative;
   width: 100%;
-  max-width: 48px;
-  min-height: 4px;
-  background: var(--color-primary);
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  transition: height 0.3s ease;
+  height: 2rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: visible;
 }
 
-.dashboard-chart-label {
+.chart-horizontal-bar {
+  height: 100%;
+  min-width: 4px;
+  max-width: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-right: 0.5rem;
+  box-sizing: border-box;
+}
+
+.chart-horizontal-bar-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-light);
+  text-shadow: 0 0 1px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+
+.chart-horizontal-bar-label-unidades {
+  opacity: 0.95;
+}
+
+.chart-horizontal-x-axis {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.chart-horizontal-x-label {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  min-width: 3rem;
+}
+
+.chart-horizontal-x-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  flex: 1;
+}
+
+.chart-horizontal-x-tick {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  margin-top: 0.5rem;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 .dashboard-grid {

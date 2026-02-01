@@ -15,17 +15,11 @@ function Navbar({ onToggleSidebar }) {
       if (error) {
         console.error('Error al cerrar sesión:', error)
       }
-      // Solo PWA instalada: standalone o iOS standalone. Navegador normal → landing.
-      const isPWA =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (typeof window.navigator.standalone === 'boolean' && window.navigator.standalone)
-      navigate(isPWA ? '/auth/login' : '/', { replace: true })
+      // Siempre redirigir a la landing; desde ahí el usuario puede iniciar sesión de nuevo.
+      navigate('/', { replace: true })
     } catch (error) {
       console.error('Error al cerrar sesión:', error)
-      const isPWA =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (typeof window.navigator.standalone === 'boolean' && window.navigator.standalone)
-      navigate(isPWA ? '/auth/login' : '/', { replace: true })
+      navigate('/', { replace: true })
     }
   }
 
