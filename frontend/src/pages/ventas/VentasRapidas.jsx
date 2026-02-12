@@ -289,11 +289,16 @@ function VentasRapidas() {
       return
     }
 
-    // Limpiar formulario
+    // Limpiar formulario (incluir estados de edición para que al enviar con Enter también se limpien los campos)
     setClienteSeleccionado(null)
     setClienteSearch('')
-    setTotal('0,00')
-    setMontoPagado('0,00')
+    setTotal('0')
+    setTotalEditando(false)
+    setTotalValorRaw('')
+    setMontoPagado('0')
+    setMontoPagadoEditando(false)
+    setMontoPagadoValorRaw('')
+    setMontoPagadoManual(false)
     setMetodoPago('efectivo')
     setObservaciones('')
     
