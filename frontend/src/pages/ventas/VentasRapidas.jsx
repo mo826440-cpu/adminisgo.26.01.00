@@ -26,6 +26,8 @@ function VentasRapidas() {
   const [aperturaVirtual, setAperturaVirtual] = useState('0')
   const [aperturaCredito, setAperturaCredito] = useState('0')
   const [aperturaOtros, setAperturaOtros] = useState('0')
+  const [aperturaEditandoCampo, setAperturaEditandoCampo] = useState(null) // 'efectivo' | 'virtual' | 'credito' | 'otros'
+  const [aperturaValorRaw, setAperturaValorRaw] = useState('')
   const [showVerMasApertura, setShowVerMasApertura] = useState(false)
   const [observacionesApertura, setObservacionesApertura] = useState('')
   const [observacionesCierre, setObservacionesCierre] = useState('')
@@ -183,10 +185,14 @@ function VentasRapidas() {
 
   // Abrir caja con desglose efectivo / virtual / crédito / otros
   const handleAbrirCaja = async () => {
-    const efectivo = parseFloat(parsearMoneda(aperturaEfectivo) || 0)
-    const virtual = parseFloat(parsearMoneda(aperturaVirtual) || 0)
-    const credito = parseFloat(parsearMoneda(aperturaCredito) || 0)
-    const otros = parseFloat(parsearMoneda(aperturaOtros) || 0)
+    const efectivoStr = aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : aperturaEfectivo
+    const virtualStr = aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : aperturaVirtual
+    const creditoStr = aperturaEditandoCampo === 'credito' ? aperturaValorRaw : aperturaCredito
+    const otrosStr = aperturaEditandoCampo === 'otros' ? aperturaValorRaw : aperturaOtros
+    const efectivo = parseFloat(parsearMoneda(efectivoStr) || 0)
+    const virtual = parseFloat(parsearMoneda(virtualStr) || 0)
+    const credito = parseFloat(parsearMoneda(creditoStr) || 0)
+    const otros = parseFloat(parsearMoneda(otrosStr) || 0)
     if (efectivo < 0 || virtual < 0 || credito < 0 || otros < 0) {
       setError('Ningún importe puede ser negativo')
       return
@@ -214,6 +220,8 @@ function VentasRapidas() {
     setAperturaVirtual('0')
     setAperturaCredito('0')
     setAperturaOtros('0')
+    setAperturaEditandoCampo(null)
+    setAperturaValorRaw('')
     setShowVerMasApertura(false)
     setObservacionesApertura('')
     await loadEstadoCaja()
@@ -773,6 +781,8 @@ function VentasRapidas() {
             setAperturaVirtual('0')
             setAperturaCredito('0')
             setAperturaOtros('0')
+            setAperturaEditandoCampo(null)
+            setAperturaValorRaw('')
             setShowVerMasApertura(false)
             setObservacionesApertura('')
           }}
@@ -787,6 +797,8 @@ function VentasRapidas() {
                   setAperturaVirtual('0')
                   setAperturaCredito('0')
                   setAperturaOtros('0')
+                  setAperturaEditandoCampo(null)
+                  setAperturaValorRaw('')
                   setShowVerMasApertura(false)
                   setObservacionesApertura('')
                 }}
@@ -833,16 +845,22 @@ function VentasRapidas() {
               <input
                 type="text"
                 className="form-control"
-                value={aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo)}
+                value={aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : (aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo))}
+                onFocus={() => {
+                  setAperturaEditandoCampo('efectivo')
+                  setAperturaValorRaw(aperturaEfectivo === '0' ? '' : aperturaEfectivo)
+                }}
                 onChange={(e) => {
                   const valor = e.target.value
                   if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                    setAperturaEfectivo(valor === '' ? '0' : parsearMoneda(valor))
+                    setAperturaValorRaw(valor)
                   }
                 }}
-                onBlur={(e) => {
-                  const v = e.target.value
-                  setAperturaEfectivo(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                onBlur={() => {
+                  const v = parsearMoneda(aperturaValorRaw) || '0'
+                  setAperturaEfectivo(v)
+                  setAperturaEditandoCampo(null)
+                  setAperturaValorRaw('')
                 }}
                 placeholder="$0,00"
                 autoFocus
@@ -855,16 +873,22 @@ function VentasRapidas() {
               <input
                 type="text"
                 className="form-control"
-                value={aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual)}
+                value={aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : (aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual))}
+                onFocus={() => {
+                  setAperturaEditandoCampo('virtual')
+                  setAperturaValorRaw(aperturaVirtual === '0' ? '' : aperturaVirtual)
+                }}
                 onChange={(e) => {
                   const valor = e.target.value
                   if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                    setAperturaVirtual(valor === '' ? '0' : parsearMoneda(valor))
+                    setAperturaValorRaw(valor)
                   }
                 }}
-                onBlur={(e) => {
-                  const v = e.target.value
-                  setAperturaVirtual(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                onBlur={() => {
+                  const v = parsearMoneda(aperturaValorRaw) || '0'
+                  setAperturaVirtual(v)
+                  setAperturaEditandoCampo(null)
+                  setAperturaValorRaw('')
                 }}
                 placeholder="$0,00"
               />
@@ -888,16 +912,22 @@ function VentasRapidas() {
                   <input
                     type="text"
                     className="form-control"
-                    value={aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito)}
+                    value={aperturaEditandoCampo === 'credito' ? aperturaValorRaw : (aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito))}
+                    onFocus={() => {
+                      setAperturaEditandoCampo('credito')
+                      setAperturaValorRaw(aperturaCredito === '0' ? '' : aperturaCredito)
+                    }}
                     onChange={(e) => {
                       const valor = e.target.value
                       if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                        setAperturaCredito(valor === '' ? '0' : parsearMoneda(valor))
+                        setAperturaValorRaw(valor)
                       }
                     }}
-                    onBlur={(e) => {
-                      const v = e.target.value
-                      setAperturaCredito(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                    onBlur={() => {
+                      const v = parsearMoneda(aperturaValorRaw) || '0'
+                      setAperturaCredito(v)
+                      setAperturaEditandoCampo(null)
+                      setAperturaValorRaw('')
                     }}
                     placeholder="$0,00"
                   />
@@ -909,16 +939,22 @@ function VentasRapidas() {
                   <input
                     type="text"
                     className="form-control"
-                    value={aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros)}
+                    value={aperturaEditandoCampo === 'otros' ? aperturaValorRaw : (aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros))}
+                    onFocus={() => {
+                      setAperturaEditandoCampo('otros')
+                      setAperturaValorRaw(aperturaOtros === '0' ? '' : aperturaOtros)
+                    }}
                     onChange={(e) => {
                       const valor = e.target.value
                       if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                        setAperturaOtros(valor === '' ? '0' : parsearMoneda(valor))
+                        setAperturaValorRaw(valor)
                       }
                     }}
-                    onBlur={(e) => {
-                      const v = e.target.value
-                      setAperturaOtros(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                    onBlur={() => {
+                      const v = parsearMoneda(aperturaValorRaw) || '0'
+                      setAperturaOtros(v)
+                      setAperturaEditandoCampo(null)
+                      setAperturaValorRaw('')
                     }}
                     placeholder="$0,00"
                   />
