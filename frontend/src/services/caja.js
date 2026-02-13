@@ -1,22 +1,54 @@
 // Servicio para gestión de caja
 import { supabase } from './supabase'
 
+/** Método de pago → categoría de caja: efectivo | virtual | credito | otros */
+const metodoPagoToCategoria = (metodo) => {
+  const m = (metodo || '').toLowerCase()
+  if (m === 'efectivo') return 'efectivo'
+  if (['qr', 'transferencia', 'debito'].includes(m)) return 'virtual'
+  if (m === 'credito') return 'credito'
+  return 'otros'
+}
+
+/** Sumar ventas por categoría */
+const sumarVentasPorCategoria = (ventas) => {
+  const desglose = { efectivo: 0, virtual: 0, credito: 0, otros: 0 }
+  ;(ventas || []).forEach((v) => {
+    const cat = metodoPagoToCategoria(v.metodo_pago)
+    desglose[cat] += parseFloat(v.monto_pagado || 0)
+  })
+  return desglose
+}
+
 /**
- * Abrir caja
+ * Abrir caja con desglose por método de pago.
+ * @param {Object} desglose - { efectivo, virtual, credito, otros } (números; credito/otros opcionales, default 0)
+ * @param {string} observaciones - opcional
  */
-export const abrirCaja = async (importe, observaciones = null) => {
+export const abrirCaja = async (desglose, observaciones = null) => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       throw new Error('Usuario no autenticado')
     }
 
+    const efectivo = parseFloat(desglose?.efectivo ?? desglose) || 0
+    const virtual = parseFloat(desglose?.virtual) || 0
+    const credito = parseFloat(desglose?.credito) || 0
+    const otros = parseFloat(desglose?.otros) || 0
+    // Compatibilidad: si se pasó un número solo (antiguo), usarlo como efectivo
+    const importeTotal = typeof desglose === 'number' ? desglose : efectivo + virtual + credito + otros
+
     const { data, error } = await supabase
       .from('historial_cajas')
       .insert([{
         usuario_id: user.id,
         tipo_operacion: 'apertura',
-        importe: parseFloat(importe) || 0,
+        importe: importeTotal,
+        importe_efectivo: efectivo,
+        importe_virtual: virtual,
+        importe_credito: credito,
+        importe_otros: otros,
         observaciones: observaciones?.trim() || null
       }])
       .select()
@@ -33,7 +65,7 @@ export const abrirCaja = async (importe, observaciones = null) => {
 
 /**
  * Cerrar caja
- * Calcula ingresos y egresos desde el último inicio de caja
+ * Calcula desglose por método desde la última apertura y registra cierre con importes por categoría.
  */
 export const cerrarCaja = async (observaciones = null) => {
   try {
@@ -42,7 +74,6 @@ export const cerrarCaja = async (observaciones = null) => {
       throw new Error('Usuario no autenticado')
     }
 
-    // Obtener la última apertura de caja
     const { data: ultimaApertura, error: errorApertura } = await supabase
       .from('historial_cajas')
       .select('*')
@@ -55,32 +86,37 @@ export const cerrarCaja = async (observaciones = null) => {
       throw errorApertura
     }
 
-    // Calcular ingresos desde la última apertura
-    // Sumar todas las ventas rápidas desde la última apertura
     const fechaDesde = ultimaApertura?.fecha_hora || new Date(0).toISOString()
-    
     const { data: ventasRapidas, error: errorVentas } = await supabase
       .from('ventas_rapidas')
-      .select('total, monto_pagado')
+      .select('monto_pagado, metodo_pago')
       .gte('fecha_hora', fechaDesde)
       .eq('estado', 'PAGADO')
 
     if (errorVentas) throw errorVentas
 
-    // Calcular total de ingresos
-    const ingresos = (ventasRapidas || []).reduce((sum, v) => sum + parseFloat(v.monto_pagado || 0), 0)
-    
-    // El importe del cierre es: importe inicial + ingresos
-    const importeInicial = parseFloat(ultimaApertura?.importe || 0)
-    const importeCierre = importeInicial + ingresos
+    const ventasPorCategoria = sumarVentasPorCategoria(ventasRapidas || [])
+    const aperturaEfectivo = parseFloat(ultimaApertura?.importe_efectivo ?? ultimaApertura?.importe ?? 0)
+    const aperturaVirtual = parseFloat(ultimaApertura?.importe_virtual ?? 0)
+    const aperturaCredito = parseFloat(ultimaApertura?.importe_credito ?? 0)
+    const aperturaOtros = parseFloat(ultimaApertura?.importe_otros ?? 0)
 
-    // Registrar el cierre
+    const importeEfectivo = aperturaEfectivo + ventasPorCategoria.efectivo
+    const importeVirtual = aperturaVirtual + ventasPorCategoria.virtual
+    const importeCredito = aperturaCredito + ventasPorCategoria.credito
+    const importeOtros = aperturaOtros + ventasPorCategoria.otros
+    const importeCierre = importeEfectivo + importeVirtual + importeCredito + importeOtros
+
     const { data, error } = await supabase
       .from('historial_cajas')
       .insert([{
         usuario_id: user.id,
         tipo_operacion: 'cierre',
         importe: importeCierre,
+        importe_efectivo: importeEfectivo,
+        importe_virtual: importeVirtual,
+        importe_credito: importeCredito,
+        importe_otros: importeOtros,
         observaciones: observaciones?.trim() || null
       }])
       .select()
@@ -96,8 +132,7 @@ export const cerrarCaja = async (observaciones = null) => {
 }
 
 /**
- * Obtener estado actual de la caja
- * Retorna la última apertura y el estado actual calculado
+ * Obtener estado actual de la caja con desglose por método (efectivo, virtual, crédito, otros).
  */
 export const obtenerEstadoCaja = async () => {
   try {
@@ -106,7 +141,6 @@ export const obtenerEstadoCaja = async () => {
       throw new Error('Usuario no autenticado')
     }
 
-    // Obtener la última apertura
     const { data: ultimaApertura, error: errorApertura } = await supabase
       .from('historial_cajas')
       .select(`
@@ -120,7 +154,6 @@ export const obtenerEstadoCaja = async () => {
 
     if (errorApertura) throw errorApertura
 
-    // Si no hay apertura, retornar estado vacío
     if (!ultimaApertura) {
       return {
         data: {
@@ -132,7 +165,6 @@ export const obtenerEstadoCaja = async () => {
       }
     }
 
-    // Verificar si hay un cierre después de esta apertura
     const { data: ultimoCierre, error: errorCierre } = await supabase
       .from('historial_cajas')
       .select('*')
@@ -144,41 +176,60 @@ export const obtenerEstadoCaja = async () => {
 
     if (errorCierre) throw errorCierre
 
-    // Si hay un cierre después de la apertura, la caja está cerrada
     if (ultimoCierre) {
       return {
         data: {
           cajaAbierta: false,
-          inicioCaja: null, // No mostrar inicio de caja cuando está cerrada
+          inicioCaja: null,
           estadoActual: null
         },
         error: null
       }
     }
 
-    // Calcular estado actual (importe inicial + ingresos desde apertura)
     const fechaDesde = ultimaApertura.fecha_hora
-    
     const { data: ventasRapidas, error: errorVentas } = await supabase
       .from('ventas_rapidas')
-      .select('monto_pagado')
+      .select('monto_pagado, metodo_pago')
       .gte('fecha_hora', fechaDesde)
       .eq('estado', 'PAGADO')
 
     if (errorVentas) throw errorVentas
 
-    const ingresos = (ventasRapidas || []).reduce((sum, v) => sum + parseFloat(v.monto_pagado || 0), 0)
-    const importeInicial = parseFloat(ultimaApertura.importe || 0)
-    const estadoActual = importeInicial + ingresos
+    const ventasPorCategoria = sumarVentasPorCategoria(ventasRapidas || [])
+    const aperturaEfectivo = parseFloat(ultimaApertura.importe_efectivo ?? ultimaApertura.importe ?? 0)
+    const aperturaVirtual = parseFloat(ultimaApertura.importe_virtual ?? 0)
+    const aperturaCredito = parseFloat(ultimaApertura.importe_credito ?? 0)
+    const aperturaOtros = parseFloat(ultimaApertura.importe_otros ?? 0)
+
+    const desgloseActual = {
+      efectivo: aperturaEfectivo + ventasPorCategoria.efectivo,
+      virtual: aperturaVirtual + ventasPorCategoria.virtual,
+      credito: aperturaCredito + ventasPorCategoria.credito,
+      otros: aperturaOtros + ventasPorCategoria.otros
+    }
+    const importeTotal = desgloseActual.efectivo + desgloseActual.virtual + desgloseActual.credito + desgloseActual.otros
+
+    const desgloseInicio = {
+      efectivo: aperturaEfectivo,
+      virtual: aperturaVirtual,
+      credito: aperturaCredito,
+      otros: aperturaOtros
+    }
 
     return {
       data: {
         cajaAbierta: true,
-        inicioCaja: ultimaApertura,
+        inicioCaja: {
+          ...ultimaApertura,
+          desglose: desgloseInicio,
+          importe: aperturaEfectivo + aperturaVirtual + aperturaCredito + aperturaOtros
+        },
         estadoActual: {
-          importe: estadoActual,
+          importe: importeTotal,
+          desglose: desgloseActual,
           usuario: ultimaApertura.usuarios,
-          fecha_hora: new Date().toISOString() // Fecha actual para el indicador
+          fecha_hora: new Date().toISOString()
         }
       },
       error: null

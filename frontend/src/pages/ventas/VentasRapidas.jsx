@@ -22,12 +22,15 @@ function VentasRapidas() {
   const [loadingCaja, setLoadingCaja] = useState(true)
   const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false)
   const [showCerrarCajaModal, setShowCerrarCajaModal] = useState(false)
-  const [importeApertura, setImporteApertura] = useState('0')
-  const [importeAperturaEditando, setImporteAperturaEditando] = useState(false)
-  const [importeAperturaValorRaw, setImporteAperturaValorRaw] = useState('')
+  const [aperturaEfectivo, setAperturaEfectivo] = useState('0')
+  const [aperturaVirtual, setAperturaVirtual] = useState('0')
+  const [aperturaCredito, setAperturaCredito] = useState('0')
+  const [aperturaOtros, setAperturaOtros] = useState('0')
+  const [showVerMasApertura, setShowVerMasApertura] = useState(false)
   const [observacionesApertura, setObservacionesApertura] = useState('')
   const [observacionesCierre, setObservacionesCierre] = useState('')
   const [procesandoCaja, setProcesandoCaja] = useState(false)
+  const [showMasCaja, setShowMasCaja] = useState(false) // Ver crédito y otros en indicadores
 
   // Estados del formulario de venta
   const [clientes, setClientes] = useState([])
@@ -178,17 +181,27 @@ function VentasRapidas() {
     }
   }, [total, montoPagadoManual, montoPagadoEditando])
 
-  // Abrir caja
+  // Abrir caja con desglose efectivo / virtual / crédito / otros
   const handleAbrirCaja = async () => {
-    const importe = parseFloat(parsearMoneda(importeApertura) || 0)
-    if (importe < 0) {
-      setError('El importe no puede ser negativo')
+    const efectivo = parseFloat(parsearMoneda(aperturaEfectivo) || 0)
+    const virtual = parseFloat(parsearMoneda(aperturaVirtual) || 0)
+    const credito = parseFloat(parsearMoneda(aperturaCredito) || 0)
+    const otros = parseFloat(parsearMoneda(aperturaOtros) || 0)
+    if (efectivo < 0 || virtual < 0 || credito < 0 || otros < 0) {
+      setError('Ningún importe puede ser negativo')
+      return
+    }
+    if (efectivo === 0 && virtual === 0 && credito === 0 && otros === 0) {
+      setError('Ingresá al menos un importe (efectivo y/o virtual)')
       return
     }
 
     setProcesandoCaja(true)
     setError(null)
-    const { error: err } = await abrirCaja(importe, observacionesApertura)
+    const { error: err } = await abrirCaja(
+      { efectivo, virtual, credito, otros },
+      observacionesApertura
+    )
     
     if (err) {
       setError(err.message || 'Error al abrir caja')
@@ -197,7 +210,11 @@ function VentasRapidas() {
     }
 
     setShowAbrirCajaModal(false)
-    setImporteApertura('0')
+    setAperturaEfectivo('0')
+    setAperturaVirtual('0')
+    setAperturaCredito('0')
+    setAperturaOtros('0')
+    setShowVerMasApertura(false)
     setObservacionesApertura('')
     await loadEstadoCaja()
     setProcesandoCaja(false)
@@ -379,11 +396,19 @@ function VentasRapidas() {
             </div>
 
             <div className="caja-indicators">
-              <div className="caja-indicator">
+              <div className="caja-indicator caja-indicator-inicio">
                 <h3>Inicio de Caja</h3>
                 {estadoCaja?.inicioCaja ? (
                   <>
                     <div className="indicator-value">{formatearMoneda(estadoCaja.inicioCaja.importe)}</div>
+                    {estadoCaja.inicioCaja.desglose && (
+                      <div className="indicator-desglose">
+                        Efectivo {formatearMoneda(estadoCaja.inicioCaja.desglose.efectivo)} · Virtual {formatearMoneda(estadoCaja.inicioCaja.desglose.virtual)}
+                        {(estadoCaja.inicioCaja.desglose.credito > 0 || estadoCaja.inicioCaja.desglose.otros > 0) && (
+                          <> · Crédito {formatearMoneda(estadoCaja.inicioCaja.desglose.credito)} · Otros {formatearMoneda(estadoCaja.inicioCaja.desglose.otros)}</>
+                        )}
+                      </div>
+                    )}
                     <div className="indicator-info">
                       Usuario: {estadoCaja.inicioCaja.usuarios?.nombre || user?.nombre || '-'}
                     </div>
@@ -396,22 +421,47 @@ function VentasRapidas() {
                 )}
               </div>
 
-              <div className="caja-indicator">
-                <h3>Estado Actual de Caja</h3>
-                {estadoCaja?.estadoActual ? (
-                  <>
-                    <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.importe)}</div>
-                    <div className="indicator-info">
-                      Usuario: {estadoCaja.inicioCaja?.usuarios?.nombre || user?.nombre || '-'}
-                    </div>
-                    <div className="indicator-info">
-                      {formatearFechaHora(estadoCaja.estadoActual.fecha_hora)}
-                    </div>
-                  </>
-                ) : (
-                  <div className="indicator-value">$0,00</div>
-                )}
-              </div>
+              {estadoCaja?.estadoActual?.desglose ? (
+                <>
+                  <div className="caja-indicator">
+                    <h3>Caja efectivo</h3>
+                    <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.efectivo)}</div>
+                  </div>
+                  <div className="caja-indicator">
+                    <h3>Caja virtual</h3>
+                    <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.virtual)}</div>
+                    <div className="indicator-info" style={{ fontSize: '0.75rem' }}>QR, transferencia, débito</div>
+                  </div>
+                  {showMasCaja && (
+                    <>
+                      <div className="caja-indicator">
+                        <h3>Caja crédito</h3>
+                        <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.credito)}</div>
+                      </div>
+                      <div className="caja-indicator">
+                        <h3>Caja otros métodos</h3>
+                        <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.otros)}</div>
+                        <div className="indicator-info" style={{ fontSize: '0.75rem' }}>Cheque, otro</div>
+                      </div>
+                    </>
+                  )}
+                  <div className="caja-indicators-ver-mas">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMasCaja((v) => !v)}
+                    >
+                      {showMasCaja ? 'Ocultar crédito y otros' : 'Ver crédito y otros'}
+                    </Button>
+                  </div>
+                </>
+              ) : estadoCaja?.estadoActual ? (
+                <div className="caja-indicator">
+                  <h3>Estado actual</h3>
+                  <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.importe)}</div>
+                </div>
+              ) : null}
             </div>
           </Card>
         </div>
@@ -719,9 +769,11 @@ function VentasRapidas() {
           isOpen={showAbrirCajaModal}
           onClose={() => {
             setShowAbrirCajaModal(false)
-            setImporteApertura('0')
-            setImporteAperturaEditando(false)
-            setImporteAperturaValorRaw('')
+            setAperturaEfectivo('0')
+            setAperturaVirtual('0')
+            setAperturaCredito('0')
+            setAperturaOtros('0')
+            setShowVerMasApertura(false)
             setObservacionesApertura('')
           }}
           title="Abrir Caja"
@@ -731,9 +783,11 @@ function VentasRapidas() {
                 variant="outline"
                 onClick={() => {
                   setShowAbrirCajaModal(false)
-                  setImporteApertura('0')
-                  setImporteAperturaEditando(false)
-                  setImporteAperturaValorRaw('')
+                  setAperturaEfectivo('0')
+                  setAperturaVirtual('0')
+                  setAperturaCredito('0')
+                  setAperturaOtros('0')
+                  setShowVerMasApertura(false)
                   setObservacionesApertura('')
                 }}
                 disabled={procesandoCaja}
@@ -775,46 +829,103 @@ function VentasRapidas() {
           </div>
           <div className="form-group">
             <label className="form-label">
-              Importe ($)
+              Caja efectivo ($)
               <input
                 type="text"
                 className="form-control"
-                value={importeAperturaEditando ? (importeAperturaValorRaw || '') : formatearNumeroMoneda(importeApertura)}
+                value={aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo)}
                 onChange={(e) => {
                   const valor = e.target.value
-                  // Permitir números, puntos, comas y símbolo $
                   if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                    setImporteAperturaEditando(true)
-                    setImporteAperturaValorRaw(valor)
-                    // Actualizar el estado importeApertura con el valor parseado
-                    const valorParseado = parsearMoneda(valor)
-                    setImporteApertura(valorParseado)
+                    setAperturaEfectivo(valor === '' ? '0' : parsearMoneda(valor))
                   }
-                }}
-                onFocus={(e) => {
-                  setImporteAperturaEditando(true)
-                  // Mostrar el valor sin formato cuando se enfoca
-                  const valorSinFormato = parsearMoneda(e.target.value)
-                  setImporteAperturaValorRaw(valorSinFormato === '0' ? '' : valorSinFormato)
                 }}
                 onBlur={(e) => {
-                  let valor = e.target.value
-                  // Si está vacío o solo tiene $, usar 0
-                  if (!valor || valor.trim() === '' || valor === '$') {
-                    valor = '0'
-                  } else {
-                    valor = parsearMoneda(valor)
-                  }
-                  setImporteApertura(valor)
-                  setImporteAperturaEditando(false)
-                  setImporteAperturaValorRaw('')
+                  const v = e.target.value
+                  setAperturaEfectivo(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
                 }}
                 placeholder="$0,00"
-                required
                 autoFocus
               />
             </label>
           </div>
+          <div className="form-group">
+            <label className="form-label">
+              Caja virtual ($) — QR, transferencia, débito
+              <input
+                type="text"
+                className="form-control"
+                value={aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual)}
+                onChange={(e) => {
+                  const valor = e.target.value
+                  if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                    setAperturaVirtual(valor === '' ? '0' : parsearMoneda(valor))
+                  }
+                }}
+                onBlur={(e) => {
+                  const v = e.target.value
+                  setAperturaVirtual(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                }}
+                placeholder="$0,00"
+              />
+            </label>
+          </div>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowVerMasApertura((v) => !v)}
+            >
+              {showVerMasApertura ? 'Ocultar crédito y otros' : 'Ver crédito y otros'}
+            </Button>
+          </div>
+          {showVerMasApertura && (
+            <>
+              <div className="form-group">
+                <label className="form-label">
+                  Caja crédito ($)
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito)}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                        setAperturaCredito(valor === '' ? '0' : parsearMoneda(valor))
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const v = e.target.value
+                      setAperturaCredito(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                    }}
+                    placeholder="$0,00"
+                  />
+                </label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">
+                  Caja otros métodos ($) — cheque, otro
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros)}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                        setAperturaOtros(valor === '' ? '0' : parsearMoneda(valor))
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const v = e.target.value
+                      setAperturaOtros(!v || v.trim() === '' || v === '$' ? '0' : parsearMoneda(v))
+                    }}
+                    placeholder="$0,00"
+                  />
+                </label>
+              </div>
+            </>
+          )}
           <div className="form-group">
             <label className="form-label">
               Observaciones (opcional)
@@ -861,9 +972,19 @@ function VentasRapidas() {
         >
           <div>
             <p style={{ marginBottom: '0.5rem' }}>¿Estás seguro de que deseas cerrar la caja?</p>
-            <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Se calcularán automáticamente los ingresos y egresos desde el último inicio de caja.
-            </p>
+            {estadoCaja?.estadoActual?.desglose && (
+              <div className="caja-cierre-desglose" style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem 1.5rem', fontSize: '0.95rem' }}>
+                  <div><strong>Caja efectivo:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.efectivo)}</div>
+                  <div><strong>Caja virtual:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.virtual)}</div>
+                  <div><strong>Caja crédito:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.credito)}</div>
+                  <div><strong>Caja otros métodos:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.otros)}</div>
+                </div>
+                <div style={{ marginTop: '0.5rem', fontWeight: 600 }}>
+                  Total: {formatearMoneda(estadoCaja.estadoActual.importe)}
+                </div>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label">
                 Observaciones (opcional)

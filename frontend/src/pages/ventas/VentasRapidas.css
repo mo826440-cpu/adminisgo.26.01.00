@@ -57,6 +57,19 @@
   margin-top: 0.25rem;
 }
 
+.indicator-desglose {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.caja-indicators-ver-mas {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
 .venta-rapida-form {
   margin-top: 1rem;
 }
