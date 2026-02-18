@@ -183,6 +183,12 @@
   padding: 1rem;
 }
 
+.registros-aviso-filtro {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+}
+
 .table.table-sticky-header {
   border-collapse: separate !important; /* necesario para sticky */
   border-spacing: 0 !important; /* sin espacios */

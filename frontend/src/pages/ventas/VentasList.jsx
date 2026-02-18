@@ -33,11 +33,10 @@ function VentasList() {
   }, [showActions])
   
   // Estados de filtros
-  // Por defecto: últimos 90 días (evita que al cambiar de mes no se vean ventas del mes anterior)
+  // Por defecto: desde hace 3 meses hasta el día actual (incluido)
   const getDefaultFechaDesde = () => {
     const ahora = new Date()
-    const desde = new Date(ahora)
-    desde.setDate(desde.getDate() - 90)
+    const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
     return desde.toISOString().split('T')[0]
   }
   const getDefaultFechaHasta = () => {
@@ -387,6 +386,9 @@ function VentasList() {
         <Card className="registros-panel">
           <div className="section-label">SECCIÓN</div>
           <h3>TABLA DE REGISTROS</h3>
+          <p className="registros-aviso-filtro">
+            Por defecto se muestran los registros desde hace 3 meses hasta el día de hoy. Para ver registros anteriores, cambiá los filtros manualmente.
+          </p>
           {paginatedVentas.length === 0 ? (
             <div className="empty-state">
               {ventas.length === 0 ? (
