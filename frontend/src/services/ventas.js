@@ -443,6 +443,9 @@ export const deleteVenta = async (id) => {
 
     if (errorUpdate) throw errorUpdate
 
+    // Si esta venta tiene registro en ventas_rapidas, eliminarlo para que desaparezca también ahí
+    await supabase.from('ventas_rapidas').delete().eq('venta_id', id)
+
     if (items && items.length > 0) {
       for (const item of items) {
         await updateStockByDelta(item.producto_id, parseFloat(item.cantidad || 0))

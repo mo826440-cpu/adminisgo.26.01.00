@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
 import { abrirCaja, cerrarCaja, obtenerEstadoCaja } from '../../services/caja'
-import { createVentaRapida, getVentasRapidas } from '../../services/ventasRapidas'
+import { createVentaRapida, getVentasRapidas, deleteVentaRapida } from '../../services/ventasRapidas'
 import { getClientes } from '../../services/clientes'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
@@ -60,6 +60,9 @@ function VentasRapidas() {
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
   const [usarFiltroAutomatico, setUsarFiltroAutomatico] = useState(true)
+  const [ventaRapidaToDelete, setVentaRapidaToDelete] = useState(null)
+  const [showDeleteVentaRapidaModal, setShowDeleteVentaRapidaModal] = useState(false)
+  const [deletingVentaRapida, setDeletingVentaRapida] = useState(false)
 
   // Formatear moneda
   const formatearMoneda = (valor) => {
@@ -244,6 +247,25 @@ function VentasRapidas() {
     setObservacionesCierre('')
     await loadEstadoCaja()
     setProcesandoCaja(false)
+  }
+
+  // Eliminar venta rápida (también quita el registro de la tabla Ventas)
+  const handleEliminarVentaRapida = async () => {
+    if (!ventaRapidaToDelete) return
+    setDeletingVentaRapida(true)
+    setError(null)
+    const { error: err } = await deleteVentaRapida(ventaRapidaToDelete.id)
+    if (err) {
+      setError(err.message || 'Error al eliminar el registro')
+      setDeletingVentaRapida(false)
+      return
+    }
+    setShowDeleteVentaRapidaModal(false)
+    setVentaRapidaToDelete(null)
+    setSuccessMessage('Registro eliminado. También se quitó de la tabla de Ventas.')
+    await loadVentasRapidas()
+    await loadEstadoCaja()
+    setDeletingVentaRapida(false)
   }
 
   // Aplicar cliente seleccionado
@@ -762,6 +784,17 @@ function VentasRapidas() {
                           >
                             <i className="bi bi-printer" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Eliminar registro"
+                            onClick={() => {
+                              setVentaRapidaToDelete(venta)
+                              setShowDeleteVentaRapidaModal(true)
+                            }}
+                          >
+                            <i className="bi bi-trash" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1034,6 +1067,49 @@ function VentasRapidas() {
               </label>
             </div>
           </div>
+        </Modal>
+
+        {/* Modal confirmar eliminar venta rápida */}
+        <Modal
+          isOpen={showDeleteVentaRapidaModal}
+          onClose={() => {
+            setShowDeleteVentaRapidaModal(false)
+            setVentaRapidaToDelete(null)
+          }}
+          title="Eliminar registro"
+          variant="danger"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteVentaRapidaModal(false)
+                  setVentaRapidaToDelete(null)
+                }}
+                disabled={deletingVentaRapida}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleEliminarVentaRapida}
+                loading={deletingVentaRapida}
+                disabled={deletingVentaRapida}
+              >
+                Eliminar
+              </Button>
+            </>
+          }
+        >
+          <p>¿Eliminar este registro de venta rápida?</p>
+          {ventaRapidaToDelete && (
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+              {formatearFechaHora(ventaRapidaToDelete.fecha_hora)} — {formatearMoneda(ventaRapidaToDelete.total)}
+            </p>
+          )}
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.75rem' }}>
+            También se quitará de la Tabla de Registros en la página de Ventas.
+          </p>
         </Modal>
       </div>
     </Layout>

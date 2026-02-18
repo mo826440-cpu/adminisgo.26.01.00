@@ -1,6 +1,6 @@
 // Servicio para gestión de ventas rápidas
 import { supabase } from './supabase'
-import { createVenta } from './ventas'
+import { createVenta, deleteVenta } from './ventas'
 import { validarLimiteVentas } from './planes'
 
 /**
@@ -140,6 +140,42 @@ export const getVentaRapidaById = async (id) => {
     return { data, error: null }
   } catch (error) {
     console.error('Error al obtener venta rápida:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Eliminar una venta rápida y su registro asociado en la tabla ventas.
+ * Así el registro desaparece tanto de Registros de Ventas Rápidas como de la Tabla de Registros en Ventas.
+ */
+export const deleteVentaRapida = async (ventaRapidaId) => {
+  try {
+    const { data: ventaRapida, error: errorGet } = await supabase
+      .from('ventas_rapidas')
+      .select('venta_id')
+      .eq('id', ventaRapidaId)
+      .single()
+
+    if (errorGet) throw errorGet
+    if (!ventaRapida) {
+      throw new Error('Registro no encontrado')
+    }
+
+    if (ventaRapida.venta_id) {
+      const { error: errorVenta } = await deleteVenta(ventaRapida.venta_id)
+      if (errorVenta) throw errorVenta
+    }
+
+    const { error: errorDelete } = await supabase
+      .from('ventas_rapidas')
+      .delete()
+      .eq('id', ventaRapidaId)
+
+    if (errorDelete) throw errorDelete
+
+    return { data: { id: ventaRapidaId }, error: null }
+  } catch (error) {
+    console.error('Error al eliminar venta rápida:', error)
     return { data: null, error }
   }
 }
