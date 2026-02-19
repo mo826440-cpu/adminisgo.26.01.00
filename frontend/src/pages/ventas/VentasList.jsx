@@ -37,11 +37,17 @@ function VentasList() {
   const getDefaultFechaDesde = () => {
     const ahora = new Date()
     const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
-    return desde.toISOString().split('T')[0]
+    const y = desde.getFullYear()
+    const m = String(desde.getMonth() + 1).padStart(2, '0')
+    const d = String(desde.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
   }
   const getDefaultFechaHasta = () => {
     const ahora = new Date()
-    return ahora.toISOString().split('T')[0]
+    const y = ahora.getFullYear()
+    const m = String(ahora.getMonth() + 1).padStart(2, '0')
+    const d = String(ahora.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
   }
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde())
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta())
@@ -102,14 +108,14 @@ function VentasList() {
     setLoading(false)
   }
 
-  // Filtrar ventas por rango de fechas
+  // Filtrar ventas por rango de fechas (inicio y fin de día en hora local para incluir todo el día actual)
   const filtrarPorFecha = useCallback((ventas) => {
     if (!filtroFechaDesde || !filtroFechaHasta) return ventas
     
-    const fechaDesde = new Date(filtroFechaDesde)
-    fechaDesde.setHours(0, 0, 0, 0) // Inicio del día
-    const fechaHasta = new Date(filtroFechaHasta)
-    fechaHasta.setHours(23, 59, 59, 999) // Fin del día
+    const [yDesde, mDesde, dDesde] = filtroFechaDesde.split('-').map(Number)
+    const [yHasta, mHasta, dHasta] = filtroFechaHasta.split('-').map(Number)
+    const fechaDesde = new Date(yDesde, mDesde - 1, dDesde, 0, 0, 0, 0)
+    const fechaHasta = new Date(yHasta, mHasta - 1, dHasta, 23, 59, 59, 999)
     
     return ventas.filter(venta => {
       const fechaVenta = new Date(venta.fecha_hora)
