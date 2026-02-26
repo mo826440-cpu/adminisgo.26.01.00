@@ -579,19 +579,31 @@ function HistorialCajas() {
           }}
           title="Detalle del importe"
         >
-          {registroDetalle && (
-            <>
-              <p style={{ marginBottom: '0.5rem' }}>
-                {registroDetalle.tipo_operacion === 'apertura' ? 'Inicio' : 'Cierre'} — {formatearFechaHora(registroDetalle.fecha_hora)}
-              </p>
-              <div className="detalle-importe-texto" style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--text-primary)' }}>
-                {textoDesglose(registroDetalle)}
-              </div>
-              <p style={{ marginTop: '1rem', fontWeight: 600 }}>
-                Total: {formatearMoneda(registroDetalle.importe)}
-              </p>
-            </>
-          )}
+          {registroDetalle && (() => {
+            const d = getDesglose(registroDetalle)
+            const lineas = []
+            if (d.efectivo > 0) lineas.push({ label: 'Efectivo', value: formatearMoneda(d.efectivo) })
+            if (d.virtual > 0) lineas.push({ label: 'Virtual (QR, transferencia, débito)', value: formatearMoneda(d.virtual) })
+            if (d.credito > 0) lineas.push({ label: 'Crédito', value: formatearMoneda(d.credito) })
+            if (d.otros > 0) lineas.push({ label: 'Otros', value: formatearMoneda(d.otros) })
+            return (
+              <>
+                <p style={{ marginBottom: '1rem' }}>
+                  {registroDetalle.tipo_operacion === 'apertura' ? 'Inicio' : 'Cierre'} — {formatearFechaHora(registroDetalle.fecha_hora)}
+                </p>
+                <div className="detalle-importe-lineas" style={{ fontSize: '0.95rem', lineHeight: 1.8, color: 'var(--text-primary)' }}>
+                  {lineas.length > 0 ? lineas.map((l, i) => (
+                    <div key={i}>{l.label} = {l.value}</div>
+                  )) : (
+                    <div>Total: {formatearMoneda(registroDetalle.importe)}</div>
+                  )}
+                </div>
+                <p style={{ marginTop: '1rem', fontWeight: 600 }}>
+                  Total: {formatearMoneda(registroDetalle.importe)}
+                </p>
+              </>
+            )
+          })()}
         </Modal>
       </div>
     </Layout>
