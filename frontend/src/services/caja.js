@@ -295,14 +295,24 @@ export const deleteHistorialCaja = async (id) => {
 }
 
 /**
- * Actualizar registro del historial de cajas
+ * Actualizar registro del historial de cajas (total y/o desglose por método de pago)
  */
 export const updateHistorialCaja = async (id, datos) => {
   try {
+    const efectivo = parseFloat(datos.importe_efectivo ?? datos.importe) ?? 0
+    const virtual = parseFloat(datos.importe_virtual) ?? 0
+    const credito = parseFloat(datos.importe_credito) ?? 0
+    const otros = parseFloat(datos.importe_otros) ?? 0
+    const importeTotal = datos.importe != null ? parseFloat(datos.importe) : efectivo + virtual + credito + otros
+
     const { data, error } = await supabase
       .from('historial_cajas')
       .update({
-        importe: datos.importe,
+        importe: importeTotal,
+        importe_efectivo: efectivo,
+        importe_virtual: virtual,
+        importe_credito: credito,
+        importe_otros: otros,
         observaciones: datos.observaciones?.trim() || null
       })
       .eq('id', id)

@@ -26,8 +26,13 @@ function HistorialCajas() {
   // Modales
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDetalleModal, setShowDetalleModal] = useState(false)
   const [registroSeleccionado, setRegistroSeleccionado] = useState(null)
-  const [editImporte, setEditImporte] = useState('0')
+  const [registroDetalle, setRegistroDetalle] = useState(null)
+  const [editEfectivo, setEditEfectivo] = useState('0')
+  const [editVirtual, setEditVirtual] = useState('0')
+  const [editCredito, setEditCredito] = useState('0')
+  const [editOtros, setEditOtros] = useState('0')
   const [editObservaciones, setEditObservaciones] = useState('')
   const [procesando, setProcesando] = useState(false)
 
@@ -37,10 +42,26 @@ function HistorialCajas() {
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  // Formatear fecha y hora
-  const formatearFechaHora = (fecha) => {
-    if (!fecha) return '-'
-    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
+  // Obtener desglose de un registro (registros antiguos sin columnas usan importe como efectivo)
+  const getDesglose = (registro) => {
+    if (!registro) return { efectivo: 0, virtual: 0, credito: 0, otros: 0 }
+    const efectivo = parseFloat(registro.importe_efectivo ?? registro.importe ?? 0) || 0
+    const virtual = parseFloat(registro.importe_virtual ?? 0) || 0
+    const credito = parseFloat(registro.importe_credito ?? 0) || 0
+    const otros = parseFloat(registro.importe_otros ?? 0) || 0
+    return { efectivo, virtual, credito, otros }
+  }
+
+  // Texto del desglose para mostrar (ej. "Efectivo = $X - Virtual = $Y")
+  const textoDesglose = (registro) => {
+    const d = getDesglose(registro)
+    const partes = []
+    if (d.efectivo > 0) partes.push(`Efectivo = ${formatearMoneda(d.efectivo)}`)
+    if (d.virtual > 0) partes.push(`Virtual (QR, transferencia, débito) = ${formatearMoneda(d.virtual)}`)
+    if (d.credito > 0) partes.push(`Crédito = ${formatearMoneda(d.credito)}`)
+    if (d.otros > 0) partes.push(`Otros = ${formatearMoneda(d.otros)}`)
+    if (partes.length === 0) return formatearMoneda(registro?.importe ?? 0)
+    return partes.join(' — ')
   }
 
   // Cargar historial
@@ -118,27 +139,37 @@ function HistorialCajas() {
     setProcesando(false)
   }
 
-  // Editar registro
+  // Editar registro (cargar desglose en los campos)
   const handleEdit = (registro) => {
     setRegistroSeleccionado(registro)
-    setEditImporte(registro.importe.toString())
+    const d = getDesglose(registro)
+    setEditEfectivo(d.efectivo.toString())
+    setEditVirtual(d.virtual.toString())
+    setEditCredito(d.credito.toString())
+    setEditOtros(d.otros.toString())
     setEditObservaciones(registro.observaciones || '')
     setShowEditModal(true)
   }
 
-  // Guardar edición
+  // Guardar edición (enviar desglose por método de pago)
   const handleSaveEdit = async () => {
     if (!registroSeleccionado) return
 
-    const importe = parseFloat(editImporte || 0)
-    if (importe < 0) {
-      setError('El importe no puede ser negativo')
+    const efectivo = parseFloat(editEfectivo || 0) || 0
+    const virtual = parseFloat(editVirtual || 0) || 0
+    const credito = parseFloat(editCredito || 0) || 0
+    const otros = parseFloat(editOtros || 0) || 0
+    if (efectivo < 0 || virtual < 0 || credito < 0 || otros < 0) {
+      setError('Ningún importe puede ser negativo')
       return
     }
 
     setProcesando(true)
     const { error: err } = await updateHistorialCaja(registroSeleccionado.id, {
-      importe,
+      importe_efectivo: efectivo,
+      importe_virtual: virtual,
+      importe_credito: credito,
+      importe_otros: otros,
       observaciones: editObservaciones
     })
 
@@ -279,6 +310,17 @@ function HistorialCajas() {
                         <td>{formatearMoneda(registro.importe)}</td>
                         <td>
                           <div className="table-actions">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setRegistroDetalle(registro)
+                                setShowDetalleModal(true)
+                              }}
+                              title="Ver detalle del importe"
+                            >
+                              <i className="bi bi-list-ul" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -467,31 +509,83 @@ function HistorialCajas() {
           }
         >
           <div className="form-group">
-            <label className="form-label">
-              Importe ($)
-              <input
-                type="number"
-                className="form-control"
-                step="0.01"
-                min="0"
-                value={editImporte}
-                onChange={(e) => setEditImporte(e.target.value)}
-                required
-                autoFocus
-              />
-            </label>
+            <label className="form-label">Caja efectivo ($)</label>
+            <input
+              type="number"
+              className="form-control"
+              step="0.01"
+              min="0"
+              value={editEfectivo}
+              onChange={(e) => setEditEfectivo(e.target.value)}
+              autoFocus
+            />
           </div>
           <div className="form-group">
-            <label className="form-label">
-              Observaciones
-              <textarea
-                className="form-control"
-                rows="3"
-                value={editObservaciones}
-                onChange={(e) => setEditObservaciones(e.target.value)}
-              />
-            </label>
+            <label className="form-label">Caja virtual ($) — QR, transferencia, débito</label>
+            <input
+              type="number"
+              className="form-control"
+              step="0.01"
+              min="0"
+              value={editVirtual}
+              onChange={(e) => setEditVirtual(e.target.value)}
+            />
           </div>
+          <div className="form-group">
+            <label className="form-label">Caja crédito ($)</label>
+            <input
+              type="number"
+              className="form-control"
+              step="0.01"
+              min="0"
+              value={editCredito}
+              onChange={(e) => setEditCredito(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Caja otros métodos ($)</label>
+            <input
+              type="number"
+              className="form-control"
+              step="0.01"
+              min="0"
+              value={editOtros}
+              onChange={(e) => setEditOtros(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Observaciones</label>
+            <textarea
+              className="form-control"
+              rows="3"
+              value={editObservaciones}
+              onChange={(e) => setEditObservaciones(e.target.value)}
+            />
+          </div>
+        </Modal>
+
+        {/* Modal Ver detalle del importe */}
+        <Modal
+          isOpen={showDetalleModal}
+          onClose={() => {
+            setShowDetalleModal(false)
+            setRegistroDetalle(null)
+          }}
+          title="Detalle del importe"
+        >
+          {registroDetalle && (
+            <>
+              <p style={{ marginBottom: '0.5rem' }}>
+                {registroDetalle.tipo_operacion === 'apertura' ? 'Inicio' : 'Cierre'} — {formatearFechaHora(registroDetalle.fecha_hora)}
+              </p>
+              <div className="detalle-importe-texto" style={{ fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--text-primary)' }}>
+                {textoDesglose(registroDetalle)}
+              </div>
+              <p style={{ marginTop: '1rem', fontWeight: 600 }}>
+                Total: {formatearMoneda(registroDetalle.importe)}
+              </p>
+            </>
+          )}
         </Modal>
       </div>
     </Layout>
