@@ -42,6 +42,12 @@ function HistorialCajas() {
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
+  // Formatear fecha y hora
+  const formatearFechaHora = (fecha) => {
+    if (!fecha) return '-'
+    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
+  }
+
   // Obtener desglose de un registro (registros antiguos sin columnas usan importe como efectivo)
   const getDesglose = (registro) => {
     if (!registro) return { efectivo: 0, virtual: 0, credito: 0, otros: 0 }
