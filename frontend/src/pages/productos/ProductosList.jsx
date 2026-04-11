@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
 import { getProductos, deleteProducto } from '../../services/productos'
+import ProductosActionsMenu from './ProductosActionsMenu'
 import './ProductosList.css'
 
 const ITEMS_PER_PAGE = 100
@@ -214,15 +215,10 @@ function ProductosList() {
                         </td>
                         <td>
                           <div className="table-actions">
-                            <Link to={`/productos/${producto.id}`} className="btn-link">
-                              Editar
-                            </Link>
-                            <button
-                              className="btn-link btn-link-danger"
-                              onClick={() => handleDeleteClick(producto)}
-                            >
-                              Eliminar
-                            </button>
+                            <ProductosActionsMenu
+                              producto={producto}
+                              onDelete={handleDeleteClick}
+                            />
                           </div>
                         </td>
                       </tr>
