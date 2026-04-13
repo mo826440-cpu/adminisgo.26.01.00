@@ -1,75 +1,157 @@
-// Servicio para gestión de ventas rápidas
+// Servicio de ventas rápidas: solo usa tablas ventas, venta_items, venta_pagos (sin ventas_rapidas).
 import { supabase } from './supabase'
-import { createVenta, deleteVenta } from './ventas'
-import { validarLimiteVentas } from './planes'
+import { createVenta, deleteVenta, getVentaById } from './ventas'
+
+const PAGE = 1000
+
+function mapVentaListadoShape(v) {
+  const deuda = parseFloat(v.monto_deuda) || 0
+  const estado = deuda > 0.009 ? 'DEBE' : 'PAGADO'
+  return {
+    id: v.id,
+    fecha_hora: v.fecha_hora,
+    total: v.total,
+    metodo_pago: v.metodo_pago,
+    monto_pagado: v.monto_pagado,
+    estado,
+    observaciones: v.observaciones,
+    clientes: v.clientes,
+    usuarios: v.usuarios,
+    ventas: { id: v.id, numero_ticket: v.numero_ticket },
+  }
+}
 
 /**
- * Crear una venta rápida
- * Guarda en ventas_rapidas y también en ventas
+ * Ventas del comercio en rango de fechas (misma pantalla “registros”; incluye POS y rápidas).
+ */
+export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => {
+  try {
+    const all = []
+    let from = 0
+    for (;;) {
+      let q = supabase
+        .from('ventas')
+        .select(`
+          id,
+          fecha_hora,
+          total,
+          metodo_pago,
+          monto_pagado,
+          monto_deuda,
+          observaciones,
+          numero_ticket,
+          clientes:cliente_id(id, nombre),
+          usuarios:usuario_id(id, nombre)
+        `)
+        .is('deleted_at', null)
+        .order('fecha_hora', { ascending: false })
+
+      if (fechaDesde) q = q.gte('fecha_hora', fechaDesde)
+      if (fechaHasta) q = q.lte('fecha_hora', fechaHasta)
+
+      const { data, error } = await q.range(from, from + PAGE - 1)
+      if (error) throw error
+      const chunk = data || []
+      all.push(...chunk.map(mapVentaListadoShape))
+      if (chunk.length < PAGE) break
+      from += PAGE
+    }
+
+    return { data: all, error: null }
+  } catch (error) {
+    console.error('Error al obtener ventas (listado ventas rápidas):', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Detalle por id de venta (ruta /ventas-rapidas/:id usa ventas.id).
+ */
+export const getVentaRapidaById = async (id) => {
+  try {
+    const { data, error } = await getVentaById(id)
+    if (error) return { data: null, error }
+    if (!data) return { data: null, error: new Error('Venta no encontrada') }
+
+    const deuda = parseFloat(data.monto_deuda) || 0
+    const estado = deuda > 0.009 ? 'DEBE' : 'PAGADO'
+
+    const mapped = {
+      id: data.id,
+      fecha_hora: data.fecha_hora,
+      total: data.total,
+      metodo_pago: data.metodo_pago,
+      monto_pagado: data.monto_pagado,
+      estado,
+      observaciones: data.observaciones,
+      clientes: data.clientes,
+      usuarios: data.usuarios,
+      ventas: {
+        id: data.id,
+        numero_ticket: data.numero_ticket,
+        fecha_hora: data.fecha_hora,
+        total: data.total,
+        monto_pagado: data.monto_pagado,
+        monto_deuda: data.monto_deuda,
+      },
+    }
+
+    return { data: mapped, error: null }
+  } catch (error) {
+    console.error('Error al obtener venta (detalle venta rápida):', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Crear venta rápida: solo ventas + ítems + pagos (sin ventas_rapidas).
  */
 export const createVentaRapida = async (ventaRapidaData) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error('Usuario no autenticado')
+    const productoId = ventaRapidaData.producto_id
+    if (!productoId) {
+      throw new Error('Debés seleccionar el producto genérico de venta rápida (código de barras 1111111111).')
     }
 
     const total = parseFloat(ventaRapidaData.total || 0)
     const montoPagado = parseFloat(ventaRapidaData.monto_pagado || total)
-    const estado = montoPagado >= total ? 'PAGADO' : 'DEBE'
 
-    // Primero crear la venta en la tabla ventas (sin items, solo datos básicos)
     const ventaData = {
       cliente_id: ventaRapidaData.cliente_id || null,
       fecha_hora: ventaRapidaData.fecha_hora || new Date().toISOString(),
-      facturacion: null, // Por defecto nulo para ventas rápidas
+      facturacion: null,
       subtotal: total,
       descuento: 0,
       impuestos: 0,
       total: total,
       metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
       observaciones: ventaRapidaData.observaciones || null,
-      // Crear pago si está pagado
-      pagos: montoPagado > 0 ? [{
-        metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
-        monto_pagado: montoPagado,
-        fecha_pago: ventaRapidaData.fecha_hora || new Date().toISOString(),
-        observaciones: null
-      }] : []
+      items: [
+        {
+          producto_id: productoId,
+          cantidad: 1,
+          precio_unitario: total,
+          descuento: 0,
+          subtotal: total,
+        },
+      ],
+      pagos:
+        montoPagado > 0
+          ? [
+              {
+                metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
+                monto_pagado: montoPagado,
+                fecha_pago: ventaRapidaData.fecha_hora || new Date().toISOString(),
+                observaciones: null,
+              },
+            ]
+          : [],
     }
 
     const { data: ventaCreada, error: errorVenta } = await createVenta(ventaData)
+    if (errorVenta) throw errorVenta
 
-    if (errorVenta) {
-      throw errorVenta
-    }
-
-    // Ahora crear el registro en ventas_rapidas
-    const { data: ventaRapidaCreada, error: errorVentaRapida } = await supabase
-      .from('ventas_rapidas')
-      .insert([{
-        usuario_id: user.id,
-        cliente_id: ventaRapidaData.cliente_id || null,
-        venta_id: ventaCreada.id,
-        fecha_hora: ventaRapidaData.fecha_hora || new Date().toISOString(),
-        total: total,
-        metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
-        monto_pagado: montoPagado,
-        estado: estado,
-        observaciones: ventaRapidaData.observaciones?.trim() || null
-      }])
-      .select()
-      .single()
-
-    if (errorVentaRapida) {
-      // Si falla, intentar eliminar la venta creada
-      if (ventaCreada?.id) {
-        await supabase.from('ventas').delete().eq('id', ventaCreada.id)
-      }
-      throw errorVentaRapida
-    }
-
-    return { data: ventaRapidaCreada, error: null }
+    return { data: ventaCreada, error: null }
   } catch (error) {
     console.error('Error al crear venta rápida:', error)
     return { data: null, error }
@@ -77,106 +159,8 @@ export const createVentaRapida = async (ventaRapidaData) => {
 }
 
 /**
- * Obtener todas las ventas rápidas
+ * Eliminar venta por id de ventas (soft delete + stock como deleteVenta).
  */
-export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => {
-  try {
-    let query = supabase
-      .from('ventas_rapidas')
-      .select(`
-        *,
-        clientes:cliente_id(id, nombre),
-        usuarios:usuario_id(id, nombre),
-        ventas:venta_id(id, numero_ticket)
-      `)
-      .order('fecha_hora', { ascending: false })
-
-    if (fechaDesde) {
-      query = query.gte('fecha_hora', fechaDesde)
-    }
-
-    if (fechaHasta) {
-      const fechaHastaCompleta = new Date(fechaHasta)
-      fechaHastaCompleta.setHours(23, 59, 59, 999)
-      query = query.lte('fecha_hora', fechaHastaCompleta.toISOString())
-    }
-
-    const { data, error } = await query
-
-    if (error) throw error
-
-    return { data: data || [], error: null }
-  } catch (error) {
-    console.error('Error al obtener ventas rápidas:', error)
-    return { data: null, error }
-  }
+export const deleteVentaRapida = async (ventaId) => {
+  return deleteVenta(ventaId)
 }
-
-/**
- * Obtener una venta rápida por ID
- */
-export const getVentaRapidaById = async (id) => {
-  try {
-    const { data, error } = await supabase
-      .from('ventas_rapidas')
-      .select(`
-        *,
-        clientes:cliente_id(id, nombre, email, telefono),
-        usuarios:usuario_id(id, nombre),
-        ventas:venta_id(
-          id,
-          numero_ticket,
-          fecha_hora,
-          total,
-          monto_pagado,
-          monto_deuda
-        )
-      `)
-      .eq('id', id)
-      .single()
-
-    if (error) throw error
-
-    return { data, error: null }
-  } catch (error) {
-    console.error('Error al obtener venta rápida:', error)
-    return { data: null, error }
-  }
-}
-
-/**
- * Eliminar una venta rápida y su registro asociado en la tabla ventas.
- * Así el registro desaparece tanto de Registros de Ventas Rápidas como de la Tabla de Registros en Ventas.
- */
-export const deleteVentaRapida = async (ventaRapidaId) => {
-  try {
-    const { data: ventaRapida, error: errorGet } = await supabase
-      .from('ventas_rapidas')
-      .select('venta_id')
-      .eq('id', ventaRapidaId)
-      .single()
-
-    if (errorGet) throw errorGet
-    if (!ventaRapida) {
-      throw new Error('Registro no encontrado')
-    }
-
-    if (ventaRapida.venta_id) {
-      const { error: errorVenta } = await deleteVenta(ventaRapida.venta_id)
-      if (errorVenta) throw errorVenta
-    }
-
-    const { error: errorDelete } = await supabase
-      .from('ventas_rapidas')
-      .delete()
-      .eq('id', ventaRapidaId)
-
-    if (errorDelete) throw errorDelete
-
-    return { data: { id: ventaRapidaId }, error: null }
-  } catch (error) {
-    console.error('Error al eliminar venta rápida:', error)
-    return { data: null, error }
-  }
-}
-

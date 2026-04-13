@@ -1,11 +1,13 @@
 // Página de Ventas Rápidas
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
 import { abrirCaja, cerrarCaja, obtenerEstadoCaja } from '../../services/caja'
 import { createVentaRapida, getVentasRapidas, deleteVentaRapida } from '../../services/ventasRapidas'
 import { getClientes } from '../../services/clientes'
+import { getProductoPorCodigoBarras } from '../../services/productos'
+import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
@@ -15,6 +17,7 @@ import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
 
 function VentasRapidas() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuthContext()
   const { timezone, dateFormat } = useDateTime()
   const clienteInputRef = useRef(null)
@@ -56,6 +59,9 @@ function VentasRapidas() {
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
 
+  const [productoVentaRapida, setProductoVentaRapida] = useState(null)
+  const [loadingProducto, setLoadingProducto] = useState(true)
+
   // Estados de tabla de ventas rápidas
   const [ventasRapidas, setVentasRapidas] = useState([])
   const [loadingVentas, setLoadingVentas] = useState(false)
@@ -89,6 +95,22 @@ function VentasRapidas() {
     }
     setLoadingCaja(false)
   }
+
+  const loadProductoVentaRapida = useCallback(async () => {
+    setLoadingProducto(true)
+    const { data, error: err } = await getProductoPorCodigoBarras(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA)
+    if (err) {
+      console.error('Error al cargar producto venta rápida:', err)
+      setProductoVentaRapida(null)
+    } else {
+      setProductoVentaRapida(data)
+    }
+    setLoadingProducto(false)
+  }, [])
+
+  useEffect(() => {
+    loadProductoVentaRapida()
+  }, [loadProductoVentaRapida, location.key])
 
   // Cargar clientes
   const loadClientes = async () => {
@@ -319,6 +341,18 @@ function VentasRapidas() {
       return
     }
 
+    if (loadingProducto) {
+      setError('Esperá a que termine de verificarse el producto.')
+      return
+    }
+
+    if (!productoVentaRapida?.id) {
+      setError(
+        `No hay producto activo con código de barras ${CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}. Registralo antes de cargar la venta (ícono al lado del mensaje).`
+      )
+      return
+    }
+
     setSaving(true)
 
     const ventaData = {
@@ -327,7 +361,8 @@ function VentasRapidas() {
       total: totalNum,
       metodo_pago: metodoPago,
       monto_pagado: montoPagadoNum,
-      observaciones: observaciones.trim() || null
+      observaciones: observaciones.trim() || null,
+      producto_id: productoVentaRapida.id,
     }
 
     const { error: err } = await createVentaRapida(ventaData)
@@ -503,6 +538,46 @@ function VentasRapidas() {
           <h2>Cargar Venta (F2)</h2>
           <form onSubmit={handleRegistrarVenta}>
             <div className="venta-rapida-form">
+              <div className="form-row venta-rapida-producto-row">
+                <div className="form-col" style={{ flex: '1 1 100%' }}>
+                  <label className="form-label">Producto</label>
+                  {loadingProducto ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minHeight: '2.25rem' }}>
+                      <Spinner size="sm" />
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        Buscando producto con código {CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}…
+                      </span>
+                    </div>
+                  ) : productoVentaRapida ? (
+                    <div className="venta-rapida-producto-ok">
+                      <span className="bi bi-check-circle-fill venta-rapida-producto-ok-icon" aria-hidden />
+                      <span>
+                        <strong>{productoVentaRapida.nombre}</strong>
+                        {' · '}
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          Cód. barras {productoVentaRapida.codigo_barras || CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}
+                        </span>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="venta-rapida-producto-error" role="alert">
+                      <span className="venta-rapida-producto-error-text">
+                        No hay producto activo con código de barras <strong>{CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}</strong>.
+                        Registrá el producto para poder cargar ventas rápidas.
+                      </span>
+                      <Link
+                        to={`/productos/nuevo?codigo_barras=${encodeURIComponent(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA)}`}
+                        className="venta-rapida-producto-error-link"
+                        title="Ir al formulario de producto (código precargado)"
+                      >
+                        <i className="bi bi-box-seam" aria-hidden />
+                        <span className="sr-only">Registrar producto</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-col autocomplete-wrapper">
                   <label className="form-label">
@@ -656,7 +731,12 @@ function VentasRapidas() {
                   type="submit"
                   variant="primary"
                   loading={saving}
-                  disabled={saving || !estadoCaja?.cajaAbierta}
+                  disabled={
+                    saving ||
+                    !estadoCaja?.cajaAbierta ||
+                    loadingProducto ||
+                    !productoVentaRapida?.id
+                  }
                 >
                   Registrar Venta
                 </Button>

@@ -10,14 +10,44 @@ const metodoPagoToCategoria = (metodo) => {
   return 'otros'
 }
 
-/** Sumar ventas por categoría */
-const sumarVentasPorCategoria = (ventas) => {
+/** Sumar filas de pagos por categoría (desde venta_pagos de ventas del período) */
+const sumarPagosPorCategoria = (pagos) => {
   const desglose = { efectivo: 0, virtual: 0, credito: 0, otros: 0 }
-  ;(ventas || []).forEach((v) => {
-    const cat = metodoPagoToCategoria(v.metodo_pago)
-    desglose[cat] += parseFloat(v.monto_pagado || 0)
+  ;(pagos || []).forEach((p) => {
+    const cat = metodoPagoToCategoria(p.metodo_pago)
+    desglose[cat] += parseFloat(p.monto_pagado || 0)
   })
   return desglose
+}
+
+const PAGE_VENTAS_CAJA = 1000
+
+/**
+ * Pagos de venta_pagos de todas las ventas desde fechaDesde (POS + rápidas).
+ */
+async function getPagosVentasDesde(supabase, fechaDesdeISO) {
+  const pagos = []
+  let from = 0
+  for (;;) {
+    const { data: ventasChunk, error } = await supabase
+      .from('ventas')
+      .select('venta_pagos(monto_pagado, metodo_pago)')
+      .is('deleted_at', null)
+      .gte('fecha_hora', fechaDesdeISO)
+      .order('fecha_hora', { ascending: true })
+      .range(from, from + PAGE_VENTAS_CAJA - 1)
+
+    if (error) throw error
+    const chunk = ventasChunk || []
+    for (const v of chunk) {
+      for (const p of v.venta_pagos || []) {
+        pagos.push({ monto_pagado: p.monto_pagado, metodo_pago: p.metodo_pago })
+      }
+    }
+    if (chunk.length < PAGE_VENTAS_CAJA) break
+    from += PAGE_VENTAS_CAJA
+  }
+  return pagos
 }
 
 /**
@@ -87,15 +117,8 @@ export const cerrarCaja = async (observaciones = null) => {
     }
 
     const fechaDesde = ultimaApertura?.fecha_hora || new Date(0).toISOString()
-    const { data: ventasRapidas, error: errorVentas } = await supabase
-      .from('ventas_rapidas')
-      .select('monto_pagado, metodo_pago')
-      .gte('fecha_hora', fechaDesde)
-      .eq('estado', 'PAGADO')
-
-    if (errorVentas) throw errorVentas
-
-    const ventasPorCategoria = sumarVentasPorCategoria(ventasRapidas || [])
+    const pagosVentas = await getPagosVentasDesde(supabase, fechaDesde)
+    const ventasPorCategoria = sumarPagosPorCategoria(pagosVentas)
     const aperturaEfectivo = parseFloat(ultimaApertura?.importe_efectivo ?? ultimaApertura?.importe ?? 0)
     const aperturaVirtual = parseFloat(ultimaApertura?.importe_virtual ?? 0)
     const aperturaCredito = parseFloat(ultimaApertura?.importe_credito ?? 0)
@@ -188,15 +211,8 @@ export const obtenerEstadoCaja = async () => {
     }
 
     const fechaDesde = ultimaApertura.fecha_hora
-    const { data: ventasRapidas, error: errorVentas } = await supabase
-      .from('ventas_rapidas')
-      .select('monto_pagado, metodo_pago')
-      .gte('fecha_hora', fechaDesde)
-      .eq('estado', 'PAGADO')
-
-    if (errorVentas) throw errorVentas
-
-    const ventasPorCategoria = sumarVentasPorCategoria(ventasRapidas || [])
+    const pagosVentas = await getPagosVentasDesde(supabase, fechaDesde)
+    const ventasPorCategoria = sumarPagosPorCategoria(pagosVentas)
     const aperturaEfectivo = parseFloat(ultimaApertura.importe_efectivo ?? ultimaApertura.importe ?? 0)
     const aperturaVirtual = parseFloat(ultimaApertura.importe_virtual ?? 0)
     const aperturaCredito = parseFloat(ultimaApertura.importe_credito ?? 0)

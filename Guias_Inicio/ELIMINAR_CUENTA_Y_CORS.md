@@ -66,7 +66,7 @@ El mensaje **"Response to preflight request doesn't pass access control check: I
 ### Cambios en la Edge Function
 
 - **CORS**: OPTIONS devuelve **200** con cuerpo `"ok"` y cabeceras CORS (algunos entornos exigen 200 en el preflight).
-- **Orden de borrado**: ventas → compras → movimientos_inventario → historial_cajas → ventas_rapidas → usuarios en Auth → comercio.
+- **Orden de borrado** (edge actual): ventas → compras → movimientos_inventario → historial_cajas → usuarios en Auth → comercio. (La tabla `ventas_rapidas` fue removida del flujo; si aún existe en una BD vieja, podés borrarla con la migración `035_drop_ventas_rapidas.sql`.)
 
 ### 3. Borrar manualmente desde el dashboard de Supabase
 
@@ -74,7 +74,7 @@ Si en algún momento tenés que borrar un usuario o un comercio a mano:
 
 - **No se puede** borrar primero el usuario de la tabla `usuarios` ni el comercio de `comercios` si hay filas que los referencian (ventas, compras, historial_cajas, ventas_rapidas, etc.).
 - **Orden recomendado** (para un comercio dado):
-  1. Borrar filas en: `venta_items` (o borrar `ventas` y dejar que CASCADE borre `venta_items`), `ventas`, `compra_items` / `compras`, `movimientos_inventario`, `historial_cajas`, `ventas_rapidas` de ese comercio.
+  1. Borrar filas en: `venta_items` (o borrar `ventas` y dejar que CASCADE borre `venta_items` y `venta_pagos`), `ventas`, `compra_items` / `compras`, `movimientos_inventario`, `historial_cajas` de ese comercio.
   2. Luego borrar los usuarios de **Authentication** (así se borran las filas en `usuarios` por CASCADE).
   3. Por último borrar el **comercio** en la tabla `comercios`.
 

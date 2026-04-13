@@ -48,6 +48,39 @@ export const getProducto = async (id) => {
 }
 
 /**
+ * Producto activo por código de barras (un comercio; RLS aplica).
+ */
+export const getProductoPorCodigoBarras = async (codigoBarras) => {
+  const codigo = (codigoBarras && String(codigoBarras).trim()) || ''
+  if (!codigo) {
+    return { data: null, error: null }
+  }
+  try {
+    const { data, error } = await supabase
+      .from('productos')
+      .select(`
+        id,
+        nombre,
+        codigo_barras,
+        precio_venta,
+        stock_actual,
+        categorias: categoria_id (id, nombre),
+        marcas: marca_id (id, nombre)
+      `)
+      .eq('codigo_barras', codigo)
+      .eq('activo', true)
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+    return { data: data || null, error: null }
+  } catch (error) {
+    console.error('Error al buscar producto por código de barras:', error)
+    return { data: null, error }
+  }
+}
+
+/**
  * Verificar si existe un código de barras
  */
 export const verificarCodigoBarras = async (codigoBarras, productoIdExcluir = null) => {

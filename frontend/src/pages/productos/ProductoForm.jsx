@@ -1,6 +1,6 @@
 // Formulario para crear/editar producto
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal } from '../../components/common'
 import { getProducto, createProducto, updateProducto, getCategorias, getMarcas, verificarCodigoBarras, verificarCodigoInterno, verificarNombreProducto } from '../../services/productos'
@@ -10,6 +10,7 @@ import './ProductoForm.css'
 function ProductoForm() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuthContext()
   const isEditing = !!id
 
@@ -45,6 +46,15 @@ function ProductoForm() {
       loadProducto()
     }
   }, [id])
+
+  // Alta desde ventas rápidas (u otra pantalla): ?codigo_barras=...
+  useEffect(() => {
+    if (isEditing) return
+    const cb = searchParams.get('codigo_barras')
+    if (cb != null && String(cb).trim() !== '') {
+      setFormData((prev) => ({ ...prev, codigo_barras: String(cb).trim() }))
+    }
+  }, [isEditing, searchParams])
 
   const loadProducto = async () => {
     setLoading(true)

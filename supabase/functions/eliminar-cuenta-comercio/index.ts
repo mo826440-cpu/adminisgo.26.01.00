@@ -74,11 +74,10 @@ Deno.serve(async (req) => {
 
     // Borrar en orden para no violar FKs: primero tablas que referencian usuarios/comercio
     const tablesToDeleteByComercio = [
-      'ventas',           // CASCADE borra venta_items
-      'compras',          // CASCADE borra compra_items
+      'ventas', // CASCADE borra venta_items, venta_pagos
+      'compras', // CASCADE borra compra_items
       'movimientos_inventario',
       'historial_cajas',
-      'ventas_rapidas',
     ] as const
     for (const table of tablesToDeleteByComercio) {
       const { error: delErr } = await supabaseAdmin
