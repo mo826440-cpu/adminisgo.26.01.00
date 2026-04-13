@@ -13,11 +13,20 @@
 
 .navbar-container {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
   height: 64px;
   width: 100%;
-  padding: 0 var(--spacing-md);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Columna alineada con el menú lateral (mismo ancho que el sidebar en escritorio) */
+.navbar-leading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   box-sizing: border-box;
 }
 
@@ -32,7 +41,6 @@
   cursor: pointer;
   padding: 0;
   z-index: 101;
-  margin-right: auto;
 }
 
 .navbar-menu-toggle span {
@@ -75,6 +83,39 @@
   align-items: center;
   gap: var(--spacing-md);
   flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 var(--spacing-md) 0 0;
+  height: 100%;
+}
+
+.navbar-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.navbar-sidebar-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--color-primary);
+}
+
+.navbar-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.navbar-sidebar-toggle .bi {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .navbar-link {
@@ -99,29 +140,46 @@
   border-left: 1px solid var(--border-color);
 }
 
+@media (min-width: 769px) {
+  .navbar-leading {
+    width: 250px;
+    min-width: 250px;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .navbar-menu-toggle {
+    display: none !important;
+  }
+}
+
 .navbar-user-email {
   font-size: var(--font-size-small);
   color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {
+  .navbar-sidebar-toggle--desktop {
+    display: none;
+  }
+
+  .navbar-leading {
+    justify-content: flex-start;
+    padding-left: var(--spacing-sm);
+    flex: 0 0 auto;
+  }
+
   .navbar-menu-toggle {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
+
   .navbar-user-email {
     display: none;
   }
-  
-  .navbar-container {
-    padding: 0 var(--spacing-sm);
-    justify-content: space-between;
-  }
-  
+
   .navbar-menu {
-    margin-left: auto;
+    padding-right: var(--spacing-sm);
   }
 }
 

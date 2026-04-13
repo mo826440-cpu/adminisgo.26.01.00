@@ -49,3 +49,6 @@ scripts/node_modules/
 *.log
 .cache/
 
+# Módulo / herramientas solo para tu PC (nunca se suben con git push)
+local-admin/
+

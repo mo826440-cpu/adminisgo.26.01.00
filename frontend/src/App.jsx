@@ -34,6 +34,7 @@ import VentaRapidaDetalle from './pages/ventas/VentaRapidaDetalle'
 import Configuracion from './pages/configuracion/Configuracion'
 import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
+import ReportesPage from './pages/reportes/ReportesPage'
 import UsuariosList from './pages/usuarios/UsuariosList'
 import UsuarioForm from './pages/usuarios/UsuarioForm'
 import ComprasList from './pages/compras/ComprasList'
@@ -409,7 +410,7 @@ function App() {
             path="/reportes" 
             element={
               <ProtectedRoute>
-                <EnDesarrollo modulo="Módulo de Reportes" />
+                <ReportesPage />
               </ProtectedRoute>
             } 
           />

@@ -2,6 +2,40 @@
 import { supabase } from './supabase'
 import { validarLimiteVentas } from './planes'
 
+/** PostgREST/Supabase suele limitar a 1000 filas por respuesta si no se pagina */
+const SUPABASE_PAGE_SIZE = 1000
+
+/**
+ * Repite la consulta con .range() hasta obtener todas las filas.
+ * @param {() => ReturnType<typeof supabase.from>} makeQuery - builder sin .range()
+ */
+async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE) {
+  const all = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await makeQuery().range(from, from + pageSize - 1)
+    if (error) throw error
+    const chunk = data || []
+    all.push(...chunk)
+    if (chunk.length < pageSize) break
+    from += pageSize
+  }
+  return all
+}
+
+/**
+ * Suma de cantidades en venta_items. Si no hay ítems (p. ej. venta rápida sin
+ * desglose por producto), se usa 1 cuando total > 0 para listados y gráficos.
+ */
+function computeVentaUnidadesTotales(venta) {
+  const items = venta.venta_items || []
+  if (items.length === 0) {
+    const total = parseFloat(venta.total)
+    return Number.isFinite(total) && total > 0 ? 1 : 0
+  }
+  return items.reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
+}
+
 /**
  * Crear una nueva venta
  * Esta función crea la venta y los items asociados en una transacción
@@ -152,29 +186,28 @@ export const createVenta = async (ventaData) => {
 
 /**
  * Obtener todas las ventas con sus datos completos
- * Incluye cliente, unidades totales, y datos de pagos
+ * Incluye cliente, unidades totales (suma de ítems; si no hay ítems y total > 0 → 1, p. ej. venta rápida), y datos de pagos
  */
 export const getVentas = async () => {
   try {
-    const { data, error } = await supabase
-      .from('ventas')
-      .select(`
+    const data = await fetchAllQueryPages(() =>
+      supabase
+        .from('ventas')
+        .select(`
         *,
         clientes:cliente_id(nombre),
         usuarios:usuario_id(nombre),
         venta_items(cantidad)
       `)
-      .is('deleted_at', null)
-      .order('fecha_hora', { ascending: false })
-
-    if (error) throw error
+        .is('deleted_at', null)
+        .order('fecha_hora', { ascending: false })
+    )
 
     // Calcular unidades totales para cada venta
     const ventasConUnidades = (data || []).map(venta => {
-      const unidades = (venta.venta_items || []).reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
       return {
         ...venta,
-        unidades_totales: unidades
+        unidades_totales: computeVentaUnidadesTotales(venta),
       }
     })
 
@@ -221,24 +254,24 @@ export const getVentasUltimosDias = async (dias = 7) => {
     const desde = new Date(now)
     desde.setDate(desde.getDate() - dias)
     desde.setHours(0, 0, 0, 0)
-    const { data, error } = await supabase
-      .from('ventas')
-      .select(`
+    const data = await fetchAllQueryPages(() =>
+      supabase
+        .from('ventas')
+        .select(`
         id,
         total,
         fecha_hora,
         venta_items(cantidad)
       `)
-      .is('deleted_at', null)
-      .gte('fecha_hora', desde.toISOString())
-      .order('fecha_hora', { ascending: true })
+        .is('deleted_at', null)
+        .gte('fecha_hora', desde.toISOString())
+        .order('fecha_hora', { ascending: true })
+    )
 
-    if (error) throw error
-
-    const ventasConUnidades = (data || []).map(venta => {
-      const unidades = (venta.venta_items || []).reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
-      return { ...venta, unidades_totales: unidades }
-    })
+    const ventasConUnidades = (data || []).map((venta) => ({
+      ...venta,
+      unidades_totales: computeVentaUnidadesTotales(venta),
+    }))
 
     return { data: ventasConUnidades, error: null }
   } catch (error) {
@@ -247,9 +280,15 @@ export const getVentasUltimosDias = async (dias = 7) => {
   }
 }
 
+const MS_DAY = 24 * 60 * 60 * 1000
+
 /**
  * Ventas en un rango de fechas (para gráfico) - con unidades por venta
- * desde/hasta: objetos Date (se usan inicio del día y fin del día)
+ * desde/hasta: objetos Date (inicio y fin de día en hora local del usuario).
+ *
+ * Se filtra en cliente con el mismo criterio que la lista de ventas, porque
+ * comparar solo con toISOString() en PostgREST puede desalinear días según zona
+ * horaria y cómo quedó guardado fecha_hora.
  */
 export const getVentasPorRangoFechas = async (desde, hasta) => {
   try {
@@ -257,9 +296,14 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
     inicio.setHours(0, 0, 0, 0)
     const fin = new Date(hasta)
     fin.setHours(23, 59, 59, 999)
-    const { data, error } = await supabase
-      .from('ventas')
-      .select(`
+
+    const queryStart = new Date(inicio.getTime() - 2 * MS_DAY)
+    const queryEnd = new Date(fin.getTime() + 2 * MS_DAY)
+
+    const data = await fetchAllQueryPages(() =>
+      supabase
+        .from('ventas')
+        .select(`
         id,
         total,
         monto_pagado,
@@ -270,17 +314,22 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         venta_items(producto_id, cantidad),
         venta_pagos(metodo_pago, monto_pagado)
       `)
-      .is('deleted_at', null)
-      .gte('fecha_hora', inicio.toISOString())
-      .lte('fecha_hora', fin.toISOString())
-      .order('fecha_hora', { ascending: true })
+        .is('deleted_at', null)
+        .gte('fecha_hora', queryStart.toISOString())
+        .lte('fecha_hora', queryEnd.toISOString())
+        .order('fecha_hora', { ascending: true })
+    )
 
-    if (error) throw error
-
-    const ventasConUnidades = (data || []).map(venta => {
-      const unidades = (venta.venta_items || []).reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
-      return { ...venta, unidades_totales: unidades }
+    const enRango = (data || []).filter((venta) => {
+      if (!venta.fecha_hora) return false
+      const fv = new Date(venta.fecha_hora)
+      return fv >= inicio && fv <= fin
     })
+
+    const ventasConUnidades = enRango.map((venta) => ({
+      ...venta,
+      unidades_totales: computeVentaUnidadesTotales(venta),
+    }))
 
     return { data: ventasConUnidades, error: null }
   } catch (error) {

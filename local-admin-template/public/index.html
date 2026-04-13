@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adminis Go — módulo de seguimiento (local)</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #1a1d24;
+      --border: #2d3340;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #6c8eef;
+      --ok: #34a853;
+      --warn: #f9ab00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.5rem;
+      max-width: 1100px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 0.25rem; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .banner {
+      background: rgba(249, 171, 0, 0.12);
+      border: 1px solid rgba(249, 171, 0, 0.35);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      font-size: 0.88rem;
+    }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .grid-hero { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .card h3 { margin: 0 0 0.35rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .num { font-size: 1.5rem; font-weight: 700; }
+    .card .hint { margin-top: 0.35rem; font-size: 0.72rem; color: var(--muted); line-height: 1.35; }
+    section { margin-top: 1.75rem; }
+    section h2 { font-size: 1rem; margin: 0 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .section-note { color: var(--muted); font-size: 0.82rem; margin: 0 0 0.65rem; }
+    a { color: var(--accent); }
+    .err { color: #ea4335; font-size: 0.85rem; }
+    .links a { display: inline-block; margin-right: 1rem; margin-bottom: 0.35rem; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button:hover { filter: brightness(1.08); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>Módulo de seguimiento (solo local)</h1>
+  <p class="sub">No se sube a GitHub. Usa la <strong>service role</strong> solo en tu PC; no abras este puerto a la red.</p>
+
+  <div class="banner">
+    El <strong>plan de facturación de Supabase</strong> (Gratis / Pro) no lo expone la API de datos.
+    Revisalo en <span id="billingLinkWrap"></span>. El indicador de <strong>tamaño</strong> abajo es el de la <em>base de datos en disco</em> (Postgres), no la RAM del servidor.
+  </div>
+
+  <p class="links" id="quickLinks"></p>
+  <p><button type="button" id="btnRefresh">Actualizar datos</button> <span class="muted" id="fetched"></span></p>
+
+  <div id="configError" class="err" style="display:none"></div>
+
+  <section>
+    <h2>Resumen</h2>
+    <div class="grid grid-hero" id="indicadores"></div>
+  </section>
+
+  <section>
+    <h2>Detalle operativo</h2>
+    <div class="grid" id="counts"></div>
+  </section>
+
+  <section>
+    <h2>Tablas en <code>public</code></h2>
+    <p class="section-note">
+      <strong>Registros</strong>: estimación de Postgres (<code>pg_stat_*</code> / <code>reltuples</code>), no un <code>COUNT(*)</code> en vivo (más rápido; puede desfasarse hasta <code>ANALYZE</code> / actividad).
+      <strong>Espacio</strong>: disco ocupado por cada tabla (datos + índices + TOAST), vía <code>pg_total_relation_size</code> — no es RAM.
+    </p>
+    <div id="tablasDetalle"></div>
+  </section>
+
+  <section>
+    <h2>Planes en tu app (tabla <code>planes</code>)</h2>
+    <div id="planesTable"></div>
+  </section>
+
+  <section>
+    <h2>Comercios registrados</h2>
+    <div id="comerciosTable"></div>
+  </section>
+
+  <section>
+    <h2>Consideraciones</h2>
+    <ul class="muted" style="margin:0;padding-left:1.2rem">
+      <li><strong>Resumen BD y desglose por tabla</strong>: funciones <code>local_admin_db_overview</code> y <code>local_admin_table_breakdown</code> (migraciones <code>033_…</code> y <code>034_…</code>). Solo tablas base del schema <code>public</code>.</li>
+      <li><strong>Tamaño por comercio</strong>: Postgres no guarda “MB por comercio” solo; haría falta medir por tablas con <code>comercio_id</code> (consultas avanzadas o export).</li>
+      <li><strong>Límite 1000 filas</strong> de PostgREST: lo resolvés paginando en el frontend (ya hecho en ventas).</li>
+      <li><strong>Service role</strong>: bypass RLS; tratá el <code>.env</code> como contraseña maestra.</li>
+    </ul>
+  </section>
+
+  <script>
+    async function loadMeta() {
+      const r = await fetch('/api/meta')
+      const m = await r.json()
+      const wrap = document.getElementById('billingLinkWrap')
+      const links = document.getElementById('quickLinks')
+      if (m.billingUrl) {
+        wrap.innerHTML = '<a href="' + m.billingUrl + '" target="_blank" rel="noreferrer">Facturación en Supabase</a>'
+        links.innerHTML =
+          '<a href="' + m.dashboardUrl + '" target="_blank" rel="noreferrer">Dashboard proyecto</a>' +
+          '<a href="' + m.databaseUrl + '" target="_blank" rel="noreferrer">Base de datos</a>' +
+          '<a href="' + m.pricingUrl + '" target="_blank" rel="noreferrer">Precios Supabase</a>'
+      } else {
+        wrap.textContent = 'Supabase (configurá .env con URL válida).'
+      }
+      const ce = document.getElementById('configError')
+      if (!m.supabaseConfigured) {
+        ce.style.display = 'block'
+        ce.textContent = 'Falta configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env'
+      }
+    }
+
+    function formatBytes(n) {
+      if (n == null || Number.isNaN(n)) return '—'
+      const b = Number(n)
+      if (b < 1024) return b + ' B'
+      const mb = b / (1024 * 1024)
+      if (mb < 1024) return mb.toFixed(1) + ' MB'
+      const gb = mb / 1024
+      return gb.toFixed(2) + ' GB'
+    }
+
+    function renderIndicadores(raw) {
+      const i = raw || {}
+      const el = document.getElementById('indicadores')
+      const cards = [
+        {
+          title: 'Comercios (total)',
+          num: i.comerciosTotal ?? null,
+          hint: 'Filas en tabla comercios.',
+        },
+        {
+          title: 'Comercios activos',
+          num: i.comerciosActivos ?? null,
+          hint: 'Donde activo = true.',
+        },
+        {
+          title: 'Usuarios registrados',
+          num: i.usuariosRegistradosAuth ?? null,
+          hint: 'Cuentas en Auth (auth.users), todas las páginas.',
+        },
+        {
+          title: 'Tablas (schema public)',
+          num: i.tablasSchemaPublic ?? null,
+          hint: 'Tablas base en public (Postgres).',
+        },
+        {
+          title: 'Tamaño de la base de datos',
+          num: i.tamanoBaseDatosBytes != null ? formatBytes(i.tamanoBaseDatosBytes) : null,
+          hint: 'pg_database_size: uso en disco del proyecto, no RAM.',
+        },
+      ]
+      el.innerHTML = cards
+        .map(
+          (c) =>
+            '<div class="card"><h3>' +
+            c.title +
+            '</h3><div class="num">' +
+            (c.num == null || c.num === '' ? '—' : c.num) +
+            '</div>' +
+            (c.hint ? '<p class="hint">' + c.hint + '</p>' : '') +
+            '</div>'
+        )
+        .join('')
+    }
+
+    function renderCounts(c) {
+      const el = document.getElementById('counts')
+      const items = [
+        ['Usuarios (filas en public.usuarios)', c.usuariosTotal],
+        ['Usuarios sin soft-delete', c.usuariosActivos],
+        ['Ventas (no eliminadas)', c.ventasNoEliminadas],
+        ['Compras (no eliminadas)', c.comprasNoEliminadas],
+        ['Productos (no eliminados)', c.productosTotal],
+      ]
+      el.innerHTML = items
+        .map(
+          ([label, n]) =>
+            '<div class="card"><h3>' +
+            label +
+            '</h3><div class="num">' +
+            (n == null ? '—' : n) +
+            '</div></div>'
+        )
+        .join('')
+    }
+
+    function renderPlanes(planes) {
+      const el = document.getElementById('planesTable')
+      if (!planes.length) {
+        el.innerHTML = '<p class="muted">Sin datos o error de permisos.</p>'
+        return
+      }
+      el.innerHTML =
+        '<table><thead><tr><th>ID</th><th>Nombre</th><th>Lím. productos</th><th>Lím. usuarios</th><th>Precio / mes</th></tr></thead><tbody>' +
+        planes
+          .map(
+            (p) =>
+              '<tr><td>' +
+              p.id +
+              '</td><td>' +
+              (p.nombre || '') +
+              '</td><td>' +
+              (p.limite_productos ?? '—') +
+              '</td><td>' +
+              (p.limite_usuarios ?? '—') +
+              '</td><td>' +
+              (p.precio_mensual != null ? '$' + p.precio_mensual : '—') +
+              '</td></tr>'
+          )
+          .join('') +
+        '</tbody></table>'
+    }
+
+    function renderTablasDetalle(rows) {
+      const el = document.getElementById('tablasDetalle')
+      if (!rows || !rows.length) {
+        el.innerHTML =
+          '<p class="muted">No hay filas para mostrar. Si debería haber tablas en <code>public</code>, aplicá <code>034_local_admin_table_breakdown_rpc.sql</code> en Supabase o revisá el mensaje en rojo arriba.</p>'
+        return
+      }
+      const sorted = rows
+        .slice()
+        .sort((a, b) => (b.totalBytes ?? 0) - (a.totalBytes ?? 0))
+      el.innerHTML =
+        '<table><thead><tr><th>Tabla</th><th class="num">Registros (aprox.)</th><th class="num">Espacio en disco</th></tr></thead><tbody>' +
+        sorted
+          .map(
+            (t) =>
+              '<tr><td><code>' +
+              escapeHtml(t.tableName || '') +
+              '</code></td><td class="num">' +
+              (t.rowEstimate == null ? '—' : String(t.rowEstimate)) +
+              '</td><td class="num">' +
+              formatBytes(t.totalBytes) +
+              '</td></tr>'
+          )
+          .join('') +
+        '</tbody></table>'
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    function renderComercios(rows) {
+      const el = document.getElementById('comerciosTable')
+      if (!rows.length) {
+        el.innerHTML = '<p class="muted">Sin datos.</p>'
+        return
+      }
+      el.innerHTML =
+        '<table><thead><tr><th>ID</th><th>Nombre</th><th>Activo</th><th>Plan (app)</th></tr></thead><tbody>' +
+        rows
+          .map((c) => {
+            const pn = c.planes && (c.planes.nombre || c.planes[0]?.nombre)
+            return (
+              '<tr><td>' +
+              c.id +
+              '</td><td>' +
+              (c.nombre || '') +
+              '</td><td>' +
+              (c.activo ? 'Sí' : 'No') +
+              '</td><td>' +
+              (pn || (c.plan_id != null ? '#' + c.plan_id : '—')) +
+              '</td></tr>'
+            )
+          })
+          .join('') +
+        '</tbody></table>'
+    }
+
+    async function loadStats() {
+      const r = await fetch('/api/stats')
+      const j = await r.json()
+      document.getElementById('fetched').textContent = j.fetchedAt
+        ? 'Última lectura: ' + new Date(j.fetchedAt).toLocaleString('es-AR')
+        : ''
+      const ce = document.getElementById('configError')
+      if (!j.ok) {
+        ce.style.display = 'block'
+        ce.textContent = j.error || 'Error'
+        return
+      }
+      if (j.errors && j.errors.length) {
+        ce.style.display = 'block'
+        ce.textContent = j.errors.join(' | ')
+      } else {
+        ce.style.display = 'none'
+        ce.textContent = ''
+      }
+      renderIndicadores(j.indicadores || {})
+      renderCounts(j.counts || {})
+      renderTablasDetalle(j.tablasDetalle || [])
+      renderPlanes(j.planes || [])
+      renderComercios(j.comercios || [])
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', loadStats)
+    loadMeta()
+    loadStats()
+  </script>
+</body>
+</html>

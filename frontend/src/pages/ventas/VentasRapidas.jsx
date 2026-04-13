@@ -11,6 +11,7 @@ import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
+import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
 
 function VentasRapidas() {
   const navigate = useNavigate()
@@ -772,32 +773,13 @@ function VentasRapidas() {
                         </Badge>
                       </td>
                       <td>
-                        <div className="table-actions">
-                          <Link to={`/ventas-rapidas/${venta.id}`}>
-                            <Button variant="ghost" size="sm" title="Ver detalle">
-                              <i className="bi bi-eye" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Imprimir Ticket"
-                            onClick={() => navigate(`/ventas-rapidas/${venta.id}`, { state: { print: true } })}
-                          >
-                            <i className="bi bi-printer" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Eliminar registro"
-                            onClick={() => {
-                              setVentaRapidaToDelete(venta)
-                              setShowDeleteVentaRapidaModal(true)
-                            }}
-                          >
-                            <i className="bi bi-trash" />
-                          </Button>
-                        </div>
+                        <VentasRapidasActionsMenu
+                          ventaRapidaId={venta.id}
+                          onDelete={() => {
+                            setVentaRapidaToDelete(venta)
+                            setShowDeleteVentaRapidaModal(true)
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}

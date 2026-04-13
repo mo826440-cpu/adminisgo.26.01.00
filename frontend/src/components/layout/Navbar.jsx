@@ -5,7 +5,7 @@ import { signOut } from '../../services/auth'
 import { Button } from '../common'
 import './Navbar.css'
 
-function Navbar({ onToggleSidebar }) {
+function Navbar({ onToggleSidebar, sidebarOpen }) {
   const { user, isAuthenticated } = useAuthContext()
   const navigate = useNavigate()
 
@@ -30,15 +30,31 @@ function Navbar({ onToggleSidebar }) {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <button 
-          className="navbar-menu-toggle"
-          onClick={onToggleSidebar}
-          aria-label="Toggle menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+        <div className="navbar-leading">
+          <button
+            type="button"
+            className="navbar-menu-toggle"
+            onClick={onToggleSidebar}
+            aria-label="Abrir o cerrar menú lateral"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <button
+            type="button"
+            className="navbar-sidebar-toggle navbar-sidebar-toggle--desktop"
+            onClick={onToggleSidebar}
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? 'Ocultar menú lateral' : 'Mostrar menú lateral'}
+            title={sidebarOpen ? 'Ocultar menú lateral' : 'Mostrar menú lateral'}
+          >
+            <i
+              className={`bi ${sidebarOpen ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar'}`}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
         <div className="navbar-menu">
           {user && (
             <div className="navbar-user">

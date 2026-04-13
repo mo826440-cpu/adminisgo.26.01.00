@@ -1,0 +1,292 @@
+.reporte-ventas {
+  --reporte-cobradas: #28a745;
+  --reporte-deuda: #dc3545;
+  --reporte-pie-vacio: var(--border-color);
+}
+
+.reporte-ventas-intro {
+  margin-bottom: 1.25rem;
+}
+
+.reporte-ventas-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.reporte-ventas-filtro-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-bottom: -0.5rem;
+}
+
+.reporte-ventas-filtro-campos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.reporte-ventas-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reporte-ventas-fecha input {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.reporte-ventas-alert {
+  margin-bottom: 1rem;
+}
+
+.reporte-ventas-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.reporte-ventas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .reporte-ventas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reporte-ventas-subtitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reporte-ventas-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.reporte-ventas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.reporte-ventas-table thead th {
+  background: rgba(102, 126, 234, 0.22);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.reporte-ventas-table tbody td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.reporte-ventas-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reporte-ventas-table tfoot td {
+  padding: 0.65rem 0.75rem;
+  font-weight: 700;
+  background: rgba(102, 126, 234, 0.35);
+  color: var(--text-primary);
+  border-top: 2px solid var(--border-color);
+}
+
+.reporte-ventas-sin-datos {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1.5rem !important;
+}
+
+.reporte-ventas-chart-area {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: #1a1d24;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='light'] .reporte-ventas-chart-area {
+  background: #2c313a;
+}
+
+.reporte-ventas-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.reporte-ventas-barra-fila {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.reporte-ventas-barra-mes {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e8eaed;
+  text-transform: lowercase;
+}
+
+.reporte-ventas-barra-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reporte-ventas-barra-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 22px;
+}
+
+.reporte-ventas-barra-fill {
+  height: 18px;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.35s ease;
+}
+
+.reporte-ventas-barra-fill--pagado {
+  background: var(--reporte-cobradas);
+}
+
+.reporte-ventas-barra-fill--deuda {
+  background: var(--reporte-deuda);
+}
+
+.reporte-ventas-barra-valor {
+  font-size: 0.75rem;
+  color: #e8eaed;
+  white-space: nowrap;
+}
+
+.reporte-ventas-leyenda-barras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #e8eaed;
+}
+
+.reporte-ventas-sq {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+.reporte-ventas-sq--pagado {
+  background: var(--reporte-cobradas);
+}
+
+.reporte-ventas-sq--deuda {
+  background: var(--reporte-deuda);
+}
+
+.reporte-ventas-pies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.25rem;
+}
+
+.reporte-ventas-pie-wrap {
+  text-align: center;
+}
+
+.reporte-ventas-pie-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e8eaed;
+  margin-bottom: 0.5rem;
+}
+
+.reporte-ventas-pie-visual {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.reporte-ventas-pie {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.reporte-ventas-pie-empty {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.reporte-ventas-pie-leyenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #e8eaed;
+  text-align: left;
+}
+
+.reporte-ventas-pie-leyenda li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.reporte-ventas-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.reporte-ventas-dot--cobradas {
+  background: var(--reporte-cobradas);
+}
+
+.reporte-ventas-dot--deuda {
+  background: var(--reporte-deuda);
+}
