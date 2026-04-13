@@ -5,6 +5,7 @@ import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination } from '../../components/common'
 import { getMarcas } from '../../services/marcas'
 import './MarcasList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
 
@@ -107,6 +108,8 @@ function MarcasList() {
         )}
 
         <Card>
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE MARCAS</h3>
           <div className="table-controls">
             <input
               type="text"

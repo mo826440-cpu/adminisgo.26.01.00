@@ -8,6 +8,7 @@ import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import ActionsMenu from './ActionsMenu'
 import './VentasList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
 
@@ -391,7 +392,7 @@ function VentasList() {
         {/* Tabla de Registros */}
         <Card className="registros-panel">
           <div className="section-label">SECCIÓN</div>
-          <h3>TABLA DE REGISTROS</h3>
+          <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS</h3>
           <p className="registros-aviso-filtro">
             Por defecto se muestran los registros desde hace 3 meses hasta el día de hoy. Para ver registros anteriores, cambiá los filtros manualmente.
           </p>

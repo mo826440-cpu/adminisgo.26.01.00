@@ -20,15 +20,6 @@
   font-weight: 600; /* peso medio */
 }
 
-.section-label {
-  font-size: 0.7rem; /* etiqueta pequena */
-  color: var(--text-secondary); /* color secundario */
-  letter-spacing: 0.08em; /* separacion letras */
-  text-transform: uppercase; /* mayusculas */
-  margin-bottom: 0.25rem; /* espacio bajo etiqueta */
-}
-
-
 .indicadores-grid {
   display: grid; /* layout en grilla */
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* columnas responsivas */

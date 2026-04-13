@@ -5,6 +5,7 @@ import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination } from '../../components/common'
 import { getUsuariosDelComercio } from '../../services/usuarios'
 import './UsuariosList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 50
 
@@ -95,6 +96,8 @@ function UsuariosList() {
         )}
 
         <Card>
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE USUARIOS</h3>
           <div className="table-controls">
             <input
               type="text"

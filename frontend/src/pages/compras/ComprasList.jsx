@@ -7,6 +7,7 @@ import { getCompras, deleteCompra } from '../../services/compras'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate } from '../../utils/dateFormat'
 import './ComprasList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
 
@@ -417,7 +418,7 @@ function ComprasList() {
         {/* Tabla de Registros */}
         <Card className="registros-panel">
           <div className="section-label">SECCIÓN</div>
-          <h3>TABLA DE REGISTROS</h3>
+          <h3 className="registros-seccion-titulo">REGISTROS DE COMPRAS</h3>
           {paginatedCompras.length === 0 ? (
             <div className="empty-state">
               {compras.length === 0 ? (

@@ -5,6 +5,7 @@ import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination } from '../../components/common'
 import { getProveedores } from '../../services/proveedores'
 import './ProveedoresList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
 
@@ -109,6 +110,8 @@ function ProveedoresList() {
         )}
 
         <Card>
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE PROVEEDORES</h3>
           <div className="table-controls">
             <input
               type="text"

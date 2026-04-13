@@ -10,6 +10,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import './VentasRapidas.css'
+import '../../styles/registros-seccion.css'
 
 function VentasRapidas() {
   const navigate = useNavigate()
@@ -665,8 +666,9 @@ function VentasRapidas() {
 
         {/* Tabla de Registros de Ventas Rápidas */}
         <Card style={{ marginTop: '1.5rem' }}>
-          <h2>Registros de Ventas Rápidas</h2>
-          
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS RAPIDAS</h3>
+
           {/* Filtros de fecha */}
           <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>

@@ -6,6 +6,7 @@ import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../co
 import { getProductos, deleteProducto } from '../../services/productos'
 import ProductosActionsMenu from './ProductosActionsMenu'
 import './ProductosList.css'
+import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
 
@@ -143,6 +144,8 @@ function ProductosList() {
         )}
 
         <Card>
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE PRODUCTOS</h3>
           <div className="productos-filters">
             <input
               type="text"
