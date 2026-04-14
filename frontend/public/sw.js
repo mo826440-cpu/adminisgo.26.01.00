@@ -2,7 +2,7 @@
 // IMPORTANTE: Cambiar esta versión cuando quieras forzar una actualización
 // El navegador detectará automáticamente cuando este archivo cambia
 
-const SW_VERSION = '2.0'; // Incrementar este número para forzar actualización
+const SW_VERSION = '2.1'; // Incrementar este número para forzar actualización
 const CACHE_NAME = `adminis-go-${SW_VERSION}`;
 const RUNTIME_CACHE = `adminis-go-runtime-${SW_VERSION}`;
 
@@ -70,6 +70,26 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/**
+ * Shell SPA desde caché; si no hay, red a index.html.
+ * respondWith debe recibir siempre un Response (nunca undefined).
+ */
+function spaShellFromCacheThenNetwork() {
+  return caches
+    .match('/index.html')
+    .then((r) => r || caches.match('/'))
+    .then((cached) => {
+      if (cached) return cached;
+      return fetch('/index.html', { cache: 'reload' });
+    })
+    .catch(() => {
+      return new Response(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sin conexión</title></head><body><p>Sin conexión. Intentá de nuevo.</p></body></html>',
+        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      );
+    });
+}
+
 // Evento: Interceptar peticiones
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -80,6 +100,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isDocumentNavigation =
+    request.mode === 'navigate' || request.destination === 'document';
+
   // Estrategia mejorada: Network First con fallback a cache
   // Esto asegura que siempre se obtenga la versión más reciente
   event.respondWith(
@@ -88,24 +111,33 @@ self.addEventListener('fetch', (event) => {
         // Si la respuesta es válida, actualizar el cache
         if (response && response.status === 200) {
           const responseToCache = response.clone();
-          caches.open(RUNTIME_CACHE)
-            .then((cache) => {
-              cache.put(request, responseToCache);
-            });
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseToCache);
+          });
         }
         return response;
       })
       .catch(() => {
-        // Si falla la red, intentar desde el cache
-        return caches.match(request)
+        return caches
+          .match(request)
           .then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
+            if (cachedResponse) return cachedResponse;
+            if (isDocumentNavigation) {
+              return spaShellFromCacheThenNetwork();
             }
-            // Si es una navegación y no hay cache, devolver index.html
-            if (request.mode === 'navigate') {
-              return caches.match('/index.html');
+            return new Response('', {
+              status: 503,
+              statusText: 'Sin conexión',
+            });
+          })
+          .catch(() => {
+            if (isDocumentNavigation) {
+              return spaShellFromCacheThenNetwork();
             }
+            return new Response('', {
+              status: 503,
+              statusText: 'Sin conexión',
+            });
           });
       })
   );
