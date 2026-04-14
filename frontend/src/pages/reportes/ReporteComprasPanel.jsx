@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { getVentasPorRangoFechas } from '../../services/ventas'
+import { getComprasPorRangoFechas } from '../../services/compras'
 import { Spinner, Alert, Button } from '../../components/common'
 import {
-  aggregateVentasByMonth,
-  mergeAggregatedWithAllMonthsInRange,
-  totalesGenerales,
+  aggregateComprasByMonth,
+  mergeComprasAggregatedWithAllMonthsInRange,
+  totalesGeneralesCompras,
   formatMoneyAR,
   maxBarScale,
   mesTituloPie,
-} from './reporteVentasUtils'
+} from './reporteComprasUtils'
 import {
-  downloadReporteVentasPdf,
-  buildTicketTextVentas,
+  downloadReporteComprasPdf,
+  buildTicketTextCompras,
   printReporteTicket,
 } from './reporteInformeExport'
 import { ReporteInformeExportActions } from './ReporteInformeExportActions'
@@ -34,23 +34,23 @@ function getDefaultFechaHasta() {
   return `${y}-${m}-${d}`
 }
 
-function PieMes({ row }) {
-  const total = row.numVentas
-  const cob = row.ventasCobradas
-  const deu = row.ventasConDeuda
-  const pctCob = total > 0 ? Math.round((cob / total) * 1000) / 10 : 0
+function PieMesCompras({ row }) {
+  const total = row.numCompras
+  const pag = row.comprasPagadas
+  const deu = row.comprasConDeuda
+  const pctPag = total > 0 ? Math.round((pag / total) * 1000) / 10 : 0
   const pctDeu = total > 0 ? Math.min(100, Math.round((deu / total) * 1000) / 10) : 0
-  const gradosCob = total > 0 ? (cob / total) * 360 : 0
+  const gradosPag = total > 0 ? (pag / total) * 360 : 0
 
   const title = mesTituloPie(row.year, row.monthIndex)
   const grad =
     total === 0
       ? 'conic-gradient(var(--reporte-pie-vacio) 0deg 360deg)'
-      : cob === 0
+      : pag === 0
         ? 'conic-gradient(var(--reporte-deuda) 0deg 360deg)'
         : deu === 0
           ? 'conic-gradient(var(--reporte-cobradas) 0deg 360deg)'
-          : `conic-gradient(var(--reporte-cobradas) 0deg ${gradosCob}deg, var(--reporte-deuda) ${gradosCob}deg 360deg)`
+          : `conic-gradient(var(--reporte-cobradas) 0deg ${gradosPag}deg, var(--reporte-deuda) ${gradosPag}deg 360deg)`
 
   return (
     <div className="reporte-ventas-pie-wrap">
@@ -59,16 +59,16 @@ function PieMes({ row }) {
         <div className="reporte-ventas-pie" style={{ background: grad }} aria-hidden="true" />
       </div>
       {total === 0 ? (
-        <p className="reporte-ventas-pie-empty text-secondary">Sin ventas</p>
+        <p className="reporte-ventas-pie-empty text-secondary">Sin compras</p>
       ) : (
         <ul className="reporte-ventas-pie-leyenda">
           <li>
             <span className="reporte-ventas-dot reporte-ventas-dot--cobradas" />
-            VENTAS COBRADAS: {cob} ({pctCob}%)
+            COMPRAS PAGADAS: {pag} ({pctPag}%)
           </li>
           <li>
             <span className="reporte-ventas-dot reporte-ventas-dot--deuda" />
-            VENTAS CON DEUDA: {deu} ({pctDeu}%)
+            COMPRAS CON DEUDA: {deu} ({pctDeu}%)
           </li>
         </ul>
       )}
@@ -76,7 +76,7 @@ function PieMes({ row }) {
   )
 }
 
-function ReporteVentasPanel() {
+function ReporteComprasPanel() {
   const [desde, setDesde] = useState(getDefaultFechaDesde)
   const [hasta, setHasta] = useState(getDefaultFechaHasta)
   const [loading, setLoading] = useState(true)
@@ -99,15 +99,15 @@ function ReporteVentasPanel() {
       return
     }
 
-    const { data, error: err } = await getVentasPorRangoFechas(dDesde, dHasta)
+    const { data, error: err } = await getComprasPorRangoFechas(dDesde, dHasta)
     if (err) {
-      setError(err.message || 'No se pudieron cargar las ventas.')
+      setError(err.message || 'No se pudieron cargar las compras.')
       setRows([])
       setLoading(false)
       return
     }
-    const agregado = aggregateVentasByMonth(data || [])
-    setRows(mergeAggregatedWithAllMonthsInRange(dDesde, dHasta, agregado))
+    const agregado = aggregateComprasByMonth(data || [])
+    setRows(mergeComprasAggregatedWithAllMonthsInRange(dDesde, dHasta, agregado))
     setLoading(false)
   }, [desde, hasta])
 
@@ -115,10 +115,10 @@ function ReporteVentasPanel() {
     cargar()
   }, [cargar])
 
-  const totales = useMemo(() => totalesGenerales(rows), [rows])
+  const totales = useMemo(() => totalesGeneralesCompras(rows), [rows])
   const barScale = useMemo(() => maxBarScale(rows), [rows])
   const ticketText = useMemo(
-    () => buildTicketTextVentas({ desde, hasta, rows, totales }),
+    () => buildTicketTextCompras({ desde, hasta, rows, totales }),
     [desde, hasta, rows, totales]
   )
 
@@ -127,7 +127,7 @@ function ReporteVentasPanel() {
     setPdfExporting(true)
     setError(null)
     try {
-      await downloadReporteVentasPdf({
+      await downloadReporteComprasPdf({
         desde,
         hasta,
         rows,
@@ -143,14 +143,15 @@ function ReporteVentasPanel() {
   }
 
   const handlePrintTicket = () => {
-    printReporteTicket({ titulo: 'Reporte de ventas — ticket', texto: ticketText })
+    printReporteTicket({ titulo: 'Reporte de compras — ticket', texto: ticketText })
   }
 
   return (
     <div className="reporte-ventas">
-      <h2 className="reportes-panel-heading">Reporte de ventas</h2>
+      <h2 className="reportes-panel-heading">Reporte de compras</h2>
       <p className="reportes-panel-text reporte-ventas-intro">
-        Totales por mes según el rango de fechas: montos, cobranzas y deudas, y cantidad de operaciones.
+        Totales por mes según el rango de fechas (fecha de orden del registro de compras): montos, pagos y deudas, y
+        cantidad de operaciones.
       </p>
 
       <div className="reporte-ventas-filtro">
@@ -158,19 +159,11 @@ function ReporteVentasPanel() {
         <div className="reporte-ventas-filtro-campos">
           <label className="reporte-ventas-fecha">
             Desde
-            <input
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-            />
+            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
           </label>
           <label className="reporte-ventas-fecha">
             Hasta
-            <input
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-            />
+            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
           </label>
           <Button type="button" variant="outline" size="sm" onClick={cargar} disabled={loading}>
             Actualizar
@@ -198,8 +191,8 @@ function ReporteVentasPanel() {
         </div>
       ) : (
         <div className="reporte-ventas-grid">
-          <section className="reporte-ventas-col" aria-labelledby="reporte-ventas-montos-title">
-            <h3 id="reporte-ventas-montos-title" className="reporte-ventas-subtitle">
+          <section className="reporte-ventas-col" aria-labelledby="reporte-compras-montos-title">
+            <h3 id="reporte-compras-montos-title" className="reporte-ventas-subtitle">
               Montos
             </h3>
             <div className="reporte-ventas-table-wrap">
@@ -216,7 +209,7 @@ function ReporteVentasPanel() {
                   {rows.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="reporte-ventas-sin-datos">
-                        No hay ventas en el rango seleccionado.
+                        No hay compras en el rango seleccionado.
                       </td>
                     </tr>
                   ) : (
@@ -284,34 +277,34 @@ function ReporteVentasPanel() {
             )}
           </section>
 
-          <section className="reporte-ventas-col" aria-labelledby="reporte-ventas-volumen-title">
-            <h3 id="reporte-ventas-volumen-title" className="reporte-ventas-subtitle">
-              Cantidad de ventas
+          <section className="reporte-ventas-col" aria-labelledby="reporte-compras-volumen-title">
+            <h3 id="reporte-compras-volumen-title" className="reporte-ventas-subtitle">
+              Cantidad de compras
             </h3>
             <div className="reporte-ventas-table-wrap">
               <table className="reporte-ventas-table">
                 <thead>
                   <tr>
                     <th>MES</th>
-                    <th>NUMERO VENTAS</th>
-                    <th>VENTAS COBRADAS</th>
-                    <th>VENTAS CON DEUDA</th>
+                    <th>Nº COMPRAS</th>
+                    <th>COMPRAS PAGADAS</th>
+                    <th>COMPRAS CON DEUDA</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="reporte-ventas-sin-datos">
-                        No hay ventas en el rango seleccionado.
+                        No hay compras en el rango seleccionado.
                       </td>
                     </tr>
                   ) : (
                     rows.map((r) => (
                       <tr key={r.key}>
                         <td>{r.labelCorto}</td>
-                        <td>{r.numVentas}</td>
-                        <td>{r.ventasCobradas}</td>
-                        <td>{r.ventasConDeuda}</td>
+                        <td>{r.numCompras}</td>
+                        <td>{r.comprasPagadas}</td>
+                        <td>{r.comprasConDeuda}</td>
                       </tr>
                     ))
                   )}
@@ -320,9 +313,9 @@ function ReporteVentasPanel() {
                   <tfoot>
                     <tr>
                       <td>Total general</td>
-                      <td>{totales.numVentas}</td>
-                      <td>{totales.ventasCobradas}</td>
-                      <td>{totales.ventasConDeuda}</td>
+                      <td>{totales.numCompras}</td>
+                      <td>{totales.comprasPagadas}</td>
+                      <td>{totales.comprasConDeuda}</td>
                     </tr>
                   </tfoot>
                 )}
@@ -332,7 +325,7 @@ function ReporteVentasPanel() {
             {rows.length > 0 && (
               <div className="reporte-ventas-chart-area reporte-ventas-pies-grid" aria-label="Gráficos por mes">
                 {rows.map((r) => (
-                  <PieMes key={r.key} row={r} />
+                  <PieMesCompras key={r.key} row={r} />
                 ))}
               </div>
             )}
@@ -343,4 +336,4 @@ function ReporteVentasPanel() {
   )
 }
 
-export default ReporteVentasPanel
+export default ReporteComprasPanel

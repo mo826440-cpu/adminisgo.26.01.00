@@ -290,3 +290,46 @@
 .reporte-ventas-dot--deuda {
   background: var(--reporte-deuda);
 }
+
+/* Reporte de balances */
+.reporte-balances-chart-block {
+  margin-top: 1.5rem;
+}
+
+.reporte-balance-fill--ventas {
+  background: var(--reporte-cobradas);
+}
+
+.reporte-balance-fill--compras {
+  background: #fd7e14;
+}
+
+.reporte-balance-fill--renta-pos {
+  background: #20c997;
+}
+
+.reporte-balance-fill--renta-neg {
+  background: var(--reporte-deuda);
+}
+
+.reporte-balance-sq--ventas {
+  background: var(--reporte-cobradas);
+}
+
+.reporte-balance-sq--compras {
+  background: #fd7e14;
+}
+
+.reporte-balance-sq--renta {
+  background: linear-gradient(135deg, #20c997 50%, #dc3545 50%);
+}
+
+.reporte-balance-renta-pos {
+  color: #20c997;
+  font-weight: 600;
+}
+
+.reporte-balance-renta-neg {
+  color: #dc3545;
+  font-weight: 600;
+}

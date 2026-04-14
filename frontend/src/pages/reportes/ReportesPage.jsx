@@ -5,19 +5,21 @@ import { Card } from '../../components/common'
 import '../../styles/registros-seccion.css'
 import './ReportesPage.css'
 import ReporteVentasPanel from './ReporteVentasPanel'
+import ReporteComprasPanel from './ReporteComprasPanel'
+import ReporteBalancesPanel from './ReporteBalancesPanel'
 
 const TABS = [
   {
     id: 'ventas',
     label: 'VENTAS',
     descripcion:
-      'En esta sección se implementarán los reportes sobre los registros del módulo de ventas.',
+      'Totales por mes según registros de ventas: montos, cobranzas y deudas.',
   },
   {
     id: 'compras',
     label: 'COMPRAS',
     descripcion:
-      'En esta sección se implementarán los reportes sobre los registros del módulo de compras.',
+      'Totales por mes según registros de compras (fecha de orden): montos, pagos y deudas.',
   },
   {
     id: 'productos',
@@ -41,7 +43,7 @@ const TABS = [
     id: 'balances',
     label: 'BALANCES',
     descripcion:
-      'En esta sección se implementarán los informes de balances y estados resumidos de tu negocio.',
+      'Totales de ventas y compras por mes y rentabilidad (ventas − compras) en el mismo período.',
   },
 ]
 
@@ -93,6 +95,10 @@ function ReportesPage() {
           >
             {active.id === 'ventas' ? (
               <ReporteVentasPanel />
+            ) : active.id === 'compras' ? (
+              <ReporteComprasPanel />
+            ) : active.id === 'balances' ? (
+              <ReporteBalancesPanel />
             ) : (
               <>
                 <h2 className="reportes-panel-heading">{active.label}</h2>
