@@ -116,6 +116,15 @@ function Sidebar({ isOpen, onClose }) {
         </Link>
 
         {isAdmin && (
+          <Link
+            to="/otros-costos"
+            className={`sidebar-item ${isActive('/otros-costos') ? 'active' : ''}`}
+          >
+            💸 Otros costos
+          </Link>
+        )}
+
+        {isAdmin && (
           <Link 
             to="/configuraciones" 
             className={`sidebar-item ${isActive('/configuraciones') ? 'active' : ''}`}

@@ -1,3 +1,5 @@
+import { enumerateMonthBuckets } from './reporteDateSlicers'
+
 // Agregación de ventas por mes para informes (fechas en hora local)
 
 const MESES_CORTO = [
@@ -143,6 +145,31 @@ export function mergeAggregatedWithAllMonthsInRange(desde, hasta, aggregatedRows
   }
 
   return out
+}
+
+/**
+ * Igual que mergeAggregatedWithAllMonthsInRange pero solo para los meses incluidos en el slicer (puede ser no contiguo).
+ * @param {{ years: number[], months: number[], days: number[] }} slicerArrays
+ */
+export function mergeAggregatedWithSlicer(aggregatedRows, slicerArrays) {
+  const byKey = new Map(aggregatedRows.map((r) => [r.key, r]))
+  const buckets = enumerateMonthBuckets(slicerArrays)
+  return buckets.map(({ year, monthIndex }) => {
+    const key = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
+    if (byKey.has(key)) return byKey.get(key)
+    return {
+      key,
+      year,
+      monthIndex,
+      labelCorto: mesCorto(year, monthIndex),
+      totalMonto: 0,
+      montoPagado: 0,
+      montoDeuda: 0,
+      numVentas: 0,
+      ventasCobradas: 0,
+      ventasConDeuda: 0,
+    }
+  })
 }
 
 export function totalesGenerales(rows) {

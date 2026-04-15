@@ -3,12 +3,21 @@ import { getVentasPorRangoFechas } from '../../services/ventas'
 import { Spinner, Alert, Button } from '../../components/common'
 import {
   aggregateVentasByMonth,
-  mergeAggregatedWithAllMonthsInRange,
+  mergeAggregatedWithSlicer,
   totalesGenerales,
   formatMoneyAR,
   maxBarScale,
   mesTituloPie,
 } from './reporteVentasUtils'
+import {
+  buildSlicerDateKeySet,
+  filterVentasBySlicerDateKeys,
+  formatSlicerExportLines,
+  getDefaultSlicerArrays,
+  getSlicerBoundingDates,
+  slicerArraysToState,
+} from './reporteDateSlicers'
+import ReporteDateSlicerBar from './ReporteDateSlicerBar'
 import {
   downloadReporteVentasPdf,
   buildTicketTextVentas,
@@ -16,23 +25,6 @@ import {
 } from './reporteInformeExport'
 import { ReporteInformeExportActions } from './ReporteInformeExportActions'
 import './ReporteVentasPanel.css'
-
-function getDefaultFechaDesde() {
-  const ahora = new Date()
-  const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
-  const y = desde.getFullYear()
-  const m = String(desde.getMonth() + 1).padStart(2, '0')
-  const d = String(desde.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function getDefaultFechaHasta() {
-  const ahora = new Date()
-  const y = ahora.getFullYear()
-  const m = String(ahora.getMonth() + 1).padStart(2, '0')
-  const d = String(ahora.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 function PieMes({ row }) {
   const total = row.numVentas
@@ -77,39 +69,47 @@ function PieMes({ row }) {
 }
 
 function ReporteVentasPanel() {
-  const [desde, setDesde] = useState(getDefaultFechaDesde)
-  const [hasta, setHasta] = useState(getDefaultFechaHasta)
+  const [slicer, setSlicer] = useState(() => getDefaultSlicerArrays())
   const [loading, setLoading] = useState(true)
   const [pdfExporting, setPdfExporting] = useState(false)
   const [error, setError] = useState(null)
   const [rows, setRows] = useState([])
   const chartBarrasRef = useRef(null)
 
+  const slicerNorm = useMemo(() => slicerArraysToState(slicer), [slicer])
+  const exportLines = useMemo(() => formatSlicerExportLines(slicerNorm), [slicerNorm])
+
   const cargar = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const [y0, m0, d0] = desde.split('-').map(Number)
-    const [y1, m1, d1] = hasta.split('-').map(Number)
-    const dDesde = new Date(y0, m0 - 1, d0)
-    const dHasta = new Date(y1, m1 - 1, d1)
-    if (dDesde > dHasta) {
-      setError('La fecha "Desde" no puede ser posterior a "Hasta".')
+    const s = slicerArraysToState(slicer)
+    if (!s.years.length) {
+      setError('Seleccioná al menos un año.')
+      setLoading(false)
+      setRows([])
+      return
+    }
+    const bounds = getSlicerBoundingDates(s)
+    if (!bounds) {
+      setError('La combinación de segmentos no incluye ninguna fecha.')
       setLoading(false)
       setRows([])
       return
     }
 
-    const { data, error: err } = await getVentasPorRangoFechas(dDesde, dHasta)
+    const ks = buildSlicerDateKeySet(s)
+    const { data, error: err } = await getVentasPorRangoFechas(bounds.desde, bounds.hasta)
     if (err) {
       setError(err.message || 'No se pudieron cargar las ventas.')
       setRows([])
       setLoading(false)
       return
     }
-    const agregado = aggregateVentasByMonth(data || [])
-    setRows(mergeAggregatedWithAllMonthsInRange(dDesde, dHasta, agregado))
+    const filtradas = filterVentasBySlicerDateKeys(data || [], ks)
+    const agregado = aggregateVentasByMonth(filtradas)
+    setRows(mergeAggregatedWithSlicer(agregado, s))
     setLoading(false)
-  }, [desde, hasta])
+  }, [slicer])
 
   useEffect(() => {
     cargar()
@@ -118,8 +118,15 @@ function ReporteVentasPanel() {
   const totales = useMemo(() => totalesGenerales(rows), [rows])
   const barScale = useMemo(() => maxBarScale(rows), [rows])
   const ticketText = useMemo(
-    () => buildTicketTextVentas({ desde, hasta, rows, totales }),
-    [desde, hasta, rows, totales]
+    () =>
+      buildTicketTextVentas({
+        desde: exportLines.desdeStr,
+        hasta: exportLines.hastaStr,
+        detalleFiltro: exportLines.criterio,
+        rows,
+        totales,
+      }),
+    [exportLines, rows, totales]
   )
 
   const handlePdf = async () => {
@@ -128,8 +135,9 @@ function ReporteVentasPanel() {
     setError(null)
     try {
       await downloadReporteVentasPdf({
-        desde,
-        hasta,
+        desde: exportLines.desdeStr,
+        hasta: exportLines.hastaStr,
+        detalleFiltro: exportLines.criterio,
         rows,
         totales,
         chartElements: rows.length > 0 ? { barras: chartBarrasRef.current } : null,
@@ -154,34 +162,24 @@ function ReporteVentasPanel() {
       </p>
 
       <div className="reporte-ventas-filtro">
-        <span className="reporte-ventas-filtro-label">FILTRAR</span>
-        <div className="reporte-ventas-filtro-campos">
-          <label className="reporte-ventas-fecha">
-            Desde
-            <input
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+        <span className="reporte-ventas-filtro-label">FILTRAR POR FECHA (SEGMENTOS)</span>
+        <div className="reporte-ventas-filtro-campos reporte-ventas-filtro-campos--slicer">
+          <ReporteDateSlicerBar years={slicer.years} months={slicer.months} days={slicer.days} onChange={setSlicer} />
+          <div className="reporte-ventas-filtro-actions">
+            <Button type="button" variant="outline" size="sm" onClick={cargar} disabled={loading}>
+              Actualizar
+            </Button>
+            <ReporteInformeExportActions
+              disabled={loading || pdfExporting}
+              onPdf={() => {
+                void handlePdf()
+              }}
+              onPrint={handlePrintTicket}
             />
-          </label>
-          <label className="reporte-ventas-fecha">
-            Hasta
-            <input
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-            />
-          </label>
-          <Button type="button" variant="outline" size="sm" onClick={cargar} disabled={loading}>
-            Actualizar
-          </Button>
-          <ReporteInformeExportActions
-            disabled={loading || pdfExporting}
-            onPdf={() => {
-              void handlePdf()
-            }}
-            onPrint={handlePrintTicket}
-          />
+          </div>
+          <p className="reporte-ventas-periodo-resumen text-secondary" aria-live="polite">
+            Consulta al servidor: {exportLines.desdeStr} → {exportLines.hastaStr} · {exportLines.criterio}
+          </p>
         </div>
       </div>
 

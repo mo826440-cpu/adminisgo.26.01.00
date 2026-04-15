@@ -5,6 +5,7 @@ import {
   formatMoneyAR,
   maxBarScale,
 } from './reporteVentasUtils'
+import { enumerateMonthBuckets } from './reporteDateSlicers'
 
 export { mesCorto, formatMoneyAR, maxBarScale }
 export { mesTituloPie } from './reporteVentasUtils'
@@ -117,6 +118,30 @@ export function mergeComprasAggregatedWithAllMonthsInRange(desde, hasta, aggrega
   }
 
   return out
+}
+
+/**
+ * @param {{ years: number[], months: number[], days: number[] }} slicerArrays
+ */
+export function mergeComprasAggregatedWithSlicer(aggregatedRows, slicerArrays) {
+  const byKey = new Map(aggregatedRows.map((r) => [r.key, r]))
+  const buckets = enumerateMonthBuckets(slicerArrays)
+  return buckets.map(({ year, monthIndex }) => {
+    const key = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
+    if (byKey.has(key)) return byKey.get(key)
+    return {
+      key,
+      year,
+      monthIndex,
+      labelCorto: mesCorto(year, monthIndex),
+      totalMonto: 0,
+      montoPagado: 0,
+      montoDeuda: 0,
+      numCompras: 0,
+      comprasPagadas: 0,
+      comprasConDeuda: 0,
+    }
+  })
 }
 
 export function totalesGeneralesCompras(rows) {

@@ -36,6 +36,26 @@
   gap: 1rem;
 }
 
+.reporte-ventas-filtro-campos--slicer {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+
+.reporte-ventas-filtro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reporte-ventas-periodo-resumen {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 .reporte-ventas-fecha {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,156 @@
+.otros-costos-page {
+  padding-bottom: 2rem;
+}
+
+.otros-costos-header {
+  margin-bottom: 1.5rem;
+}
+
+.otros-costos-title {
+  margin-top: 0.25rem;
+}
+
+.otros-costos-subtitle {
+  margin: 0.5rem 0 0 0;
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+.otros-costos-alert {
+  margin-bottom: 1rem;
+}
+
+.otros-costos-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.otros-costos-card--form {
+  background: linear-gradient(
+    160deg,
+    rgba(102, 126, 234, 0.08) 0%,
+    var(--bg-secondary) 45%,
+    rgba(32, 201, 151, 0.05) 100%
+  );
+}
+
+.otros-costos-card-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.otros-costos-form-grid {
+  display: grid;
+  grid-template-columns: minmax(8rem, 10rem) 1fr minmax(9rem, 11rem);
+  gap: 1rem;
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .otros-costos-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.otros-costos-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.otros-costos-field--grow {
+  min-width: 0;
+}
+
+.otros-costos-field-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+
+.otros-costos-select {
+  cursor: pointer;
+}
+
+.otros-costos-form-actions {
+  margin-top: 1.1rem;
+}
+
+.otros-costos-form-errors {
+  margin: 0.75rem 0 0 0;
+  padding-left: 1.2rem;
+  color: var(--danger-color, #dc3545);
+  font-size: 0.85rem;
+}
+
+.otros-costos-filtros-bar {
+  margin: 1rem 0 1.25rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.otros-costos-filtros-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .otros-costos-filtros-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.otros-costos-filtros-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.otros-costos-table-wrap {
+  margin-top: 0.5rem;
+  border-radius: var(--radius-md);
+}
+
+.otros-costos-table thead th {
+  background: rgba(102, 126, 234, 0.18);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.otros-costos-th-monto,
+.otros-costos-td-monto {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.otros-costos-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.otros-costos-loading,
+.otros-costos-loading-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.otros-costos-loading-inline {
+  justify-content: flex-start;
+  padding: 1.25rem 0;
+}

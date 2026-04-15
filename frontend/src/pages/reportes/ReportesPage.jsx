@@ -22,24 +22,6 @@ const TABS = [
       'Totales por mes según registros de compras (fecha de orden): montos, pagos y deudas.',
   },
   {
-    id: 'productos',
-    label: 'PRODUCTOS',
-    descripcion:
-      'En esta sección se implementarán los reportes sobre los registros del módulo de productos.',
-  },
-  {
-    id: 'proveedores',
-    label: 'PROVEEDORES',
-    descripcion:
-      'En esta sección se implementarán los reportes sobre los registros del módulo de proveedores.',
-  },
-  {
-    id: 'clientes',
-    label: 'CLIENTES',
-    descripcion:
-      'En esta sección se implementarán los reportes sobre los registros del módulo de clientes.',
-  },
-  {
     id: 'balances',
     label: 'BALANCES',
     descripcion:
@@ -97,16 +79,8 @@ function ReportesPage() {
               <ReporteVentasPanel />
             ) : active.id === 'compras' ? (
               <ReporteComprasPanel />
-            ) : active.id === 'balances' ? (
-              <ReporteBalancesPanel />
             ) : (
-              <>
-                <h2 className="reportes-panel-heading">{active.label}</h2>
-                <p className="reportes-panel-text">{active.descripcion}</p>
-                <p className="reportes-panel-hint text-secondary">
-                  El contenido de informes y exportaciones se agregará en próximas iteraciones.
-                </p>
-              </>
+              <ReporteBalancesPanel />
             )}
           </div>
         </Card>

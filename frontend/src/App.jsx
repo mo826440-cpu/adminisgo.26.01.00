@@ -35,6 +35,7 @@ import Configuracion from './pages/configuracion/Configuracion'
 import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
 import ReportesPage from './pages/reportes/ReportesPage'
+import OtrosCostosPage from './pages/otrosCostos/OtrosCostosPage'
 import UsuariosList from './pages/usuarios/UsuariosList'
 import UsuarioForm from './pages/usuarios/UsuarioForm'
 import ComprasList from './pages/compras/ComprasList'
@@ -413,6 +414,16 @@ function App() {
                 <ReportesPage />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/otros-costos"
+            element={
+              <AdminRoute>
+                <ErrorBoundary>
+                  <OtrosCostosPage />
+                </ErrorBoundary>
+              </AdminRoute>
+            }
           />
           <Route 
             path="/mantenimiento" 

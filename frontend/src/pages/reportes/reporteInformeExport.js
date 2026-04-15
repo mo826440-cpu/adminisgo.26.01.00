@@ -16,13 +16,23 @@ function safeFileSlug(s) {
   return String(s || '').replace(/[^\d-]/g, '').slice(0, 10) || 'fecha'
 }
 
-function addTitle(doc, titulo, desde, hasta) {
+/** @returns {number} posición Y (mm) para el siguiente bloque de contenido */
+function addTitle(doc, titulo, desde, hasta, detalleFiltro) {
   doc.setFontSize(15)
   doc.setFont('helvetica', 'bold')
   doc.text(titulo, PAGE_MARGIN, 16)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Período: ${desde} al ${hasta}`, PAGE_MARGIN, 23)
+  doc.text(`Período (consulta): ${desde} al ${hasta}`, PAGE_MARGIN, 23)
+  let nextY = 28
+  if (detalleFiltro) {
+    doc.setFontSize(8)
+    const lines = doc.splitTextToSize(String(detalleFiltro), 180)
+    doc.text(lines, PAGE_MARGIN, nextY)
+    nextY += lines.length * 3.2 + 4
+    doc.setFontSize(10)
+  }
+  return nextY
 }
 
 function tableMontos(doc, startY, rows, totales) {
@@ -392,17 +402,17 @@ export function printReporteTicket({ titulo, texto }) {
 }
 
 /**
- * @param {{ desde: string, hasta: string, rows: unknown[], totales: unknown, chartElements?: { barras?: HTMLElement | null } | null }} opts
+ * @param {{ desde: string, hasta: string, rows: unknown[], totales: unknown, chartElements?: { barras?: HTMLElement | null } | null, detalleFiltro?: string }} opts
  */
-export async function downloadReporteVentasPdf({ desde, hasta, rows, totales, chartElements }) {
+export async function downloadReporteVentasPdf({ desde, hasta, rows, totales, chartElements, detalleFiltro }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  addTitle(doc, 'Reporte de ventas', desde, hasta)
+  const yTop = addTitle(doc, 'Reporte de ventas', desde, hasta, detalleFiltro)
 
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('Montos', PAGE_MARGIN, 30)
+  doc.text('Montos', PAGE_MARGIN, yTop + 2)
 
-  let y = tableMontos(doc, 32, rows, totales)
+  let y = tableMontos(doc, yTop + 4, rows, totales)
   y += 6
 
   if (rows.length && chartElements?.barras) {
@@ -428,17 +438,17 @@ export async function downloadReporteVentasPdf({ desde, hasta, rows, totales, ch
 }
 
 /**
- * @param {{ desde: string, hasta: string, rows: unknown[], totales: unknown, chartElements?: { barras?: HTMLElement | null } | null }} opts
+ * @param {{ desde: string, hasta: string, rows: unknown[], totales: unknown, chartElements?: { barras?: HTMLElement | null } | null, detalleFiltro?: string }} opts
  */
-export async function downloadReporteComprasPdf({ desde, hasta, rows, totales, chartElements }) {
+export async function downloadReporteComprasPdf({ desde, hasta, rows, totales, chartElements, detalleFiltro }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  addTitle(doc, 'Reporte de compras', desde, hasta)
+  const yTop = addTitle(doc, 'Reporte de compras', desde, hasta, detalleFiltro)
 
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('Montos', PAGE_MARGIN, 30)
+  doc.text('Montos', PAGE_MARGIN, yTop + 2)
 
-  let y = tableMontos(doc, 32, rows, totales)
+  let y = tableMontos(doc, yTop + 4, rows, totales)
   y += 6
 
   if (rows.length && chartElements?.barras) {
@@ -505,17 +515,17 @@ function tableBalances(doc, startY, rows, totales) {
 }
 
 /**
- * @param {{ desde: string, hasta: string, rows: Array<{ labelCorto: string, totalVentas: number, totalCompras: number, rentabilidad: number }>, totales: { totalVentas: number, totalCompras: number, rentabilidad: number }, chartElements?: { barras?: HTMLElement | null } | null }} opts
+ * @param {{ desde: string, hasta: string, rows: Array<{ labelCorto: string, totalVentas: number, totalCompras: number, rentabilidad: number }>, totales: { totalVentas: number, totalCompras: number, rentabilidad: number }, chartElements?: { barras?: HTMLElement | null } | null, detalleFiltro?: string }} opts
  */
-export async function downloadReporteBalancesPdf({ desde, hasta, rows, totales, chartElements }) {
+export async function downloadReporteBalancesPdf({ desde, hasta, rows, totales, chartElements, detalleFiltro }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  addTitle(doc, 'Reporte de balances', desde, hasta)
+  const yTop = addTitle(doc, 'Reporte de balances', desde, hasta, detalleFiltro)
 
   doc.setFontSize(9)
   doc.setFont('helvetica', 'italic')
-  doc.text('Rentabilidad mensual = total ventas − total compras (mismo mes).', PAGE_MARGIN, 28)
+  doc.text('Rentabilidad mensual = total ventas − total compras (mismo mes).', PAGE_MARGIN, yTop + 2)
 
-  let y = tableBalances(doc, 32, rows, totales)
+  let y = tableBalances(doc, yTop + 8, rows, totales)
   y += 6
 
   if (rows.length && chartElements?.barras) {
@@ -531,7 +541,14 @@ export async function downloadReporteBalancesPdf({ desde, hasta, rows, totales, 
   doc.save(`reporte-balances-${slug}.pdf`)
 }
 
-export function buildTicketTextBalances({ desde, hasta, rows, totales }) {
+function pushTicketWrapped(L, text, w) {
+  const s = String(text || '')
+  for (let i = 0; i < s.length; i += w) {
+    L.push(s.slice(i, i + w))
+  }
+}
+
+export function buildTicketTextBalances({ desde, hasta, rows, totales, detalleFiltro }) {
   const w = 40
   const L = []
   L.push(line(w))
@@ -540,6 +557,10 @@ export function buildTicketTextBalances({ desde, hasta, rows, totales }) {
   L.push(line(w))
   L.push(`Desde: ${desde}`)
   L.push(`Hasta: ${hasta}`)
+  if (detalleFiltro) {
+    L.push(line(w, '.'))
+    pushTicketWrapped(L, detalleFiltro, w)
+  }
   L.push(line(w))
   L.push('MES   VENTAS     COMPRAS    RENTA')
   if (!rows.length) {
@@ -564,7 +585,7 @@ function line(w, ch = '-') {
   return ch.repeat(Math.min(w, 42))
 }
 
-export function buildTicketTextVentas({ desde, hasta, rows, totales }) {
+export function buildTicketTextVentas({ desde, hasta, rows, totales, detalleFiltro }) {
   const w = 40
   const L = []
   L.push(line(w))
@@ -573,6 +594,10 @@ export function buildTicketTextVentas({ desde, hasta, rows, totales }) {
   L.push(line(w))
   L.push(`Desde: ${desde}`)
   L.push(`Hasta: ${hasta}`)
+  if (detalleFiltro) {
+    L.push(line(w, '.'))
+    pushTicketWrapped(L, detalleFiltro, w)
+  }
   L.push(line(w))
   L.push('MONTOS')
   L.push('Mes      Total    Pagado  Deuda')
@@ -610,7 +635,7 @@ export function buildTicketTextVentas({ desde, hasta, rows, totales }) {
   return L.join('\n')
 }
 
-export function buildTicketTextCompras({ desde, hasta, rows, totales }) {
+export function buildTicketTextCompras({ desde, hasta, rows, totales, detalleFiltro }) {
   const w = 40
   const L = []
   L.push(line(w))
@@ -619,6 +644,10 @@ export function buildTicketTextCompras({ desde, hasta, rows, totales }) {
   L.push(line(w))
   L.push(`Desde: ${desde}`)
   L.push(`Hasta: ${hasta}`)
+  if (detalleFiltro) {
+    L.push(line(w, '.'))
+    pushTicketWrapped(L, detalleFiltro, w)
+  }
   L.push(line(w))
   L.push('MONTOS')
   L.push('Mes      Total    Pagado  Deuda')
