@@ -7,6 +7,7 @@ import './ReportesPage.css'
 import ReporteVentasPanel from './ReporteVentasPanel'
 import ReporteComprasPanel from './ReporteComprasPanel'
 import ReporteBalancesPanel from './ReporteBalancesPanel'
+import ReporteRentabilidadPanel from './ReporteRentabilidadPanel'
 
 const TABS = [
   {
@@ -26,6 +27,12 @@ const TABS = [
     label: 'BALANCES',
     descripcion:
       'Totales de ventas y compras por mes y rentabilidad (ventas − compras) en el mismo período.',
+  },
+  {
+    id: 'rentabilidad',
+    label: 'RENTABILIDAD',
+    descripcion:
+      'Ingresos por ventas, costo de compras, gastos operativos (otros costos fijos/variables), utilidad neta y margen %.',
   },
 ]
 
@@ -79,8 +86,10 @@ function ReportesPage() {
               <ReporteVentasPanel />
             ) : active.id === 'compras' ? (
               <ReporteComprasPanel />
-            ) : (
+            ) : active.id === 'balances' ? (
               <ReporteBalancesPanel />
+            ) : (
+              <ReporteRentabilidadPanel />
             )}
           </div>
         </Card>
