@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext'
 import { DateTimeProvider } from './context/DateTimeContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
-import { AdminRoute } from './components/common'
+import { AdminRoute, PermissionRoute } from './components/common'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -38,6 +38,7 @@ import ReportesPage from './pages/reportes/ReportesPage'
 import OtrosCostosPage from './pages/otrosCostos/OtrosCostosPage'
 import UsuariosList from './pages/usuarios/UsuariosList'
 import UsuarioForm from './pages/usuarios/UsuarioForm'
+import RolesPermisosPage from './pages/usuarios/RolesPermisosPage'
 import ComprasList from './pages/compras/ComprasList'
 import CompraForm from './pages/compras/CompraForm'
 import CompraDetalle from './pages/compras/CompraDetalle'
@@ -113,209 +114,209 @@ function App() {
             <Route 
               path="/dashboard" 
               element={
-                <ProtectedRoute>
+                <PermissionRoute modulo="dashboard">
                   <ErrorBoundary>
                     <Dashboard />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </PermissionRoute>
               } 
             />
             <Route 
               path="/productos" 
               element={
-                <ProtectedRoute>
+                <PermissionRoute modulo="productos">
                   <ErrorBoundary>
                     <ProductosList />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </PermissionRoute>
               } 
             />
             <Route 
               path="/productos/nuevo" 
               element={
-                <ProtectedRoute>
+                <PermissionRoute modulo="productos">
                   <ProductoForm />
-                </ProtectedRoute>
+                </PermissionRoute>
               } 
             />
           <Route 
             path="/productos/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="productos">
                 <ProductoForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/clientes" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="clientes">
                 <ClientesList />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/clientes/nuevo" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="clientes">
                 <ClienteForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/clientes/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="clientes">
                 <ClienteForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/categorias" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="categorias">
                 <ErrorBoundary>
                   <CategoriasList />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/categorias/nuevo" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="categorias">
                 <CategoriaForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/categorias/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="categorias">
                 <CategoriaForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/marcas" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="marcas">
                 <ErrorBoundary>
                   <MarcasList />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/marcas/nuevo" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="marcas">
                 <MarcaForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/marcas/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="marcas">
                 <MarcaForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/proveedores" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="proveedores">
                 <ErrorBoundary>
                   <ProveedoresList />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/proveedores/nuevo" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="proveedores">
                 <ProveedorForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/proveedores/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="proveedores">
                 <ProveedorForm />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
                   <VentasList />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas/nueva" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
                   <POS />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
                   <VentaDetalle />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas/:id/editar" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
                   <POS />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas-rapidas" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas_rapidas">
                 <ErrorBoundary>
                   <VentasRapidas />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas-rapidas/historial" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas_rapidas">
                 <ErrorBoundary>
                   <HistorialCajas />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/ventas-rapidas/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="ventas_rapidas">
                 <ErrorBoundary>
                   <VentaRapidaDetalle />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           {/* Configuraciones (solo admin/dueño) */}
@@ -359,60 +360,70 @@ function App() {
               </AdminRoute>
             } 
           />
+          <Route
+            path="/usuarios/permisos"
+            element={
+              <AdminRoute>
+                <ErrorBoundary>
+                  <RolesPermisosPage />
+                </ErrorBoundary>
+              </AdminRoute>
+            }
+          />
           <Route 
             path="/compras" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="compras">
                 <ErrorBoundary>
                   <ComprasList />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/compras/nueva" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="compras">
                 <ErrorBoundary>
                   <CompraForm />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/compras/:id" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="compras">
                 <ErrorBoundary>
                   <CompraDetalle />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/compras/:id/editar" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="compras">
                 <ErrorBoundary>
                   <CompraForm />
                 </ErrorBoundary>
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/inventario" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="inventario">
                 <EnDesarrollo modulo="Módulo de Inventario" />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route 
             path="/reportes" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="reportes">
                 <ReportesPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           <Route
@@ -428,9 +439,9 @@ function App() {
           <Route 
             path="/mantenimiento" 
             element={
-              <ProtectedRoute>
+              <PermissionRoute modulo="mantenimiento">
                 <EnDesarrollo modulo="Módulo de Mantenimiento" />
-              </ProtectedRoute>
+              </PermissionRoute>
             } 
           />
           

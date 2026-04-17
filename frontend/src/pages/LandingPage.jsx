@@ -3,13 +3,20 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
 import { getComercio } from '../services/comercio'
-import { Spinner } from '../components/common'
+import { signOut } from '../services/auth'
+import { Spinner, Alert, Button } from '../components/common'
 import './LandingPage.css'
 
 function LandingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { user, isAuthenticated, loading: authLoading } = useAuthContext()
+  const {
+    isAuthenticated,
+    loading: authLoading,
+    loadingPermisos,
+    firstNavigatePath,
+    sinAccesoNingunModulo,
+  } = useAuthContext()
   const [verificandoComercio, setVerificandoComercio] = useState(false)
 
   useEffect(() => {
@@ -33,7 +40,7 @@ function LandingPage() {
 
     const verificarYRedirigir = async () => {
       // Si está cargando la autenticación, esperar
-      if (authLoading) return
+      if (authLoading || loadingPermisos) return
 
       // Solo redirigir automáticamente si está autenticado Y tiene comercio
       // Si está autenticado pero NO tiene comercio, mostrar la landing page
@@ -41,11 +48,13 @@ function LandingPage() {
       if (isAuthenticated) {
         setVerificandoComercio(true)
         try {
-          const { data: comercio, error } = await getComercio()
+          const { data: comercio } = await getComercio()
           
           if (comercio) {
-            // Tiene comercio, redirigir al dashboard
-            navigate('/dashboard', { replace: true })
+            const dest = firstNavigatePath('/')
+            if (dest !== '/') {
+              navigate(dest, { replace: true })
+            }
           }
           // Si no tiene comercio, NO redirigir - mostrar la landing page
         } catch (err) {
@@ -58,10 +67,10 @@ function LandingPage() {
     }
 
     verificarYRedirigir()
-  }, [isAuthenticated, authLoading, navigate, searchParams])
+  }, [isAuthenticated, authLoading, loadingPermisos, navigate, searchParams, firstNavigatePath])
 
-  // Mostrar spinner mientras verifica
-  if (authLoading || verificandoComercio) {
+  // Mostrar spinner mientras verifica (incluye permisos para no mostrar CTA incorrecta)
+  if (authLoading || verificandoComercio || (isAuthenticated && loadingPermisos)) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -79,8 +88,23 @@ function LandingPage() {
   // Si está autenticado pero no tiene comercio, mostrar la landing page
   // con opciones para continuar el registro
 
+  const handleCerrarSesionSinAcceso = async () => {
+    await signOut()
+    navigate('/', { replace: true })
+  }
+
   return (
     <div className="landing-page">
+      {sinAccesoNingunModulo && (
+        <div className="landing-container landing-sin-acceso-wrap">
+          <Alert variant="warning" className="landing-sin-acceso-alert">
+            <strong>No tenés acceso a ningún módulo del sistema.</strong> Pedile al dueño de tu comercio que habilite
+            al menos un permiso para tu rol en <strong>Usuarios → Permisos por rol</strong>. Si cerrás sesión podés
+            volver a intentar cuando esté resuelto.
+          </Alert>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="landing-hero">
         <div className="landing-container">
@@ -97,9 +121,15 @@ function LandingPage() {
             </p>
             <div className="landing-cta">
               {isAuthenticated ? (
-                <Link to="/auth/select-plan" className="btn btn-primary btn-lg">
-                  Continuar con el Registro
-                </Link>
+                sinAccesoNingunModulo ? (
+                  <Button type="button" variant="outline" size="lg" onClick={() => void handleCerrarSesionSinAcceso()}>
+                    Cerrar sesión
+                  </Button>
+                ) : (
+                  <Link to="/auth/select-plan" className="btn btn-primary btn-lg">
+                    Continuar con el Registro
+                  </Link>
+                )
               ) : (
                 <>
                   <Link to="/auth/register" className="btn btn-primary btn-lg">

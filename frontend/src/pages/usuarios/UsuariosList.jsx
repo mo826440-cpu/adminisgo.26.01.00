@@ -73,14 +73,19 @@ function UsuariosList() {
   return (
     <Layout>
       <div className="container usuarios-list-container">
-        <div className="page-header">
+        <div className="page-header usuarios-list-header-actions">
           <div>
             <h1>Usuarios</h1>
             <p className="text-secondary">Usuarios de tu comercio</p>
           </div>
-          <Link to="/usuarios/nuevo">
-            <Button variant="primary">+ Invitar usuario</Button>
-          </Link>
+          <div className="usuarios-list-header-buttons">
+            <Link to="/usuarios/permisos">
+              <Button variant="outline">Permisos por rol</Button>
+            </Link>
+            <Link to="/usuarios/nuevo">
+              <Button variant="primary">+ Invitar usuario</Button>
+            </Link>
+          </div>
         </div>
 
         {successMessage && (

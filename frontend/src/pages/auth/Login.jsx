@@ -8,7 +8,7 @@ import { useAuthContext } from '../../context/AuthContext'
 function Login() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated, loading: authLoading } = useAuthContext()
+  const { isAuthenticated, loading: authLoading, loadingPermisos, firstNavigatePath } = useAuthContext()
   const mensajeExito = location.state?.message
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,13 +19,13 @@ function Login() {
   // Si ya está autenticado, verificar si tiene comercio y redirigir apropiadamente
   useEffect(() => {
     const verificarYRedirigir = async () => {
-      if (!authLoading && isAuthenticated) {
+      if (!authLoading && !loadingPermisos && isAuthenticated) {
         try {
-          const { data: comercio, error } = await getComercio()
+          const { data: comercio } = await getComercio()
           
           if (comercio) {
-            // Tiene comercio, redirigir al dashboard
-            navigate('/dashboard', { replace: true })
+            const dest = firstNavigatePath('/')
+            navigate(dest !== '/' ? dest : '/', { replace: true })
           } else {
             // No tiene comercio, redirigir a selección de plan
             navigate('/auth/select-plan', { replace: true })
@@ -39,7 +39,7 @@ function Login() {
     }
 
     verificarYRedirigir()
-  }, [isAuthenticated, authLoading, navigate])
+  }, [isAuthenticated, authLoading, loadingPermisos, navigate, firstNavigatePath])
 
   // Mostrar loading mientras se verifica la autenticación
   if (authLoading) {
@@ -65,7 +65,7 @@ function Login() {
     setLoading(true)
     setError(null)
 
-    const { data, error } = await signIn(email, password)
+    const { error } = await signIn(email, password)
 
     if (error) {
       setError(error.message || 'Error al iniciar sesión')
@@ -75,18 +75,11 @@ function Login() {
 
     // Verificar si tiene comercio antes de redirigir
     try {
-      const { data: comercio, error: comercioError } = await getComercio()
-      
-      // Log para depuración
-      console.log('[Login] Verificando comercio después de login:', { comercio, error: comercioError })
-      
+      const { data: comercio } = await getComercio()
+
       if (comercio) {
-        // Tiene comercio, redirigir al dashboard
-        console.log('[Login] Usuario tiene comercio, redirigiendo a dashboard')
-        navigate('/dashboard', { replace: true })
+        navigate('/', { replace: true })
       } else {
-        // No tiene comercio, redirigir a selección de plan
-        console.log('[Login] Usuario NO tiene comercio, redirigiendo a select-plan')
         navigate('/auth/select-plan', { replace: true })
       }
     } catch (err) {

@@ -10,6 +10,17 @@
   padding: 0 2rem;
 }
 
+.landing-sin-acceso-wrap {
+  padding-top: 1.25rem;
+  padding-bottom: 0;
+}
+
+.landing-sin-acceso-alert {
+  max-width: 52rem;
+  margin: 0 auto;
+  text-align: left;
+}
+
 /* Hero Section */
 .landing-hero {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);

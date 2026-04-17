@@ -3,9 +3,9 @@ import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, isAdmin, loading } = useAuthContext()
+  const { isAuthenticated, isAdmin, loading, loadingPermisos } = useAuthContext()
 
-  if (loading) {
+  if (loading || loadingPermisos) {
     return (
       <div style={{
         minHeight: '100vh',

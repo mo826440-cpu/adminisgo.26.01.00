@@ -1,0 +1,67 @@
+.roles-permisos-page {
+  padding-bottom: 2rem;
+}
+
+.roles-permisos-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.roles-permisos-card {
+  padding: 1.25rem;
+}
+
+.roles-permisos-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.roles-permisos-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-bottom: -0.35rem;
+}
+
+.roles-permisos-select {
+  min-width: 220px;
+  max-width: 100%;
+}
+
+.roles-permisos-table-wrap {
+  overflow-x: auto;
+}
+
+.roles-permisos-table {
+  margin-bottom: 0;
+}
+
+.roles-permisos-th-check,
+.roles-permisos-td-check {
+  width: 120px;
+  text-align: center;
+}
+
+.roles-permisos-td-check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+}
+
+.roles-permisos-nombre {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.roles-permisos-codigo {
+  font-size: 0.78rem;
+}

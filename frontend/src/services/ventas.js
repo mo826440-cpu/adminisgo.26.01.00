@@ -5,20 +5,84 @@ import { validarLimiteVentas } from './planes'
 /** PostgREST/Supabase suele limitar a 1000 filas por respuesta si no se pagina */
 const SUPABASE_PAGE_SIZE = 1000
 
+/** Errores transitorios del pooler (PgBouncer / Supavisor modo transacción) o red */
+function isTransientQueryError(error) {
+  if (!error) return false
+  const parts = [error.message, error.details, error.hint, error.code]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase())
+  const msg = parts.join(' ')
+  const code = String(error.code || '')
+  const status = Number(error.status || error.statusCode || 0)
+  // PostgREST a veces devuelve 500 genérico; el detalle va en `details` o queda vacío.
+  if ([500, 502, 503, 504].includes(status)) {
+    if (
+      msg.includes('prepared') ||
+      msg.includes('prepstmt') ||
+      msg.includes('declaración') ||
+      msg.includes('caducad') ||
+      (msg.includes('statement') && msg.includes('exist')) ||
+      msg.includes('connection reset') ||
+      msg.includes('econnreset') ||
+      msg.includes('upstream') ||
+      msg.includes('temporarily unavailable') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out') ||
+      msg.includes('ssl') ||
+      msg.trim().length === 0
+    ) {
+      return true
+    }
+  }
+  return (
+    msg.includes('prepared statement') ||
+    msg.includes('declaración ha caducado') ||
+    msg.includes('declaración debido') ||
+    msg.includes('connection reset') ||
+    msg.includes('econnreset') ||
+    code === '57014' ||
+    code === '08P01' ||
+    code === '57P01'
+  )
+}
+
 /**
  * Repite la consulta con .range() hasta obtener todas las filas.
+ * Reintenta ante fallos transitorios del pooler (varias páginas seguidas suelen dispararlos).
  * @param {() => ReturnType<typeof supabase.from>} makeQuery - builder sin .range()
  */
 async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE) {
   const all = []
   let from = 0
   for (;;) {
-    const { data, error } = await makeQuery().range(from, from + pageSize - 1)
-    if (error) throw error
-    const chunk = data || []
+    let chunk = null
+    let lastError = null
+    const st500 = (err) =>
+      [500, 502, 503, 504].includes(Number(err?.status || err?.statusCode || 0))
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data, error } = await makeQuery().range(from, from + pageSize - 1)
+      if (!error) {
+        chunk = data || []
+        break
+      }
+      lastError = error
+      const transient = isTransientQueryError(error)
+      // Algunos 5xx del pooler no matchean el texto; reintentar pocas veces con backoff.
+      const generic5xx = st500(error) && attempt < 2
+      const shouldRetry = transient || generic5xx
+      if (!shouldRetry || attempt === 4) {
+        throw error
+      }
+      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
+    }
+    if (!Array.isArray(chunk)) {
+      throw lastError || new Error('fetchAllQueryPages: sin respuesta')
+    }
     all.push(...chunk)
     if (chunk.length < pageSize) break
     from += pageSize
+    // Pausa entre páginas: reduce choques con prepared statements en modo transacción.
+    await new Promise((r) => setTimeout(r, 100))
   }
   return all
 }
@@ -300,7 +364,10 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
     const queryStart = new Date(inicio.getTime() - 2 * MS_DAY)
     const queryEnd = new Date(fin.getTime() + 2 * MS_DAY)
 
-    const data = await fetchAllQueryPages(() =>
+    // IMPORTANTE:
+    // Evitamos embeds (venta_items/venta_pagos) en la consulta paginada porque PostgREST
+    // puede devolver 500 en offsets altos con joins/embeds pesados. Cargamos detalles en 2 pasos.
+    const ventasBase = await fetchAllQueryPages(() =>
       supabase
         .from('ventas')
         .select(`
@@ -310,9 +377,7 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         monto_deuda,
         fecha_hora,
         cliente_id,
-        estado,
-        venta_items(producto_id, cantidad),
-        venta_pagos(metodo_pago, monto_pagado)
+        estado
       `)
         .is('deleted_at', null)
         .gte('fecha_hora', queryStart.toISOString())
@@ -320,16 +385,66 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         .order('fecha_hora', { ascending: true })
     )
 
-    const enRango = (data || []).filter((venta) => {
+    const enRango = (ventasBase || []).filter((venta) => {
       if (!venta.fecha_hora) return false
       const fv = new Date(venta.fecha_hora)
       return fv >= inicio && fv <= fin
     })
 
-    const ventasConUnidades = enRango.map((venta) => ({
-      ...venta,
-      unidades_totales: computeVentaUnidadesTotales(venta),
-    }))
+    const ids = enRango.map((v) => v.id).filter((id) => id != null)
+
+    const chunk = (arr, size) => {
+      const out = []
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+      return out
+    }
+
+    const itemsByVentaId = new Map()
+    const pagosByVentaId = new Map()
+
+    if (ids.length > 0) {
+      // PostgREST tiene límites prácticos al tamaño del querystring; chunk 500 para evitar 414/500.
+      const idChunks = chunk(ids, 500)
+
+      const allItems = []
+      for (const idsPart of idChunks) {
+        const { data, error } = await supabase
+          .from('venta_items')
+          .select('venta_id, producto_id, cantidad')
+          .in('venta_id', idsPart)
+        if (error) throw error
+        if (Array.isArray(data)) allItems.push(...data)
+      }
+
+      for (const it of allItems) {
+        const key = it.venta_id
+        if (!itemsByVentaId.has(key)) itemsByVentaId.set(key, [])
+        itemsByVentaId.get(key).push(it)
+      }
+
+      const allPagos = []
+      for (const idsPart of idChunks) {
+        const { data, error } = await supabase
+          .from('venta_pagos')
+          .select('venta_id, metodo_pago, monto_pagado')
+          .in('venta_id', idsPart)
+        if (error) throw error
+        if (Array.isArray(data)) allPagos.push(...data)
+      }
+
+      for (const p of allPagos) {
+        const key = p.venta_id
+        if (!pagosByVentaId.has(key)) pagosByVentaId.set(key, [])
+        pagosByVentaId.get(key).push(p)
+      }
+    }
+
+    const ventasConUnidades = enRango.map((venta) => {
+      const venta_items = itemsByVentaId.get(venta.id) || []
+      const venta_pagos = pagosByVentaId.get(venta.id) || []
+      const hydrated = { ...venta, venta_items, venta_pagos }
+      return { ...hydrated, unidades_totales: computeVentaUnidadesTotales(hydrated) }
+    })
 
     return { data: ventasConUnidades, error: null }
   } catch (error) {
