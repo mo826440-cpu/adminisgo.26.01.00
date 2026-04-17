@@ -61,6 +61,33 @@ npm run preview
 
 (También te dará una URL en `localhost`; `Ctrl+C` para salir.)
 
+## Ventas y ventas rápidas: qué datos se cargan al probar en local
+
+Para que el listado sea **rápido** con mucho historial y con **RLS por módulo** en Supabase, el frontend **no** pide “todas las ventas del comercio” salvo que ampliés el rango en pantalla.
+
+| Pantalla / servicio | Criterio por defecto | Cómo ver más historial |
+|---------------------|----------------------|-------------------------|
+| **Registros de ventas** (`VentasList`) | Se piden a Supabase las ventas del rango de fechas del filtro (por defecto **unos 3 meses** hasta hoy). | Abrí filtros y cambiá “Desde” / “Hasta”; al guardar el rango se vuelve a consultar el servidor. |
+| **Ventas rápidas** (tabla de registros) | Si no hay filtro de fechas ni “desde apertura de caja”, el servicio usa **últimos 3 meses**. | Filtros manuales de fecha o, con caja abierta, el listado puede acotarse desde la última apertura. |
+
+En **Registros de ventas**, la tabla pagina de a **100** filas solo en pantalla: el listado igual trae del servidor **todo el rango de fechas** (para filtros, indicadores y búsqueda) y además consulta las **líneas de venta** (`venta_items`) para calcular unidades. **Ventas rápidas** no hace esa segunda tanda de consultas, por eso suele sentirse más liviana con el mismo rango.
+
+Implementación de referencia (por si tocás código o depurás lentitud):
+
+- `frontend/src/services/ventas.js` — función `getVentas`
+- `frontend/src/services/ventasRapidas.js` — función `getVentasRapidas`
+- `frontend/src/pages/ventas/VentasList.jsx` — pasa las fechas del filtro al cargar
+
+**Supabase (listado de ventas):**
+- `039_ventas_listado_unidades_agg.sql` — crea la RPC de unidades.
+- `040_fix_ventas_listado_unidades_agg_definer.sql` — **ejecutala también** si ves **error 500** al llamar a `ventas_listado_unidades_agg` (la 039 con `SECURITY INVOKER` + agregado sobre `venta_items` y RLS puede fallar en PostgREST).
+
+Sin la RPC, el front sigue yendo al plan B (muchas lecturas a `venta_items`).
+
+**PostgREST / offsets:** si el `select` de `ventas` incluye embeds (`clientes`, `usuarios`) y hay muchas páginas (`offset=4000`, etc.), Supabase a veces responde **500**. El código del front ya **no** usa esos embeds en listados paginados; hidrata nombres aparte.
+
+Si algo tarda demasiado tras ampliar mucho el rango de fechas, es esperable: estás trayendo más filas desde la base. En ese caso conviene acotar fechas o revisar índices/consultas en Supabase.
+
 ## Resumen rápido
 
 | Objetivo              | Comando (desde `frontend`) |

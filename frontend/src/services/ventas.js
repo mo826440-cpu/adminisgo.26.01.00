@@ -50,8 +50,10 @@ function isTransientQueryError(error) {
  * Repite la consulta con .range() hasta obtener todas las filas.
  * Reintenta ante fallos transitorios del pooler (varias páginas seguidas suelen dispararlos).
  * @param {() => ReturnType<typeof supabase.from>} makeQuery - builder sin .range()
+ * @param {{ interPageDelayMs?: number }} [pageOpts] - pausa entre páginas (default 100). En listados acotados por fecha podés pasar 0 para no sumar cientos de ms en vano.
  */
-async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE) {
+async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE, pageOpts = {}) {
+  const interPageDelayMs = pageOpts.interPageDelayMs ?? 100
   const all = []
   let from = 0
   for (;;) {
@@ -82,7 +84,9 @@ async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE) {
     if (chunk.length < pageSize) break
     from += pageSize
     // Pausa entre páginas: reduce choques con prepared statements en modo transacción.
-    await new Promise((r) => setTimeout(r, 100))
+    if (interPageDelayMs > 0) {
+      await new Promise((r) => setTimeout(r, interPageDelayMs))
+    }
   }
   return all
 }
@@ -98,6 +102,61 @@ function computeVentaUnidadesTotales(venta) {
     return Number.isFinite(total) && total > 0 ? 1 : 0
   }
   return items.reduce((sum, item) => sum + (parseFloat(item.cantidad) || 0), 0)
+}
+
+/**
+ * PostgREST suele devolver 500 en `ventas` paginadas con offset alto si el select
+ * incluye embeds (`clientes`, `usuarios`). Esta función carga solo `id, nombre`
+ * por lotes y arma la misma forma `{ clientes, usuarios }` que el embed.
+ *
+ * @param {Array<Record<string, unknown>>} rows - filas con `cliente_id` y `usuario_id`
+ */
+export async function hydrateVentasRowsWithClienteUsuarioNombre(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return []
+
+  const clienteIds = [
+    ...new Set(rows.map((v) => v.cliente_id).filter((id) => id != null && id !== undefined)),
+  ]
+  const usuarioIds = [...new Set(rows.map((v) => v.usuario_id).filter(Boolean))]
+
+  const clientesMap = new Map()
+  const usuariosMap = new Map()
+
+  if (clienteIds.length > 0) {
+    const resp = await Promise.all(
+      chunkIds(clienteIds, 500).map((chunk) =>
+        supabase.from('clientes').select('id, nombre').in('id', chunk)
+      )
+    )
+    for (const { data, error } of resp) {
+      if (error) throw error
+      for (const c of data || []) clientesMap.set(Number(c.id), c.nombre)
+    }
+  }
+
+  if (usuarioIds.length > 0) {
+    const resp = await Promise.all(
+      chunkIds(usuarioIds, 200).map((chunk) =>
+        supabase.from('usuarios').select('id, nombre').in('id', chunk)
+      )
+    )
+    for (const { data, error } of resp) {
+      if (error) throw error
+      for (const u of data || []) usuariosMap.set(String(u.id), u.nombre)
+    }
+  }
+
+  return rows.map((v) => ({
+    ...v,
+    clientes:
+      v.cliente_id != null
+        ? { id: v.cliente_id, nombre: clientesMap.get(Number(v.cliente_id)) ?? null }
+        : null,
+    usuarios:
+      v.usuario_id != null
+        ? { id: v.usuario_id, nombre: usuariosMap.get(String(v.usuario_id)) ?? null }
+        : null,
+  }))
 }
 
 /**
@@ -249,29 +308,125 @@ export const createVenta = async (ventaData) => {
 }
 
 /**
- * Obtener todas las ventas con sus datos completos
- * Incluye cliente, unidades totales (suma de ítems; si no hay ítems y total > 0 → 1, p. ej. venta rápida), y datos de pagos
+ * Listado de ventas para la pantalla de registros.
+ * Filtra por rango de fechas en servidor (evita descargar todo el historial).
+ * Sin embed de venta_items en la query paginada (payload y RLS mucho más livianos).
+ * Las unidades: preferís la RPC `ventas_listado_unidades_agg` (migración 039) en una sola
+ * ida a la base; si no existe o falla, se usa el plan B (consultas por lotes a venta_items).
+ *
+ * Rango por defecto (últimos 3 meses): coincide con el texto de la UI de ventas y evita
+ * barrer toda la tabla `ventas` (antes el listado filtraba solo en cliente y podía tardar
+ * minutos con mucho historial, sobre todo con RLS por módulo en Supabase).
+ *
+ * @param {{ fechaDesde?: string, fechaHasta?: string }} [opts] - 'YYYY-MM-DD' en calendario local; si falta una fecha, últimos 3 meses
  */
-export const getVentas = async () => {
+export const getVentas = async (opts = {}) => {
   try {
-    const data = await fetchAllQueryPages(() =>
-      supabase
-        .from('ventas')
-        .select(`
-        *,
-        clientes:cliente_id(nombre),
-        usuarios:usuario_id(nombre),
-        venta_items(cantidad)
+    let { fechaDesde, fechaHasta } = opts
+    if (!fechaDesde || !fechaHasta) {
+      const d = defaultVentasListYmdRange()
+      fechaDesde = d.fechaDesde
+      fechaHasta = d.fechaHasta
+    }
+
+    const { inicio, fin, queryStart, queryEnd } = boundsFromYmdStrings(fechaDesde, fechaHasta)
+
+    const ventasBase = await fetchAllQueryPages(
+      () =>
+        supabase
+          .from('ventas')
+          .select(`
+        id,
+        fecha_hora,
+        facturacion,
+        subtotal,
+        descuento,
+        impuestos,
+        total,
+        metodo_pago,
+        monto_pagado,
+        monto_deuda,
+        estado,
+        observaciones,
+        numero_ticket,
+        cliente_id,
+        usuario_id,
+        comercio_id
       `)
-        .is('deleted_at', null)
-        .order('fecha_hora', { ascending: false })
+          .is('deleted_at', null)
+          .gte('fecha_hora', queryStart.toISOString())
+          .lte('fecha_hora', queryEnd.toISOString())
+          .order('fecha_hora', { ascending: false }),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
     )
 
-    // Calcular unidades totales para cada venta
-    const ventasConUnidades = (data || []).map(venta => {
+    const enRango = (ventasBase || []).filter((venta) => {
+      if (!venta.fecha_hora) return false
+      const fv = new Date(venta.fecha_hora)
+      return fv >= inicio && fv <= fin
+    })
+
+    if (enRango.length === 0) {
+      return { data: [], error: null }
+    }
+
+    const enRangoHydrated = await hydrateVentasRowsWithClienteUsuarioNombre(enRango)
+
+    const ids = enRangoHydrated.map((v) => v.id).filter((id) => id != null)
+
+    const { data: aggRows, error: aggErr } = await supabase.rpc('ventas_listado_unidades_agg', {
+      p_desde: queryStart.toISOString(),
+      p_hasta: queryEnd.toISOString(),
+    })
+
+    const useAggRpc = !aggErr && Array.isArray(aggRows)
+    const sumCantidadByVentaId = new Map()
+    if (useAggRpc) {
+      for (const row of aggRows) {
+        if (row?.venta_id == null) continue
+        sumCantidadByVentaId.set(Number(row.venta_id), parseFloat(row.suma_cantidad) || 0)
+      }
+    }
+
+    const itemsByVentaId = new Map()
+    if (!useAggRpc && ids.length > 0) {
+      const idChunks = chunkIds(ids, 500)
+      const itemResponses = await Promise.all(
+        idChunks.map((idsPart) =>
+          supabase.from('venta_items').select('venta_id, cantidad').in('venta_id', idsPart)
+        )
+      )
+      const allItems = []
+      for (const { data, error } of itemResponses) {
+        if (error) throw error
+        if (Array.isArray(data)) allItems.push(...data)
+      }
+      for (const it of allItems) {
+        const key = it.venta_id
+        if (!itemsByVentaId.has(key)) itemsByVentaId.set(key, [])
+        itemsByVentaId.get(key).push(it)
+      }
+    }
+
+    const ventasConUnidades = enRangoHydrated.map((venta) => {
+      if (useAggRpc) {
+        const sum = sumCantidadByVentaId.has(venta.id)
+          ? sumCantidadByVentaId.get(venta.id)
+          : null
+        const venta_items =
+          sum != null && sum > 0 ? [{ cantidad: sum }] : []
+        const hydrated = { ...venta, venta_items }
+        return {
+          ...hydrated,
+          unidades_totales: computeVentaUnidadesTotales(hydrated),
+        }
+      }
+      const venta_items = itemsByVentaId.get(venta.id) || []
+      const hydrated = { ...venta, venta_items }
       return {
-        ...venta,
-        unidades_totales: computeVentaUnidadesTotales(venta),
+        ...hydrated,
+        unidades_totales: computeVentaUnidadesTotales(hydrated),
       }
     })
 
@@ -346,6 +501,38 @@ export const getVentasUltimosDias = async (dias = 7) => {
 
 const MS_DAY = 24 * 60 * 60 * 1000
 
+function chunkIds(arr, size) {
+  const out = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
+/**
+ * Rango YMD por defecto alineado a `VentasList` (filtro inicial ~3 meses).
+ * Documentado para el equipo: no cambiar sin revisar la pantalla y la carga en Supabase.
+ */
+function defaultVentasListYmdRange() {
+  const ahora = new Date()
+  const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
+  const y = (d) => d.getFullYear()
+  const m = (d) => String(d.getMonth() + 1).padStart(2, '0')
+  const day = (d) => String(d.getDate()).padStart(2, '0')
+  return {
+    fechaDesde: `${y(desde)}-${m(desde)}-${day(desde)}`,
+    fechaHasta: `${y(ahora)}-${m(ahora)}-${day(ahora)}`,
+  }
+}
+
+function boundsFromYmdStrings(fechaDesde, fechaHasta) {
+  const [yDesde, mDesde, dDesde] = fechaDesde.split('-').map(Number)
+  const [yHasta, mHasta, dHasta] = fechaHasta.split('-').map(Number)
+  const inicio = new Date(yDesde, mDesde - 1, dDesde, 0, 0, 0, 0)
+  const fin = new Date(yHasta, mHasta - 1, dHasta, 23, 59, 59, 999)
+  const queryStart = new Date(inicio.getTime() - 2 * MS_DAY)
+  const queryEnd = new Date(fin.getTime() + 2 * MS_DAY)
+  return { inicio, fin, queryStart, queryEnd }
+}
+
 /**
  * Ventas en un rango de fechas (para gráfico) - con unidades por venta
  * desde/hasta: objetos Date (inicio y fin de día en hora local del usuario).
@@ -393,18 +580,12 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
 
     const ids = enRango.map((v) => v.id).filter((id) => id != null)
 
-    const chunk = (arr, size) => {
-      const out = []
-      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
-      return out
-    }
-
     const itemsByVentaId = new Map()
     const pagosByVentaId = new Map()
 
     if (ids.length > 0) {
       // PostgREST tiene límites prácticos al tamaño del querystring; chunk 500 para evitar 414/500.
-      const idChunks = chunk(ids, 500)
+      const idChunks = chunkIds(ids, 500)
 
       const allItems = []
       for (const idsPart of idChunks) {

@@ -1,6 +1,6 @@
 // Servicio de ventas rápidas: solo usa tablas ventas, venta_items, venta_pagos (sin ventas_rapidas).
 import { supabase } from './supabase'
-import { createVenta, deleteVenta, getVentaById } from './ventas'
+import { createVenta, deleteVenta, getVentaById, hydrateVentasRowsWithClienteUsuarioNombre } from './ventas'
 
 const PAGE = 1000
 
@@ -23,10 +23,26 @@ function mapVentaListadoShape(v) {
 
 /**
  * Ventas del comercio en rango de fechas (misma pantalla “registros”; incluye POS y rápidas).
+ *
+ * Si `fechaDesde` y `fechaHasta` vienen ambos vacíos, se usa por defecto **últimos 3 meses**
+ * (misma ventana razonable que el listado de ventas). Así no se paginan miles de filas
+ * cuando la pantalla abre sin caja ni filtros manuales; si hace falta más historial, usar
+ * filtros de fecha en la UI.
  */
 export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => {
   try {
-    const all = []
+    let desde = fechaDesde
+    let hasta = fechaHasta
+    // Sin rango explícito: acotar en servidor (evita listar todo el comercio).
+    if (!desde && !hasta) {
+      const ahora = new Date()
+      const d = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
+      const pad = (n) => String(n).padStart(2, '0')
+      desde = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
+      hasta = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T23:59:59`
+    }
+
+    const rawChunks = []
     let from = 0
     for (;;) {
       let q = supabase
@@ -40,22 +56,25 @@ export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => 
           monto_deuda,
           observaciones,
           numero_ticket,
-          clientes:cliente_id(id, nombre),
-          usuarios:usuario_id(id, nombre)
+          cliente_id,
+          usuario_id
         `)
         .is('deleted_at', null)
         .order('fecha_hora', { ascending: false })
 
-      if (fechaDesde) q = q.gte('fecha_hora', fechaDesde)
-      if (fechaHasta) q = q.lte('fecha_hora', fechaHasta)
+      if (desde) q = q.gte('fecha_hora', desde)
+      if (hasta) q = q.lte('fecha_hora', hasta)
 
       const { data, error } = await q.range(from, from + PAGE - 1)
       if (error) throw error
       const chunk = data || []
-      all.push(...chunk.map(mapVentaListadoShape))
+      rawChunks.push(...chunk)
       if (chunk.length < PAGE) break
       from += PAGE
     }
+
+    const hydrated = await hydrateVentasRowsWithClienteUsuarioNombre(rawChunks)
+    const all = hydrated.map(mapVentaListadoShape)
 
     return { data: all, error: null }
   } catch (error) {

@@ -1,5 +1,5 @@
 // Página de lista de ventas
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
@@ -56,9 +56,27 @@ function VentasList() {
   const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('cliente') // cliente, facturacion, codigo_barras, codigo_interno
   const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
 
+  const loadVentas = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const { data, error: err } = await getVentas({
+      fechaDesde: filtroFechaDesde,
+      fechaHasta: filtroFechaHasta,
+    })
+
+    if (err) {
+      setError(err.message)
+      setLoading(false)
+      return
+    }
+
+    setVentas(data || [])
+    setLoading(false)
+  }, [filtroFechaDesde, filtroFechaHasta])
+
   useEffect(() => {
     loadVentas()
-    
+
     if (location.state?.success) {
       setSuccessMessage(location.state.message || 'Operación realizada correctamente')
       navigate(location.pathname, { replace: true, state: {} })
@@ -67,7 +85,7 @@ function VentasList() {
       }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [location.state, navigate, location.pathname])
+  }, [location.state, navigate, location.pathname, loadVentas])
 
   // Atajo teclado: F2 -> nueva venta
   useEffect(() => {
@@ -92,21 +110,6 @@ function VentasList() {
     setFiltroBusqueda('')
     setTipoFiltroBusqueda('cliente')
     setFiltroEstadoPago('todas')
-  }
-
-  const loadVentas = async () => {
-    setLoading(true)
-    setError(null)
-    const { data, error: err } = await getVentas()
-    
-    if (err) {
-      setError(err.message)
-      setLoading(false)
-      return
-    }
-    
-    setVentas(data || [])
-    setLoading(false)
   }
 
   // Filtrar ventas por rango de fechas (inicio y fin de día en hora local para incluir todo el día actual)

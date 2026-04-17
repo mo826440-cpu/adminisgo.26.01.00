@@ -139,7 +139,7 @@
 - **Teclado numérico virtual**: Para ingresar cantidades y montos
 - **Scanner de códigos de barras**: Usar cámara del dispositivo
 - **Múltiples métodos de pago**: Dividir pago entre varios métodos
-- **Ventas rápidas**: Módulo completo de ventas rápidas con gestión de caja ✅
+- **Ventas rápidas**: Módulo completo de ventas rápidas con gestión de caja ✅ (el listado de registros usa el mismo criterio de **rango acotado** que la lista de ventas cuando no definís fechas ni filtro por caja; ver `DESARROLLO_LOCAL.md`.)
 - **Guardar borrador**: Guardar venta en proceso para continuar después
 - **Cancelar venta**: Volver a seleccionar productos
 - **Historial de ventas**: Ver ventas del día/semana/mes
@@ -159,7 +159,7 @@
   - QR code (opcional, para reclamos)
 
 ### 4.5 Gestión de Ventas
-- **Lista de ventas**: Tabla con todas las ventas
+- **Lista de ventas**: Tabla de ventas filtrada por **rango de fechas** (por defecto, desde hace unos **tres meses** hasta el día de hoy). Los datos de ese rango se cargan desde Supabase; no hace falta traer todo el historial del comercio para usar la pantalla con normalidad. Para períodos más largos, ampliá “Desde” / “Hasta” en los filtros. Detalle técnico para el equipo: `Guias_Inicio/DESARROLLO_LOCAL.md` (sección *Ventas y ventas rápidas*).
   - ID/Número de venta
   - Fecha y hora
   - Cliente
