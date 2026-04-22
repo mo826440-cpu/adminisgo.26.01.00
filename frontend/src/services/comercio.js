@@ -30,17 +30,12 @@ export const crearComercioYUsuario = async (datosComercio) => {
  */
 export const getComercio = async () => {
   try {
-    // Log para depuración
-    const { data: user } = await supabase.auth.getUser()
-    console.log('[getComercio] Usuario autenticado:', user?.user?.id)
-    
+    await supabase.auth.getUser()
+
     const { data, error } = await supabase
       .from('comercios')
       .select('*')
       .maybeSingle() // Usar maybeSingle() en lugar de single() para no lanzar error si no hay registro
-
-    // Log para depuración
-    console.log('[getComercio] Resultado de query:', { data, error, errorCode: error?.code })
 
     // maybeSingle() retorna null en data si no hay registro, pero no lanza error
     if (error && error.code !== 'PGRST116') {
@@ -51,8 +46,7 @@ export const getComercio = async () => {
     // Si no hay error o el error es "no encontrado", retornar data (puede ser null)
     // IMPORTANTE: Verificar explícitamente que data no sea un objeto vacío o undefined
     const comercio = data && Object.keys(data).length > 0 ? data : null
-    console.log('[getComercio] Comercio retornado:', comercio)
-    
+
     return { data: comercio, error: null }
   } catch (error) {
     console.error('[getComercio] Excepción al obtener comercio:', error)

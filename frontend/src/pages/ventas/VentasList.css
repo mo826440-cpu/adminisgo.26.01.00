@@ -103,9 +103,16 @@
   gap: 0.5rem; /* separacion */
 }
 
-.filtro-fecha-registros label {
+.filtro-fecha-registros label,
+.filtro-fecha-registros .filtro-seccion-titulo {
   font-weight: 600; /* peso medio */
   font-size: 0.875rem; /* tamaño label */
+}
+
+.filtro-busqueda-texto-label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .filtro-fecha-rango {

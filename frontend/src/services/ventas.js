@@ -47,43 +47,76 @@ function isTransientQueryError(error) {
 }
 
 /**
+ * Una página `.range(from, from+pageSize-1)` con reintentos ante pooler/5xx.
+ * @param {() => ReturnType<typeof supabase.from>} makeQuery
+ */
+async function fetchSinglePageWithRetries(makeQuery, from, pageSize) {
+  let chunk = null
+  let lastError = null
+  const st500 = (err) =>
+    [500, 502, 503, 504].includes(Number(err?.status || err?.statusCode || 0))
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await makeQuery().range(from, from + pageSize - 1)
+    if (!error) {
+      chunk = data || []
+      break
+    }
+    lastError = error
+    const transient = isTransientQueryError(error)
+    const generic5xx = st500(error) && attempt < 2
+    const shouldRetry = transient || generic5xx
+    if (!shouldRetry || attempt === 4) {
+      throw error
+    }
+    await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
+  }
+  if (!Array.isArray(chunk)) {
+    throw lastError || new Error('fetchSinglePageWithRetries: sin respuesta')
+  }
+  return chunk
+}
+
+/**
  * Repite la consulta con .range() hasta obtener todas las filas.
  * Reintenta ante fallos transitorios del pooler (varias páginas seguidas suelen dispararlos).
  * @param {() => ReturnType<typeof supabase.from>} makeQuery - builder sin .range()
- * @param {{ interPageDelayMs?: number }} [pageOpts] - pausa entre páginas (default 100). En listados acotados por fecha podés pasar 0 para no sumar cientos de ms en vano.
+ * @param {{ interPageDelayMs?: number, parallel?: boolean, maxParallel?: number }} [pageOpts] -
+ *   `interPageDelayMs` (default 100): pausa entre páginas en modo secuencial.
+ *   `parallel: true`: tras la primera página, pide el resto en lotes paralelos (mejor para listados con miles de filas).
  */
 async function fetchAllQueryPages(makeQuery, pageSize = SUPABASE_PAGE_SIZE, pageOpts = {}) {
   const interPageDelayMs = pageOpts.interPageDelayMs ?? 100
+  const parallel = pageOpts.parallel === true
+  const maxParallel = Math.min(12, Math.max(1, pageOpts.maxParallel ?? 6))
+
+  if (parallel) {
+    const first = await fetchSinglePageWithRetries(makeQuery, 0, pageSize)
+    const all = [...first]
+    if (first.length < pageSize) return all
+    let nextFrom = pageSize
+    for (;;) {
+      const froms = []
+      for (let i = 0; i < maxParallel; i++) {
+        froms.push(nextFrom + i * pageSize)
+      }
+      const chunks = await Promise.all(
+        froms.map((from) => fetchSinglePageWithRetries(makeQuery, from, pageSize))
+      )
+      for (const c of chunks) {
+        all.push(...c)
+        if (c.length < pageSize) return all
+      }
+      nextFrom += maxParallel * pageSize
+    }
+  }
+
   const all = []
   let from = 0
   for (;;) {
-    let chunk = null
-    let lastError = null
-    const st500 = (err) =>
-      [500, 502, 503, 504].includes(Number(err?.status || err?.statusCode || 0))
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const { data, error } = await makeQuery().range(from, from + pageSize - 1)
-      if (!error) {
-        chunk = data || []
-        break
-      }
-      lastError = error
-      const transient = isTransientQueryError(error)
-      // Algunos 5xx del pooler no matchean el texto; reintentar pocas veces con backoff.
-      const generic5xx = st500(error) && attempt < 2
-      const shouldRetry = transient || generic5xx
-      if (!shouldRetry || attempt === 4) {
-        throw error
-      }
-      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
-    }
-    if (!Array.isArray(chunk)) {
-      throw lastError || new Error('fetchAllQueryPages: sin respuesta')
-    }
+    const chunk = await fetchSinglePageWithRetries(makeQuery, from, pageSize)
     all.push(...chunk)
     if (chunk.length < pageSize) break
     from += pageSize
-    // Pausa entre páginas: reduce choques con prepared statements en modo transacción.
     if (interPageDelayMs > 0) {
       await new Promise((r) => setTimeout(r, interPageDelayMs))
     }
@@ -333,9 +366,10 @@ export const getVentas = async (opts = {}) => {
 
     const ventasBase = await fetchAllQueryPages(
       () =>
-        supabase
-          .from('ventas')
-          .select(`
+        (
+          supabase
+            .from('ventas')
+            .select(`
         id,
         fecha_hora,
         facturacion,
@@ -353,11 +387,13 @@ export const getVentas = async (opts = {}) => {
         usuario_id,
         comercio_id
       `)
-          .is('deleted_at', null)
-          .gte('fecha_hora', queryStart.toISOString())
-          .lte('fecha_hora', queryEnd.toISOString())
-          .order('fecha_hora', { ascending: false }),
+            .is('deleted_at', null)
+            .gte('fecha_hora', queryStart.toISOString())
+            .lte('fecha_hora', queryEnd.toISOString())
+            .order('fecha_hora', { ascending: false })
+        ),
       SUPABASE_PAGE_SIZE,
+      // Secuencial: varias peticiones paralelas a `ventas` + RLS 038 saturan el pool y dan 500.
       { interPageDelayMs: 0 }
     )
 
@@ -473,18 +509,23 @@ export const getVentasUltimosDias = async (dias = 7) => {
     const desde = new Date(now)
     desde.setDate(desde.getDate() - dias)
     desde.setHours(0, 0, 0, 0)
-    const data = await fetchAllQueryPages(() =>
-      supabase
-        .from('ventas')
-        .select(`
+    const data = await fetchAllQueryPages(
+      () =>
+        (
+          supabase
+            .from('ventas')
+            .select(`
         id,
         total,
         fecha_hora,
         venta_items(cantidad)
       `)
-        .is('deleted_at', null)
-        .gte('fecha_hora', desde.toISOString())
-        .order('fecha_hora', { ascending: true })
+            .is('deleted_at', null)
+            .gte('fecha_hora', desde.toISOString())
+            .order('fecha_hora', { ascending: true })
+        ),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
     )
 
     const ventasConUnidades = (data || []).map((venta) => ({
@@ -554,10 +595,12 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
     // IMPORTANTE:
     // Evitamos embeds (venta_items/venta_pagos) en la consulta paginada porque PostgREST
     // puede devolver 500 en offsets altos con joins/embeds pesados. Cargamos detalles en 2 pasos.
-    const ventasBase = await fetchAllQueryPages(() =>
-      supabase
-        .from('ventas')
-        .select(`
+    const ventasBase = await fetchAllQueryPages(
+      () =>
+        (
+          supabase
+            .from('ventas')
+            .select(`
         id,
         total,
         monto_pagado,
@@ -566,10 +609,13 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         cliente_id,
         estado
       `)
-        .is('deleted_at', null)
-        .gte('fecha_hora', queryStart.toISOString())
-        .lte('fecha_hora', queryEnd.toISOString())
-        .order('fecha_hora', { ascending: true })
+            .is('deleted_at', null)
+            .gte('fecha_hora', queryStart.toISOString())
+            .lte('fecha_hora', queryEnd.toISOString())
+            .order('fecha_hora', { ascending: true })
+        ),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
     )
 
     const enRango = (ventasBase || []).filter((venta) => {

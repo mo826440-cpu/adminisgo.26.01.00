@@ -74,18 +74,22 @@ function VentasList() {
     setLoading(false)
   }, [filtroFechaDesde, filtroFechaHasta])
 
+  // Cargar listado solo cuando cambian las fechas del filtro (no en cada cambio de `location.state`,
+  // porque al volver del POS con `state.success` el replace limpia el state y este efecto volvería
+  // a disparar `loadVentas` dos veces seguidas).
   useEffect(() => {
     loadVentas()
+  }, [loadVentas])
 
-    if (location.state?.success) {
-      setSuccessMessage(location.state.message || 'Operación realizada correctamente')
-      navigate(location.pathname, { replace: true, state: {} })
-      const timer = setTimeout(() => {
-        setSuccessMessage(null)
-      }, 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [location.state, navigate, location.pathname, loadVentas])
+  useEffect(() => {
+    if (!location.state?.success) return
+    setSuccessMessage(location.state.message || 'Operación realizada correctamente')
+    navigate(location.pathname, { replace: true, state: {} })
+    const timer = setTimeout(() => {
+      setSuccessMessage(null)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [location.state, navigate, location.pathname])
 
   // Atajo teclado: F2 -> nueva venta
   useEffect(() => {
@@ -313,13 +317,14 @@ function VentasList() {
                 </Button>
               </div>
               <div className="filtro-fecha-registros">
-                <label>FILTRO DE REGISTROS POR FECHA:</label>
+                <span className="filtro-seccion-titulo">FILTRO DE REGISTROS POR FECHA:</span>
                 <div className="filtro-fecha-rango">
                   <div className="filtro-fecha-item">
                     <label htmlFor="fecha-desde">Desde:</label>
                     <input
                       type="date"
                       id="fecha-desde"
+                      name="ventas_filtro_fecha_desde"
                       value={filtroFechaDesde}
                       onChange={(e) => setFiltroFechaDesde(e.target.value)}
                       className="form-control"
@@ -330,6 +335,7 @@ function VentasList() {
                     <input
                       type="date"
                       id="fecha-hasta"
+                      name="ventas_filtro_fecha_hasta"
                       value={filtroFechaHasta}
                       onChange={(e) => setFiltroFechaHasta(e.target.value)}
                       className="form-control"
@@ -341,10 +347,12 @@ function VentasList() {
               
               <div className="filtros-adicionales">
                 <div className="filtro-busqueda">
-                  <label>FILTRO DE REGISTROS POR:</label>
+                  <label htmlFor="ventas-filtro-tipo-busqueda">FILTRO DE REGISTROS POR:</label>
                   <div className="filtro-tipo">
-                    <select 
-                      value={tipoFiltroBusqueda} 
+                    <select
+                      id="ventas-filtro-tipo-busqueda"
+                      name="ventas_filtro_tipo_busqueda"
+                      value={tipoFiltroBusqueda}
                       onChange={(e) => setTipoFiltroBusqueda(e.target.value)}
                       className="form-control"
                     >
@@ -354,7 +362,12 @@ function VentasList() {
                       <option value="codigo_interno">CÓD. INTERNO</option>
                     </select>
                   </div>
+                  <label htmlFor="ventas-filtro-busqueda-texto" className="filtro-busqueda-texto-label">
+                    Buscar
+                  </label>
                   <input
+                    id="ventas-filtro-busqueda-texto"
+                    name="ventas_filtro_busqueda_texto"
                     type="text"
                     className="form-control"
                     placeholder="Buscar..."
@@ -364,9 +377,11 @@ function VentasList() {
                 </div>
                 
                 <div className="filtro-estado-pago">
-                  <label>FILTRO DE REGISTROS POR:</label>
-                  <select 
-                    value={filtroEstadoPago} 
+                  <label htmlFor="ventas-filtro-estado-pago">FILTRO DE REGISTROS POR:</label>
+                  <select
+                    id="ventas-filtro-estado-pago"
+                    name="ventas_filtro_estado_pago"
+                    value={filtroEstadoPago}
                     onChange={(e) => setFiltroEstadoPago(e.target.value)}
                     className="form-control"
                   >
