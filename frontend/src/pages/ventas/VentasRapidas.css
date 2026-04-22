@@ -87,6 +87,14 @@
   margin-top: 1.5rem;
 }
 
+.venta-rapida-form-submit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  max-width: min(100%, 22rem);
+}
+
 .autocomplete-wrapper {
   position: relative;
 }
@@ -245,5 +253,12 @@
 
 .venta-rapida-producto-error-link:hover {
   filter: brightness(1.08);
+}
+
+.venta-rapida-aviso-caja {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: right;
 }
 

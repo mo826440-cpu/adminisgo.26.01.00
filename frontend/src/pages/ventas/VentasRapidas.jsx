@@ -393,7 +393,7 @@ function VentasRapidas() {
 
     // Enfocar campo total para siguiente venta
     setTimeout(() => {
-      document.querySelector('input[name="total"]')?.focus()
+      document.querySelector('#venta-rapida-total')?.focus()
     }, 100)
   }
 
@@ -540,7 +540,7 @@ function VentasRapidas() {
             <div className="venta-rapida-form">
               <div className="form-row venta-rapida-producto-row">
                 <div className="form-col" style={{ flex: '1 1 100%' }}>
-                  <label className="form-label">Producto</label>
+                  <span className="form-label">Producto</span>
                   {loadingProducto ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minHeight: '2.25rem' }}>
                       <Spinner size="sm" />
@@ -580,55 +580,62 @@ function VentasRapidas() {
 
               <div className="form-row">
                 <div className="form-col autocomplete-wrapper">
-                  <label className="form-label">
+                  <label className="form-label" htmlFor="venta-rapida-cliente-search">
                     Cliente (opcional)
-                    <input
-                      ref={clienteInputRef}
-                      type="text"
-                      className="form-control"
-                      placeholder="Buscar clientes cargados"
-                      value={clienteSearch}
-                      onChange={(e) => {
-                        setClienteSearch(e.target.value)
-                        if (!e.target.value) {
-                          setClienteSeleccionado(null)
-                        }
-                      }}
-                      onKeyDown={handleClienteKeyDown}
-                      onFocus={() => {
-                        if (clienteSearch && clienteSuggestions.length > 0) {
-                          setShowClienteSuggestions(true)
-                        }
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowClienteSuggestions(false), 200)
-                      }}
-                    />
-                    {showClienteSuggestions && clienteSuggestions.length > 0 && (
-                      <ul className="autocomplete-list">
-                        {clienteSuggestions.map((c, idx) => (
-                          <li
-                            key={c.id}
-                            data-index={idx}
-                            className={idx === clienteActiveIndex ? 'active' : ''}
-                            onClick={() => aplicarClienteSeleccionado(c)}
-                          >
-                            {c.nombre} {c.email && `(${c.email})`}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </label>
+                  <input
+                    id="venta-rapida-cliente-search"
+                    name="venta_rapida_cliente_search"
+                    ref={clienteInputRef}
+                    type="text"
+                    className="form-control"
+                    placeholder="Buscar clientes cargados"
+                    autoComplete="off"
+                    value={clienteSearch}
+                    onChange={(e) => {
+                      setClienteSearch(e.target.value)
+                      if (!e.target.value) {
+                        setClienteSeleccionado(null)
+                      }
+                    }}
+                    onKeyDown={handleClienteKeyDown}
+                    onFocus={() => {
+                      if (clienteSearch && clienteSuggestions.length > 0) {
+                        setShowClienteSuggestions(true)
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowClienteSuggestions(false), 200)
+                    }}
+                  />
+                  {showClienteSuggestions && clienteSuggestions.length > 0 && (
+                    <ul className="autocomplete-list">
+                      {clienteSuggestions.map((c, idx) => (
+                        <li
+                          key={c.id}
+                          data-index={idx}
+                          className={idx === clienteActiveIndex ? 'active' : ''}
+                          onClick={() => aplicarClienteSeleccionado(c)}
+                        >
+                          {c.nombre} {c.email && `(${c.email})`}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div className="form-col">
-                  <label className="form-label">
+                  <label className="form-label" htmlFor="venta-rapida-total">
                     $Total
-                    <input
-                      type="text"
-                      name="total"
-                      className="form-control"
-                      value={totalEditando ? (totalValorRaw || '') : formatearNumeroMoneda(total)}
+                  </label>
+                  <input
+                    id="venta-rapida-total"
+                    type="text"
+                    name="venta_rapida_total"
+                    className="form-control"
+                    autoComplete="off"
+                    inputMode="decimal"
+                    value={totalEditando ? (totalValorRaw || '') : formatearNumeroMoneda(total)}
                       onChange={(e) => {
                         const valor = e.target.value
                         // Permitir números, puntos, comas y símbolo $
@@ -662,36 +669,42 @@ function VentasRapidas() {
                       required
                       autoFocus
                     />
-                  </label>
                 </div>
 
                 <div className="form-col">
-                  <label className="form-label">
+                  <label className="form-label" htmlFor="venta-rapida-metodo-pago">
                     Forma de Pago
-                    <select
-                      className="form-control"
-                      value={metodoPago}
-                      onChange={(e) => setMetodoPago(e.target.value)}
-                    >
-                      <option value="efectivo">Efectivo</option>
-                      <option value="transferencia">Transferencia</option>
-                      <option value="qr">QR</option>
-                      <option value="debito">Débito</option>
-                      <option value="credito">Crédito</option>
-                      <option value="cheque">Cheque</option>
-                      <option value="otro">Otro método</option>
-                    </select>
                   </label>
+                  <select
+                    id="venta-rapida-metodo-pago"
+                    name="venta_rapida_metodo_pago"
+                    className="form-control"
+                    autoComplete="off"
+                    value={metodoPago}
+                    onChange={(e) => setMetodoPago(e.target.value)}
+                  >
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="qr">QR</option>
+                    <option value="debito">Débito</option>
+                    <option value="credito">Crédito</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="otro">Otro método</option>
+                  </select>
                 </div>
 
                 <div className="form-col">
-                  <label className="form-label">
+                  <label className="form-label" htmlFor="venta-rapida-monto-pagado">
                     $Pagado
-                    <input
-                      type="text"
-                      name="monto_pagado"
-                      className="form-control"
-                      value={montoPagadoEditando ? montoPagadoValorRaw : formatearNumeroMoneda(montoPagado)}
+                  </label>
+                  <input
+                    id="venta-rapida-monto-pagado"
+                    type="text"
+                    name="venta_rapida_monto_pagado"
+                    className="form-control"
+                    autoComplete="off"
+                    inputMode="decimal"
+                    value={montoPagadoEditando ? montoPagadoValorRaw : formatearNumeroMoneda(montoPagado)}
                       onChange={(e) => {
                         const valor = e.target.value
                         // Permitir números, puntos, comas y símbolo $
@@ -722,24 +735,39 @@ function VentasRapidas() {
                       placeholder="$0,00"
                       required
                     />
-                  </label>
                 </div>
               </div>
 
               <div className="form-actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={saving}
-                  disabled={
-                    saving ||
-                    !estadoCaja?.cajaAbierta ||
-                    loadingProducto ||
-                    !productoVentaRapida?.id
-                  }
-                >
-                  Registrar Venta
-                </Button>
+                <div className="venta-rapida-form-submit">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={saving}
+                    disabled={
+                      saving ||
+                      !estadoCaja?.cajaAbierta ||
+                      loadingProducto ||
+                      !productoVentaRapida?.id
+                    }
+                    title={
+                      saving || loadingProducto
+                        ? undefined
+                        : !productoVentaRapida?.id
+                          ? 'No hay producto activo con el código de venta rápida. Creá o activá el producto en Referencias.'
+                          : !estadoCaja?.cajaAbierta
+                            ? 'Primero abrí la caja con el botón «Abrir Caja» arriba (sin caja abierta no se pueden registrar ventas rápidas).'
+                            : undefined
+                    }
+                  >
+                    Registrar Venta
+                  </Button>
+                  {!estadoCaja?.cajaAbierta && !loadingProducto && productoVentaRapida?.id && (
+                    <p className="venta-rapida-aviso-caja" role="status">
+                      Abrí la caja desde «Gestión de Caja» para poder registrar ventas.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </form>
@@ -757,6 +785,7 @@ function VentasRapidas() {
                 <input
                   type="checkbox"
                   id="filtro-automatico"
+                  name="ventas_rapidas_filtro_desde_apertura_caja"
                   checked={usarFiltroAutomatico}
                   onChange={(e) => {
                     setUsarFiltroAutomatico(e.target.checked)
@@ -774,29 +803,43 @@ function VentasRapidas() {
               {!usarFiltroAutomatico && (
                 <>
                   <div style={{ flex: 1, minWidth: '150px' }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                    <label
+                      className="form-label"
+                      htmlFor="ventas-rapidas-fecha-desde"
+                      style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}
+                    >
                       Fecha Desde
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={filtroFechaDesde}
-                        onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                        style={{ fontSize: '0.9rem' }}
-                      />
                     </label>
+                    <input
+                      id="ventas-rapidas-fecha-desde"
+                      name="ventas_rapidas_fecha_desde"
+                      type="date"
+                      className="form-control"
+                      autoComplete="off"
+                      value={filtroFechaDesde}
+                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
+                      style={{ fontSize: '0.9rem' }}
+                    />
                   </div>
                   
                   <div style={{ flex: 1, minWidth: '150px' }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                    <label
+                      className="form-label"
+                      htmlFor="ventas-rapidas-fecha-hasta"
+                      style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}
+                    >
                       Fecha Hasta
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={filtroFechaHasta}
-                        onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                        style={{ fontSize: '0.9rem' }}
-                      />
                     </label>
+                    <input
+                      id="ventas-rapidas-fecha-hasta"
+                      name="ventas_rapidas_fecha_hasta"
+                      type="date"
+                      className="form-control"
+                      autoComplete="off"
+                      value={filtroFechaHasta}
+                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
+                      style={{ fontSize: '0.9rem' }}
+                    />
                   </div>
                   
                   <Button
@@ -915,34 +958,45 @@ function VentasRapidas() {
           }
         >
           <div className="form-group">
-            <label className="form-label">
+            <label className="form-label" htmlFor="modal-apertura-fecha-hora">
               Fecha y Hora (Automático)
-              <input
-                type="text"
-                className="form-control"
-                value={formatDateTime(new Date().toISOString(), dateFormat, timezone)}
-                disabled
-              />
             </label>
+            <input
+              id="modal-apertura-fecha-hora"
+              name="modal_apertura_fecha_hora"
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              value={formatDateTime(new Date().toISOString(), dateFormat, timezone)}
+              disabled
+            />
           </div>
           <div className="form-group">
-            <label className="form-label">
+            <label className="form-label" htmlFor="modal-apertura-usuario">
               Usuario (Automático)
-              <input
-                type="text"
-                className="form-control"
-                value={user?.nombre || '-'}
-                disabled
-              />
             </label>
+            <input
+              id="modal-apertura-usuario"
+              name="modal_apertura_usuario"
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              value={user?.nombre || '-'}
+              disabled
+            />
           </div>
           <div className="form-group">
-            <label className="form-label">
+            <label className="form-label" htmlFor="modal-apertura-efectivo">
               Caja efectivo ($)
-              <input
-                type="text"
-                className="form-control"
-                value={aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : (aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo))}
+            </label>
+            <input
+              id="modal-apertura-efectivo"
+              name="modal_apertura_efectivo"
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              inputMode="decimal"
+              value={aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : (aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo))}
                 onFocus={() => {
                   setAperturaEditandoCampo('efectivo')
                   setAperturaValorRaw(aperturaEfectivo === '0' ? '' : aperturaEfectivo)
@@ -962,15 +1016,19 @@ function VentasRapidas() {
                 placeholder="$0,00"
                 autoFocus
               />
-            </label>
           </div>
           <div className="form-group">
-            <label className="form-label">
+            <label className="form-label" htmlFor="modal-apertura-virtual">
               Caja virtual ($) — QR, transferencia, débito
-              <input
-                type="text"
-                className="form-control"
-                value={aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : (aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual))}
+            </label>
+            <input
+              id="modal-apertura-virtual"
+              name="modal_apertura_virtual"
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              inputMode="decimal"
+              value={aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : (aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual))}
                 onFocus={() => {
                   setAperturaEditandoCampo('virtual')
                   setAperturaValorRaw(aperturaVirtual === '0' ? '' : aperturaVirtual)
@@ -989,7 +1047,6 @@ function VentasRapidas() {
                 }}
                 placeholder="$0,00"
               />
-            </label>
           </div>
           <div style={{ marginBottom: '0.75rem' }}>
             <Button
@@ -1004,12 +1061,17 @@ function VentasRapidas() {
           {showVerMasApertura && (
             <>
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="modal-apertura-credito">
                   Caja crédito ($)
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={aperturaEditandoCampo === 'credito' ? aperturaValorRaw : (aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito))}
+                </label>
+                <input
+                  id="modal-apertura-credito"
+                  name="modal_apertura_credito"
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  inputMode="decimal"
+                  value={aperturaEditandoCampo === 'credito' ? aperturaValorRaw : (aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito))}
                     onFocus={() => {
                       setAperturaEditandoCampo('credito')
                       setAperturaValorRaw(aperturaCredito === '0' ? '' : aperturaCredito)
@@ -1028,15 +1090,19 @@ function VentasRapidas() {
                     }}
                     placeholder="$0,00"
                   />
-                </label>
               </div>
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="modal-apertura-otros">
                   Caja otros métodos ($) — cheque, otro
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={aperturaEditandoCampo === 'otros' ? aperturaValorRaw : (aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros))}
+                </label>
+                <input
+                  id="modal-apertura-otros"
+                  name="modal_apertura_otros"
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  inputMode="decimal"
+                  value={aperturaEditandoCampo === 'otros' ? aperturaValorRaw : (aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros))}
                     onFocus={() => {
                       setAperturaEditandoCampo('otros')
                       setAperturaValorRaw(aperturaOtros === '0' ? '' : aperturaOtros)
@@ -1055,20 +1121,22 @@ function VentasRapidas() {
                     }}
                     placeholder="$0,00"
                   />
-                </label>
               </div>
             </>
           )}
           <div className="form-group">
-            <label className="form-label">
+            <label className="form-label" htmlFor="modal-apertura-observaciones">
               Observaciones (opcional)
-              <textarea
-                className="form-control"
-                rows="3"
-                value={observacionesApertura}
-                onChange={(e) => setObservacionesApertura(e.target.value)}
-              />
             </label>
+            <textarea
+              id="modal-apertura-observaciones"
+              name="modal_apertura_observaciones"
+              className="form-control"
+              rows="3"
+              autoComplete="off"
+              value={observacionesApertura}
+              onChange={(e) => setObservacionesApertura(e.target.value)}
+            />
           </div>
         </Modal>
 
@@ -1119,16 +1187,19 @@ function VentasRapidas() {
               </div>
             )}
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" htmlFor="modal-cierre-observaciones">
                 Observaciones (opcional)
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  placeholder="Ingresá observaciones sobre el cierre de caja..."
-                  value={observacionesCierre}
-                  onChange={(e) => setObservacionesCierre(e.target.value)}
-                />
               </label>
+              <textarea
+                id="modal-cierre-observaciones"
+                name="modal_cierre_observaciones"
+                className="form-control"
+                rows="3"
+                autoComplete="off"
+                placeholder="Ingresá observaciones sobre el cierre de caja..."
+                value={observacionesCierre}
+                onChange={(e) => setObservacionesCierre(e.target.value)}
+              />
             </div>
           </div>
         </Modal>
