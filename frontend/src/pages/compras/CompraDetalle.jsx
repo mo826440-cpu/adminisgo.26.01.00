@@ -1,5 +1,5 @@
 // Página de detalle de compra
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
@@ -498,114 +498,166 @@ function CompraDetalle() {
         {/* Vista previa del ticket para impresión */}
         {compra && (
           <div className="ticket-print" translate="no">
-            {/* Encabezado del ticket */}
-            <div className="ticket-header">
-              <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
-              <div className="datos-comercio">
-                {comercio?.direccion && <div>{comercio.direccion}</div>}
-                {comercio?.telefono && <div>Tel: {comercio.telefono}</div>}
-                {comercio?.cuit_rut && <div>CUIT: {comercio.cuit_rut}</div>}
-              </div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">
+                    <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
+                  </td>
+                </tr>
+                {comercio?.direccion && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">{comercio.direccion}</td>
+                  </tr>
+                )}
+                {comercio?.telefono && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">Tel: {comercio.telefono}</td>
+                  </tr>
+                )}
+                {comercio?.cuit_rut && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">CUIT: {comercio.cuit_rut}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-            {/* Información de la compra */}
-            <div className="ticket-info">
-              <div className="ticket-row">
-                <span className="label">Orden N°:</span>
-                <span>{compra.numero_orden || '-'}</span>
-              </div>
-              <div className="ticket-row">
-                <span className="label">Fecha:</span>
-                <span>{formatearFechaHoraTicket(compra.fecha_orden)}</span>
-              </div>
-              {compra.proveedores?.nombre_razon_social && (
-                <div className="ticket-row">
-                  <span className="label">Proveedor:</span>
-                  <span>{compra.proveedores.nombre_razon_social}</span>
-                </div>
-              )}
-              <div className="ticket-row">
-                <span className="label">Estado:</span>
-                <span>{obtenerTextoEstado(compra.estado)}</span>
-              </div>
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-l">Orden N°:</td>
+                  <td className="tk-r">{compra.numero_orden || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="tk-l">Fecha:</td>
+                  <td className="tk-r">{formatearFechaHoraTicket(compra.fecha_orden)}</td>
+                </tr>
+                {compra.proveedores?.nombre_razon_social && (
+                  <tr>
+                    <td className="tk-l">Proveedor:</td>
+                    <td className="tk-r">{compra.proveedores.nombre_razon_social}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td className="tk-l">Estado:</td>
+                  <td className="tk-r">{obtenerTextoEstado(compra.estado)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-            {/* Items del ticket */}
-            <div className="ticket-items">
-              {(compra.items || []).map((it) => (
-                  <div key={it.id} className="ticket-item">
-                    <div className="item-nombre">{it.productos?.nombre || '-'}</div>
-                    <div className="item-detalle">
-                      <span className="item-line-main">
-                        {it.cantidad_solicitada} × {formatearMoneda(it.precio_unitario)}
-                        {it.descuento > 0 && (
-                          <span className="item-line-disc"> −{it.descuento}%</span>
-                        )}
-                        {it.impuesto > 0 && (
-                          <span className="item-line-disc"> +{it.impuesto}%</span>
-                        )}
-                      </span>
-                      <span className="item-line-price">{formatearMoneda(it.subtotal)}</span>
-                    </div>
-                  </div>
-              ))}
-            </div>
-
-            {/* Totales */}
-            <div className="ticket-totales">
-              <div className="ticket-total-row">
-                <span>Subtotal Base:</span>
-                <span>{formatearMoneda(compra.subtotal)}</span>
-              </div>
-              {compra.descuento > 0 && (
-                <div className="ticket-total-row">
-                  <span>Descuentos:</span>
-                  <span>{formatearMoneda(compra.descuento)}</span>
-                </div>
-              )}
-              {compra.impuestos > 0 && (
-                <div className="ticket-total-row">
-                  <span>Impuestos:</span>
-                  <span>{formatearMoneda(compra.impuestos)}</span>
-                </div>
-              )}
-              {compra.monto_pagado > 0 && (
-                <div className="ticket-total-row">
-                  <span>Pagado:</span>
-                  <span>{formatearMoneda(compra.monto_pagado)}</span>
-                </div>
-              )}
-              {compra.monto_deuda > 0 && (
-                <div className="ticket-total-row">
-                  <span>Deuda:</span>
-                  <span>{formatearMoneda(compra.monto_deuda)}</span>
-                </div>
-              )}
-              <div className="ticket-total-row total-final">
-                <span>TOTAL:</span>
-                <span>{formatearMoneda(compra.total)}</span>
-              </div>
-            </div>
-
-            {/* Métodos de pago */}
-            {(compra.pagos || []).length > 0 && (
-              <div className="ticket-pagos">
-                <div className="ticket-label-block">Formas de Pago:</div>
-                {compra.pagos.map((p) => (
-                  <div key={p.id} className="ticket-pago-item">
-                    <span>{p.metodo_pago}</span>
-                    <span>{formatearMoneda(p.monto_pagado)}</span>
-                  </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                {(compra.items || []).map((it) => (
+                  <Fragment key={it.id}>
+                    <tr className="linea-producto">
+                      <td className="tk-l" colSpan={2}>{it.productos?.nombre || '-'}</td>
+                    </tr>
+                    <tr className="detalle-importe">
+                      <td className="tk-l">
+                        {`${it.cantidad_solicitada} x ${formatearMoneda(it.precio_unitario)}`}
+                        {it.descuento > 0 ? ` -${Number(it.descuento)}%` : ''}
+                        {it.impuesto > 0 ? ` +${Number(it.impuesto)}%` : ''}
+                      </td>
+                      <td className="tk-r">{formatearMoneda(it.subtotal)}</td>
+                    </tr>
+                  </Fragment>
                 ))}
-              </div>
+              </tbody>
+            </table>
+
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-l">Subtotal Base:</td>
+                  <td className="tk-r">{formatearMoneda(compra.subtotal)}</td>
+                </tr>
+                {compra.descuento > 0 && (
+                  <tr>
+                    <td className="tk-l">Descuentos:</td>
+                    <td className="tk-r">{formatearMoneda(compra.descuento)}</td>
+                  </tr>
+                )}
+                {compra.impuestos > 0 && (
+                  <tr>
+                    <td className="tk-l">Impuestos:</td>
+                    <td className="tk-r">{formatearMoneda(compra.impuestos)}</td>
+                  </tr>
+                )}
+                {compra.monto_pagado > 0 && (
+                  <tr>
+                    <td className="tk-l">Pagado:</td>
+                    <td className="tk-r">{formatearMoneda(compra.monto_pagado)}</td>
+                  </tr>
+                )}
+                {compra.monto_deuda > 0 && (
+                  <tr>
+                    <td className="tk-l">Deuda:</td>
+                    <td className="tk-r">{formatearMoneda(compra.monto_deuda)}</td>
+                  </tr>
+                )}
+                <tr className="total-final-row">
+                  <td className="tk-l">TOTAL:</td>
+                  <td className="tk-r">{formatearMoneda(compra.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {(compra.pagos || []).length > 0 && (
+              <table className="ticket-sheet" role="presentation">
+                <colgroup>
+                  <col className="col-label" />
+                  <col className="col-value" />
+                </colgroup>
+                <tbody>
+                  <tr className="pagosh-titulo">
+                    <td colSpan={2} className="tk-full">
+                      Formas de Pago:
+                    </td>
+                  </tr>
+                  {compra.pagos.map((p) => (
+                    <tr key={p.id} className="pagosh-fila">
+                      <td className="tk-l">{p.metodo_pago}</td>
+                      <td className="tk-r">{formatearMoneda(p.monto_pagado)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
 
-            {/* Pie del ticket */}
-            <div className="ticket-footer">
-              <div>¡Gracias por su compra!</div>
-              {comercio?.email && <div>{comercio.email}</div>}
-              <div className="leyenda">Conserve este ticket</div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--footer" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">¡Gracias por su compra!</td>
+                </tr>
+                {comercio?.email && (
+                  <tr className="mail-fila">
+                    <td className="tk-full">{comercio.email}</td>
+                  </tr>
+                )}
+                <tr className="leyenda-fila">
+                  <td className="tk-full">Conserve este ticket</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
       </div>

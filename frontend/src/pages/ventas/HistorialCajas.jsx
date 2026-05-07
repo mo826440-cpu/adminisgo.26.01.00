@@ -1,5 +1,5 @@
 // Página de Historial de Cajas
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
@@ -387,67 +387,123 @@ function HistorialCajas() {
         {/* Vista previa del ticket para impresión */}
         {historial.length > 0 && (
           <div className="ticket-print" translate="no">
-            <div className="ticket-header">
-              <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
-              <div className="datos-comercio">
-                {comercio?.direccion && <div>{comercio.direccion}</div>}
-                {comercio?.telefono && <div>Tel: {comercio.telefono}</div>}
-                {comercio?.cuit_rut && <div>CUIT: {comercio.cuit_rut}</div>}
-              </div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">
+                    <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
+                  </td>
+                </tr>
+                {comercio?.direccion && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">{comercio.direccion}</td>
+                  </tr>
+                )}
+                {comercio?.telefono && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">Tel: {comercio.telefono}</td>
+                  </tr>
+                )}
+                {comercio?.cuit_rut && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">CUIT: {comercio.cuit_rut}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-            <div className="ticket-info">
-              <div className="ticket-row">
-                <span className="label">Historial de Cajas</span>
-              </div>
-              {fechaDesde && (
-                <div className="ticket-row">
-                  <span className="label">Desde:</span>
-                  <span>{formatearFechaHora(fechaDesde)}</span>
-                </div>
-              )}
-              {fechaHasta && (
-                <div className="ticket-row">
-                  <span className="label">Hasta:</span>
-                  <span>{formatearFechaHora(fechaHasta)}</span>
-                </div>
-              )}
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td colSpan={2} className="tk-full tk-bold section-title">
+                    Historial de Cajas
+                  </td>
+                </tr>
+                {fechaDesde && (
+                  <tr>
+                    <td className="tk-l">Desde:</td>
+                    <td className="tk-r">{formatearFechaHora(fechaDesde)}</td>
+                  </tr>
+                )}
+                {fechaHasta && (
+                  <tr>
+                    <td className="tk-l">Hasta:</td>
+                    <td className="tk-r">{formatearFechaHora(fechaHasta)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-            <div className="ticket-items">
-              {historial.map((registro) => (
-                <div key={registro.id} className="ticket-item">
-                  <div className="item-nombre">
-                    {registro.tipo_operacion === 'apertura' ? 'Apertura' : 'Cierre'} - {registro.usuarios?.nombre || '-'}
-                  </div>
-                  <div className="item-detalle">
-                    <span className="item-line-main">{formatearFechaHora(registro.fecha_hora)}</span>
-                    <span className="item-line-price">{formatearMoneda(registro.importe)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                {historial.map((registro) => (
+                  <Fragment key={registro.id}>
+                    <tr className="linea-producto">
+                      <td className="tk-l" colSpan={2}>
+                        {(registro.tipo_operacion === 'apertura' ? 'Apertura' : 'Cierre')}
+                        {' '}
+                        - {registro.usuarios?.nombre || '-'}
+                      </td>
+                    </tr>
+                    <tr className="detalle-importe">
+                      <td className="tk-l">{formatearFechaHora(registro.fecha_hora)}</td>
+                      <td className="tk-r">{formatearMoneda(registro.importe)}</td>
+                    </tr>
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
 
-            <div className="ticket-totales">
-              <div className="ticket-total-row">
-                <span>Total Aperturas:</span>
-                <span>{formatearMoneda(totales.totalAperturas)}</span>
-              </div>
-              <div className="ticket-total-row">
-                <span>Total Cierres:</span>
-                <span>{formatearMoneda(totales.totalCierres)}</span>
-              </div>
-              <div className="ticket-total-row total-final">
-                <span>Diferencia:</span>
-                <span>{formatearMoneda(totales.diferencia)}</span>
-              </div>
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-l">Total Aperturas:</td>
+                  <td className="tk-r">{formatearMoneda(totales.totalAperturas)}</td>
+                </tr>
+                <tr>
+                  <td className="tk-l">Total Cierres:</td>
+                  <td className="tk-r">{formatearMoneda(totales.totalCierres)}</td>
+                </tr>
+                <tr className="total-final-row">
+                  <td className="tk-l">Diferencia:</td>
+                  <td className="tk-r">{formatearMoneda(totales.diferencia)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-            <div className="ticket-footer">
-              <div>¡Gracias por su compra!</div>
-              {comercio?.email && <div>{comercio.email}</div>}
-              <div className="leyenda">Conserve este ticket</div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--footer" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">¡Gracias por su compra!</td>
+                </tr>
+                {comercio?.email && (
+                  <tr className="mail-fila">
+                    <td className="tk-full">{comercio.email}</td>
+                  </tr>
+                )}
+                <tr className="leyenda-fila">
+                  <td className="tk-full">Conserve este ticket</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
 

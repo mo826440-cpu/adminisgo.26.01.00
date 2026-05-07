@@ -1,5 +1,5 @@
 // Página de detalle de venta rápida
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge } from '../../components/common'
@@ -221,82 +221,137 @@ function VentaRapidaDetalle() {
         {/* Vista previa del ticket para impresión */}
         {ventaRapida && comercio && (
           <div className="ticket-print" translate="no">
-            {/* Encabezado del ticket */}
-            <div className="ticket-header">
-              <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
-              <div className="datos-comercio">
-                {comercio?.direccion && <div>{comercio.direccion}</div>}
-                {comercio?.telefono && <div>Teléfono: {comercio.telefono}</div>}
-                {comercio?.cuit_rut && <div>CUIT: {comercio.cuit_rut}</div>}
-              </div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">
+                    <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
+                  </td>
+                </tr>
+                {comercio?.direccion && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">{comercio.direccion}</td>
+                  </tr>
+                )}
+                {comercio?.telefono && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">
+                      Teléfono:&nbsp;
+                      {comercio.telefono}
+                    </td>
+                  </tr>
+                )}
+                {comercio?.cuit_rut && (
+                  <tr className="datos-extra-row">
+                    <td className="tk-full datos-comercio">
+                      CUIT:&nbsp;
+                      {comercio.cuit_rut}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-            {/* Información de la venta */}
-            <div className="ticket-info">
-              <div className="ticket-row">
-                <span className="label">Boleto N°:</span>
-                <span>{ventaRapida?.ventas?.numero_ticket || '-'}</span>
-              </div>
-              <div className="ticket-row">
-                <span className="label">Fecha:</span>
-                <span>{formatearFechaHoraTicket(ventaRapida?.fecha_hora)}</span>
-              </div>
-              {ventaRapida?.clientes?.nombre && (
-                <div className="ticket-row">
-                  <span className="label">Cliente:</span>
-                  <span>{ventaRapida.clientes.nombre}</span>
-                </div>
-              )}
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-l">Boleto N°:</td>
+                  <td className="tk-r">{ventaRapida?.ventas?.numero_ticket || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="tk-l">Fecha:</td>
+                  <td className="tk-r">{formatearFechaHoraTicket(ventaRapida?.fecha_hora)}</td>
+                </tr>
+                {ventaRapida?.clientes?.nombre && (
+                  <tr>
+                    <td className="tk-l">Cliente:</td>
+                    <td className="tk-r">{ventaRapida.clientes.nombre}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-            {/* Totales */}
-            <div className="ticket-totales">
-              <div className="ticket-total-row">
-                <span>Total parcial:</span>
-                <span>{formatearMoneda(ventaRapida?.total)}</span>
-              </div>
-              {ventaRapida?.monto_pagado > 0 && (
-                <div className="ticket-total-row">
-                  <span>Pagado:</span>
-                  <span>{formatearMoneda(ventaRapida?.monto_pagado)}</span>
-                </div>
-              )}
-              {ventaRapida?.estado === 'DEBE' && ventaRapida?.total - ventaRapida?.monto_pagado > 0.01 && (
-                <div className="ticket-total-row">
-                  <span>Saldo:</span>
-                  <span>{formatearMoneda(ventaRapida.total - ventaRapida.monto_pagado)}</span>
-                </div>
-              )}
-              <div className="ticket-total-row total-final">
-                <span>TOTAL:</span>
-                <span>{formatearMoneda(ventaRapida?.total)}</span>
-              </div>
-            </div>
+            <table className="ticket-sheet" role="presentation">
+              <colgroup>
+                <col className="col-label" />
+                <col className="col-value" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-l">Total parcial:</td>
+                  <td className="tk-r">{formatearMoneda(ventaRapida?.total)}</td>
+                </tr>
+                {ventaRapida?.monto_pagado > 0 && (
+                  <tr>
+                    <td className="tk-l">Pagado:</td>
+                    <td className="tk-r">{formatearMoneda(ventaRapida?.monto_pagado)}</td>
+                  </tr>
+                )}
+                {ventaRapida?.estado === 'DEBE' && ventaRapida?.total - ventaRapida?.monto_pagado > 0.01 && (
+                  <tr>
+                    <td className="tk-l">Saldo:</td>
+                    <td className="tk-r">{formatearMoneda(ventaRapida.total - ventaRapida.monto_pagado)}</td>
+                  </tr>
+                )}
+                <tr className="total-final-row">
+                  <td className="tk-l">TOTAL:</td>
+                  <td className="tk-r">{formatearMoneda(ventaRapida?.total)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-            {/* Métodos de pago */}
             {ventaRapida?.metodo_pago && (
-              <div className="ticket-pagos">
-                <div className="ticket-label-block">Formas de Pago:</div>
-                <div className="ticket-pago-item">
-                  <span>{ventaRapida.metodo_pago}</span>
-                  <span>{formatearMoneda(ventaRapida.monto_pagado)}</span>
-                </div>
-              </div>
+              <table className="ticket-sheet" role="presentation">
+                <colgroup>
+                  <col className="col-label" />
+                  <col className="col-value" />
+                </colgroup>
+                <tbody>
+                  <tr className="pagosh-titulo">
+                    <td colSpan={2} className="tk-full">
+                      Formas de Pago:
+                    </td>
+                  </tr>
+                  <tr className="pagosh-fila">
+                    <td className="tk-l">{ventaRapida.metodo_pago}</td>
+                    <td className="tk-r">{formatearMoneda(ventaRapida.monto_pagado)}</td>
+                  </tr>
+                </tbody>
+              </table>
             )}
 
-            {/* Pie del ticket */}
-            <div className="ticket-footer">
-              <div>¡Gracias por su compra!</div>
-              {comercio?.email && <div>{comercio.email}</div>}
-              <div className="leyenda" style={{ marginTop: '0.5rem', fontSize: '7px' }}>
-                Este ticket no es una factura ni tiene validez fiscal.
-                <br />
-                Solo es un comprobante de venta.
-              </div>
-              <div className="leyenda" style={{ marginTop: '0.5rem' }}>
-                Conserve este ticket
-              </div>
-            </div>
+            <table className="ticket-sheet ticket-sheet--footer" role="presentation">
+              <colgroup>
+                <col />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="tk-full">¡Gracias por su compra!</td>
+                </tr>
+                {comercio?.email && (
+                  <tr className="mail-fila">
+                    <td className="tk-full">{comercio.email}</td>
+                  </tr>
+                )}
+                <tr className="mail-fila">
+                  <td className="tk-full">
+                    Este ticket no es una factura ni tiene validez fiscal.
+                    <br />
+                    Solo es un comprobante de venta.
+                  </td>
+                </tr>
+                <tr className="leyenda-fila">
+                  <td className="tk-full">Conserve este ticket</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
       </div>
