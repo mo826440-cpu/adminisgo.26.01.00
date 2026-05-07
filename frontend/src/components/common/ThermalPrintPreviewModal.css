@@ -1,0 +1,53 @@
+/* Simulador de rollo térmico en pantalla (antes del diálogo del sistema). */
+
+.thermal-preview-hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.thermal-preview-gutter {
+  background: linear-gradient(to bottom, #c5c5c5, #9a9a9a);
+  padding: 1rem 0.75rem;
+  border-radius: var(--radius-md, 8px);
+  overflow: auto;
+  max-height: min(72vh, 640px);
+}
+
+.thermal-preview-frame {
+  margin: 0 auto;
+  background: var(--bg-primary, #fff);
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.thermal-preview-frame--pos {
+  width: 80mm;
+  max-width: calc(100% - 0.5rem);
+  min-height: 80px;
+}
+
+.thermal-preview-frame--a4 {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 80px;
+}
+
+.thermal-preview-clone-shell {
+  width: 100%;
+}
+
+/*
+  Evitar que los estilos del ticket en pantalla (borde dashed, etc.) parezcan recortados.
+  Los estilos reales siguen siendo ticketThermalPrint.css en el clone.
+*/
+
+.thermal-preview-clone-shell .ticket-print {
+  max-width: none !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}

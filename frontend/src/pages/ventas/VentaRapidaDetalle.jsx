@@ -1,8 +1,9 @@
 // Página de detalle de venta rápida
-import { Fragment, useState, useEffect } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { Fragment, useState, useEffect, useRef } from 'react'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge } from '../../components/common'
+import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
 import { getVentaRapidaById } from '../../services/ventasRapidas'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
@@ -11,8 +12,12 @@ import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import './VentaRapidaDetalle.css'
 
 function VentaRapidaDetalle() {
+  useTicketPrintFormat()
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
+  const ticketPrintRef = useRef(null)
+  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
   const { timezone, dateFormat } = useDateTime()
   const [ventaRapida, setVentaRapida] = useState(null)
   const [comercio, setComercio] = useState(null)
@@ -73,12 +78,16 @@ function VentaRapidaDetalle() {
     }
   }, [location.state])
 
+  const clearPrintIntent = () => {
+    setThermalPreviewOpen(false)
+    setShouldPrint(false)
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null })
+  }
+
   useEffect(() => {
     if (!shouldPrint) return
     if (loading || error || !ventaRapida || !comercio) return
-    const timer = setTimeout(() => {
-      window.print()
-    }, 300)
+    const timer = setTimeout(() => setThermalPreviewOpen(true), 300)
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, ventaRapida, comercio])
 
@@ -220,7 +229,7 @@ function VentaRapidaDetalle() {
 
         {/* Vista previa del ticket para impresión */}
         {ventaRapida && comercio && (
-          <div className="ticket-print" translate="no">
+          <div ref={ticketPrintRef} className="ticket-print" translate="no">
             <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
               <colgroup>
                 <col />
@@ -355,6 +364,12 @@ function VentaRapidaDetalle() {
           </div>
         )}
       </div>
+
+      <ThermalPrintPreviewModal
+        isOpen={thermalPreviewOpen}
+        onClose={clearPrintIntent}
+        sourceRef={ticketPrintRef}
+      />
     </Layout>
   )
 }

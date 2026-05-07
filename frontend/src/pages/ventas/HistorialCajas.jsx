@@ -1,6 +1,6 @@
 // Página de Historial de Cajas
-import { Fragment, useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Fragment, useState, useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
 import { getHistorialCajas, deleteHistorialCaja, updateHistorialCaja } from '../../services/caja'
@@ -8,11 +8,15 @@ import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import { getComercio } from '../../services/comercio'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
 import './HistorialCajas.css'
 
 function HistorialCajas() {
   useTicketPrintFormat()
   const location = useLocation()
+  const navigate = useNavigate()
+  const ticketPrintRef = useRef(null)
+  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
   const { timezone, dateFormat } = useDateTime()
   const [historial, setHistorial] = useState([])
   const [loading, setLoading] = useState(true)
@@ -104,13 +108,17 @@ function HistorialCajas() {
     }
   }, [location.state])
 
+  const clearPrintIntent = () => {
+    setThermalPreviewOpen(false)
+    setShouldPrint(false)
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null })
+  }
+
   useEffect(() => {
     if (!shouldPrint) return
     if (loading || error || !historial.length) return
 
-    const timer = setTimeout(() => {
-      window.print()
-    }, 300)
+    const timer = setTimeout(() => setThermalPreviewOpen(true), 300)
 
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, historial])
@@ -386,7 +394,7 @@ function HistorialCajas() {
 
         {/* Vista previa del ticket para impresión */}
         {historial.length > 0 && (
-          <div className="ticket-print" translate="no">
+          <div ref={ticketPrintRef} className="ticket-print" translate="no">
             <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
               <colgroup>
                 <col />
@@ -663,6 +671,12 @@ function HistorialCajas() {
             )
           })()}
         </Modal>
+
+        <ThermalPrintPreviewModal
+          isOpen={thermalPreviewOpen}
+          onClose={clearPrintIntent}
+          sourceRef={ticketPrintRef}
+        />
       </div>
     </Layout>
   )

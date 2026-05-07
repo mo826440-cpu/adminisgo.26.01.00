@@ -1,6 +1,6 @@
 // Página de detalle de venta
-import { Fragment, useEffect, useState } from 'react'
-import { Link, useParams, useLocation } from 'react-router-dom'
+import { Fragment, useEffect, useState, useRef } from 'react'
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Spinner, Alert, Button, Badge } from '../../components/common'
 import { getVentaById } from '../../services/ventas'
@@ -8,12 +8,16 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
 import './VentaDetalle.css'
 
 function VentaDetalle() {
   useTicketPrintFormat()
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
+  const ticketPrintRef = useRef(null)
+  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
   const { timezone, dateFormat } = useDateTime()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -49,12 +53,16 @@ function VentaDetalle() {
     }
   }, [location.state])
 
+  const clearPrintIntent = () => {
+    setThermalPreviewOpen(false)
+    setShouldPrint(false)
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null })
+  }
+
   useEffect(() => {
     if (!shouldPrint) return
     if (loading || error || !venta) return
-    const timer = setTimeout(() => {
-      window.print()
-    }, 300)
+    const timer = setTimeout(() => setThermalPreviewOpen(true), 300)
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, venta])
 
@@ -214,7 +222,7 @@ function VentaDetalle() {
             </Card>
 
             {/* Vista previa del ticket para impresión */}
-            <div className="ticket-print" translate="no">
+            <div ref={ticketPrintRef} className="ticket-print" translate="no">
               {/* Tablas para drivers térmicos que ignoran flex/grid */}
               <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
                 <colgroup>
@@ -369,6 +377,12 @@ function VentaDetalle() {
           </>
         )}
       </div>
+
+      <ThermalPrintPreviewModal
+        isOpen={thermalPreviewOpen}
+        onClose={clearPrintIntent}
+        sourceRef={ticketPrintRef}
+      />
     </Layout>
   )
 }

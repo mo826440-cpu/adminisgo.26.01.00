@@ -1,5 +1,5 @@
 // Página de detalle de compra
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
@@ -8,6 +8,7 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
 import './CompraDetalle.css'
 
 function CompraDetalle() {
@@ -27,6 +28,8 @@ function CompraDetalle() {
   const [receiving, setReceiving] = useState(false)
   const [cantidadesRecibidas, setCantidadesRecibidas] = useState({})
   const [shouldPrint, setShouldPrint] = useState(false)
+  const ticketPrintRef = useRef(null)
+  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -64,23 +67,22 @@ function CompraDetalle() {
     load()
   }, [id])
 
-  // Manejar impresión
   useEffect(() => {
     if (location.state?.print) {
       setShouldPrint(true)
     }
   }, [location.state])
 
-  // Imprimir cuando los datos estén cargados
+  const clearPrintIntent = () => {
+    setThermalPreviewOpen(false)
+    setShouldPrint(false)
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null })
+  }
+
   useEffect(() => {
     if (!shouldPrint) return
     if (loading || error || !compra) return
-
-    // Pequeño delay para asegurar que el DOM esté listo
-    const timer = setTimeout(() => {
-      window.print()
-    }, 100)
-
+    const timer = setTimeout(() => setThermalPreviewOpen(true), 150)
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, compra])
 
@@ -497,7 +499,7 @@ function CompraDetalle() {
 
         {/* Vista previa del ticket para impresión */}
         {compra && (
-          <div className="ticket-print" translate="no">
+          <div ref={ticketPrintRef} className="ticket-print" translate="no">
             <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
               <colgroup>
                 <col />
@@ -661,6 +663,12 @@ function CompraDetalle() {
           </div>
         )}
       </div>
+
+      <ThermalPrintPreviewModal
+        isOpen={thermalPreviewOpen}
+        onClose={clearPrintIntent}
+        sourceRef={ticketPrintRef}
+      />
     </Layout>
   )
 }
