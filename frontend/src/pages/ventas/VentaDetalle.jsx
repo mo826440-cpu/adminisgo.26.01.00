@@ -7,9 +7,11 @@ import { getVentaById } from '../../services/ventas'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
+import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import './VentaDetalle.css'
 
 function VentaDetalle() {
+  useTicketPrintFormat()
   const { id } = useParams()
   const location = useLocation()
   const { timezone, dateFormat } = useDateTime()
@@ -212,7 +214,7 @@ function VentaDetalle() {
             </Card>
 
             {/* Vista previa del ticket para impresión */}
-            <div className="ticket-print">
+            <div className="ticket-print" translate="no">
               {/* Encabezado del ticket */}
               <div className="ticket-header">
                 <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
@@ -253,9 +255,13 @@ function VentaDetalle() {
                   <div key={it.id} className="ticket-item">
                     <div className="item-nombre">{it.productos?.nombre || '-'}</div>
                     <div className="item-detalle">
-                      <span>{it.cantidad} x {formatearMoneda(it.precio_unitario)}</span>
-                      {it.descuento > 0 && <span>-{it.descuento}%</span>}
-                      <span>{formatearMoneda(it.subtotal)}</span>
+                      <span className="item-line-main">
+                        {it.cantidad} × {formatearMoneda(it.precio_unitario)}
+                        {it.descuento > 0 && (
+                          <span className="item-line-disc"> −{it.descuento}%</span>
+                        )}
+                      </span>
+                      <span className="item-line-price">{formatearMoneda(it.subtotal)}</span>
                     </div>
                   </div>
                 ))}
@@ -288,7 +294,7 @@ function VentaDetalle() {
               {/* Métodos de pago */}
               {(venta?.pagos || []).length > 0 && (
                 <div className="ticket-pagos">
-                  <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Formas de Pago:</div>
+                  <div className="ticket-label-block">Formas de Pago:</div>
                   {venta.pagos.map((p) => (
                     <div key={p.id} className="ticket-pago-item">
                       <span>{p.metodo_pago}</span>

@@ -7,6 +7,7 @@ import { getVentaRapidaById } from '../../services/ventasRapidas'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
+import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import './VentaRapidaDetalle.css'
 
 function VentaRapidaDetalle() {
@@ -219,7 +220,7 @@ function VentaRapidaDetalle() {
 
         {/* Vista previa del ticket para impresión */}
         {ventaRapida && comercio && (
-          <div className="ticket-print">
+          <div className="ticket-print" translate="no">
             {/* Encabezado del ticket */}
             <div className="ticket-header">
               <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
@@ -275,7 +276,7 @@ function VentaRapidaDetalle() {
             {/* Métodos de pago */}
             {ventaRapida?.metodo_pago && (
               <div className="ticket-pagos">
-                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Formas de Pago:</div>
+                <div className="ticket-label-block">Formas de Pago:</div>
                 <div className="ticket-pago-item">
                   <span>{ventaRapida.metodo_pago}</span>
                   <span>{formatearMoneda(ventaRapida.monto_pagado)}</span>

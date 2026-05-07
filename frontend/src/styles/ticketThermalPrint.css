@@ -1,0 +1,264 @@
+/*
+  Ticket térmico / impresión: layout en rejilla para evitar texto pegado en 58–80mm.
+  Incluye visibilidad sólo-del-ticket en @media print.
+*/
+
+.ticket-print {
+  box-sizing: border-box;
+  max-width: 80mm;
+  margin: 0 auto;
+  padding: 1rem;
+  background: white;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #000;
+  border: 1px dashed #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+html[data-print-format='a4'] .ticket-print {
+  max-width: none;
+  width: 100%;
+}
+
+/* Encabezado */
+.ticket-header {
+  text-align: center;
+  border-bottom: 1px dashed #000;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ticket-header .nombre-comercio {
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ticket-header .datos-comercio {
+  font-size: 9px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Filas etiqueta / valor: dos columnas fijas para térmica */
+.ticket-info {
+  margin: 0.5rem 0;
+  font-size: 10px;
+}
+
+.ticket-info .ticket-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.6rem;
+  row-gap: 0.15rem;
+  align-items: start;
+  margin-bottom: 0.35rem;
+}
+
+.ticket-info .ticket-row > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ticket-info .ticket-row > span:only-child {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.ticket-info .label {
+  font-weight: bold;
+}
+
+/* Ítems */
+.ticket-items {
+  margin: 0.5rem 0;
+  border-top: 1px dashed #000;
+  border-bottom: 1px dashed #000;
+  padding: 0.5rem 0;
+}
+
+.ticket-item {
+  margin-bottom: 0.5rem;
+  font-size: 10px;
+}
+
+.ticket-item .item-nombre {
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.ticket-item .item-detalle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.5rem;
+  align-items: baseline;
+  font-size: 9px;
+  padding-left: 0.35rem;
+}
+
+.ticket-item .item-line-main {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ticket-item .item-line-price {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-item .item-line-disc {
+  font-weight: 600;
+}
+
+/* Totales y pagos */
+.ticket-totales {
+  margin: 0.5rem 0;
+  border-top: 1px dashed #000;
+  padding-top: 0.5rem;
+  font-size: 10px;
+}
+
+.ticket-total-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.6rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+
+.ticket-total-row > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-total-row.total-final {
+  border-top: 1px dashed #000;
+  padding-top: 0.35rem;
+  margin-top: 0.35rem;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.ticket-pagos {
+  margin: 0.5rem 0;
+  border-top: 1px dashed #000;
+  padding-top: 0.5rem;
+  font-size: 10px;
+}
+
+.ticket-pagos .ticket-label-block {
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+.ticket-pago-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+  font-size: 9px;
+  padding-left: 0.35rem;
+}
+
+.ticket-pago-item > span:last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pie */
+.ticket-footer {
+  text-align: center;
+  border-top: 1px dashed #000;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 8px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ticket-footer .leyenda {
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .ticket-print,
+  .ticket-print * {
+    visibility: visible;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ticket-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    background: white !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 10px !important;
+    line-height: 1.45 !important;
+    color: #000 !important;
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-print-format='a4'] .ticket-print {
+    width: 100% !important;
+    max-width: none !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 0 !important;
+  }
+
+  .navbar,
+  .sidebar,
+  .page-header,
+  button,
+  .btn,
+  a:not(.ticket-print a),
+  .card:not(.ticket-print),
+  .container > *:not(.ticket-print) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .container {
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html[data-print-format='a4'] .container {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}

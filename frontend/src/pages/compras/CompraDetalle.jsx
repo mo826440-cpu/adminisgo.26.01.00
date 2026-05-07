@@ -7,9 +7,11 @@ import { getCompraById, deleteCompra, recibirCompra } from '../../services/compr
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
+import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import './CompraDetalle.css'
 
 function CompraDetalle() {
+  useTicketPrintFormat()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -495,7 +497,7 @@ function CompraDetalle() {
 
         {/* Vista previa del ticket para impresión */}
         {compra && (
-          <div className="ticket-print">
+          <div className="ticket-print" translate="no">
             {/* Encabezado del ticket */}
             <div className="ticket-header">
               <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
@@ -530,21 +532,23 @@ function CompraDetalle() {
 
             {/* Items del ticket */}
             <div className="ticket-items">
-              {(compra.items || []).map((it) => {
-                const precioConDescuento = it.precio_unitario * (1 - (it.descuento || 0) / 100)
-                const precioFinal = precioConDescuento * (1 + (it.impuesto || 0) / 100)
-                return (
+              {(compra.items || []).map((it) => (
                   <div key={it.id} className="ticket-item">
                     <div className="item-nombre">{it.productos?.nombre || '-'}</div>
                     <div className="item-detalle">
-                      <span>{it.cantidad_solicitada} x {formatearMoneda(it.precio_unitario)}</span>
-                      {it.descuento > 0 && <span>-{it.descuento}%</span>}
-                      {it.impuesto > 0 && <span>+{it.impuesto}%</span>}
-                      <span>{formatearMoneda(it.subtotal)}</span>
+                      <span className="item-line-main">
+                        {it.cantidad_solicitada} × {formatearMoneda(it.precio_unitario)}
+                        {it.descuento > 0 && (
+                          <span className="item-line-disc"> −{it.descuento}%</span>
+                        )}
+                        {it.impuesto > 0 && (
+                          <span className="item-line-disc"> +{it.impuesto}%</span>
+                        )}
+                      </span>
+                      <span className="item-line-price">{formatearMoneda(it.subtotal)}</span>
                     </div>
                   </div>
-                )
-              })}
+              ))}
             </div>
 
             {/* Totales */}
@@ -586,7 +590,7 @@ function CompraDetalle() {
             {/* Métodos de pago */}
             {(compra.pagos || []).length > 0 && (
               <div className="ticket-pagos">
-                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Formas de Pago:</div>
+                <div className="ticket-label-block">Formas de Pago:</div>
                 {compra.pagos.map((p) => (
                   <div key={p.id} className="ticket-pago-item">
                     <span>{p.metodo_pago}</span>

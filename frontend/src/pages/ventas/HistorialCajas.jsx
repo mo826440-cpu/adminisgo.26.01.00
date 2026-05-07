@@ -7,9 +7,11 @@ import { getHistorialCajas, deleteHistorialCaja, updateHistorialCaja } from '../
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import { getComercio } from '../../services/comercio'
+import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import './HistorialCajas.css'
 
 function HistorialCajas() {
+  useTicketPrintFormat()
   const location = useLocation()
   const { timezone, dateFormat } = useDateTime()
   const [historial, setHistorial] = useState([])
@@ -384,7 +386,7 @@ function HistorialCajas() {
 
         {/* Vista previa del ticket para impresión */}
         {historial.length > 0 && (
-          <div className="ticket-print">
+          <div className="ticket-print" translate="no">
             <div className="ticket-header">
               <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
               <div className="datos-comercio">
@@ -419,8 +421,8 @@ function HistorialCajas() {
                     {registro.tipo_operacion === 'apertura' ? 'Apertura' : 'Cierre'} - {registro.usuarios?.nombre || '-'}
                   </div>
                   <div className="item-detalle">
-                    <span>{formatearFechaHora(registro.fecha_hora)}</span>
-                    <span>{formatearMoneda(registro.importe)}</span>
+                    <span className="item-line-main">{formatearFechaHora(registro.fecha_hora)}</span>
+                    <span className="item-line-price">{formatearMoneda(registro.importe)}</span>
                   </div>
                 </div>
               ))}
