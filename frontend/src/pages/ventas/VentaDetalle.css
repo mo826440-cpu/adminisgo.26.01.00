@@ -2,22 +2,7 @@
 
 @import '../../styles/ticketThermalPrint.css';
 
-/* Ticket texto plano (detalle venta): monoespaciado como rollo térmico */
-.ticket-print--venta-pre {
-  max-width: 80mm;
-}
-
-.ticket-pre-body {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px;
-  line-height: 1.45;
-  margin: 0;
-  padding: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  tab-size: 4;
-}
+/* Overrides móvil (estilos base en ticketThermalPrint.css) */
 
 /* En móvil: ocultar panel de detalles y mostrar solo el ticket */
 @media (max-width: 768px) {
@@ -36,13 +21,13 @@
     display: none !important;
   }
   
-  .ticket-print--venta-pre {
+  .ticket-print--thermal-pre {
     max-width: 100%;
   }
 
   /* Mostrar el ticket centrado y con mejor formato */
   .ticket-print,
-  .ticket-print--venta-pre {
+  .ticket-print--thermal-pre {
     max-width: 100%;
     margin: 1rem auto;
     padding: 1.5rem;
@@ -60,7 +45,7 @@
   
   /* Ajustar colores del ticket para tema oscuro/claro */
   .ticket-print,
-  .ticket-print--venta-pre {
+  .ticket-print--thermal-pre {
     background: var(--bg-primary);
     color: var(--text-primary);
   }

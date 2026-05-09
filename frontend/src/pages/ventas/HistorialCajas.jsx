@@ -1,5 +1,5 @@
 // Página de Historial de Cajas
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
@@ -9,6 +9,7 @@ import { formatDateTime } from '../../utils/dateFormat'
 import { getComercio } from '../../services/comercio'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import { buildHistorialCajasThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './HistorialCajas.css'
 
 function HistorialCajas() {
@@ -201,6 +202,23 @@ function HistorialCajas() {
     setProcesando(false)
   }
 
+  const ticketPlain = useMemo(() => {
+    if (!historial.length) return ''
+    const aperturas = historial.filter((h) => h.tipo_operacion === 'apertura')
+    const cierres = historial.filter((h) => h.tipo_operacion === 'cierre')
+    const totalAperturas = aperturas.reduce((sum, h) => sum + parseFloat(h.importe || 0), 0)
+    const totalCierres = cierres.reduce((sum, h) => sum + parseFloat(h.importe || 0), 0)
+    return buildHistorialCajasThermalPlainText({
+      historial,
+      fechaDesde,
+      fechaHasta,
+      totales: { totalAperturas, totalCierres, diferencia: totalCierres - totalAperturas },
+      comercio,
+      formatearMoneda,
+      formatearFechaHora
+    })
+  }, [historial, fechaDesde, fechaHasta, comercio, timezone])
+
   // Calcular totales
   const calcularTotales = () => {
     const aperturas = historial.filter(h => h.tipo_operacion === 'apertura')
@@ -392,126 +410,10 @@ function HistorialCajas() {
           )}
         </Card>
 
-        {/* Vista previa del ticket para impresión */}
+        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que Ventas */}
         {historial.length > 0 && (
-          <div ref={ticketPrintRef} className="ticket-print" translate="no">
-            <table className="ticket-sheet ticket-sheet--nombre" role="presentation">
-              <colgroup>
-                <col />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td className="tk-full">
-                    <div className="nombre-comercio">{comercio?.nombre || 'Comercio'}</div>
-                  </td>
-                </tr>
-                {comercio?.direccion && (
-                  <tr className="datos-extra-row">
-                    <td className="tk-full datos-comercio">{comercio.direccion}</td>
-                  </tr>
-                )}
-                {comercio?.telefono && (
-                  <tr className="datos-extra-row">
-                    <td className="tk-full datos-comercio">Tel: {comercio.telefono}</td>
-                  </tr>
-                )}
-                {comercio?.cuit_rut && (
-                  <tr className="datos-extra-row">
-                    <td className="tk-full datos-comercio">CUIT: {comercio.cuit_rut}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            <table className="ticket-sheet" role="presentation">
-              <colgroup>
-                <col className="col-label" />
-                <col className="col-value" />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td colSpan={2} className="tk-full tk-bold section-title">
-                    Historial de Cajas
-                  </td>
-                </tr>
-                {fechaDesde && (
-                  <tr>
-                    <td className="tk-l">Desde:</td>
-                    <td className="tk-r">{formatearFechaHora(fechaDesde)}</td>
-                  </tr>
-                )}
-                {fechaHasta && (
-                  <tr>
-                    <td className="tk-l">Hasta:</td>
-                    <td className="tk-r">{formatearFechaHora(fechaHasta)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            <table className="ticket-sheet" role="presentation">
-              <colgroup>
-                <col className="col-label" />
-                <col className="col-value" />
-              </colgroup>
-              <tbody>
-                {historial.map((registro) => (
-                  <Fragment key={registro.id}>
-                    <tr className="linea-producto">
-                      <td className="tk-l" colSpan={2}>
-                        {(registro.tipo_operacion === 'apertura' ? 'Apertura' : 'Cierre')}
-                        {' '}
-                        - {registro.usuarios?.nombre || '-'}
-                      </td>
-                    </tr>
-                    <tr className="detalle-importe">
-                      <td className="tk-l">{formatearFechaHora(registro.fecha_hora)}</td>
-                      <td className="tk-r">{formatearMoneda(registro.importe)}</td>
-                    </tr>
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-
-            <table className="ticket-sheet" role="presentation">
-              <colgroup>
-                <col className="col-label" />
-                <col className="col-value" />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td className="tk-l">Total Aperturas:</td>
-                  <td className="tk-r">{formatearMoneda(totales.totalAperturas)}</td>
-                </tr>
-                <tr>
-                  <td className="tk-l">Total Cierres:</td>
-                  <td className="tk-r">{formatearMoneda(totales.totalCierres)}</td>
-                </tr>
-                <tr className="total-final-row">
-                  <td className="tk-l">Diferencia:</td>
-                  <td className="tk-r">{formatearMoneda(totales.diferencia)}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <table className="ticket-sheet ticket-sheet--footer" role="presentation">
-              <colgroup>
-                <col />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td className="tk-full">¡Gracias por su compra!</td>
-                </tr>
-                {comercio?.email && (
-                  <tr className="mail-fila">
-                    <td className="tk-full">{comercio.email}</td>
-                  </tr>
-                )}
-                <tr className="leyenda-fila">
-                  <td className="tk-full">Conserve este ticket</td>
-                </tr>
-              </tbody>
-            </table>
+          <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
+            <pre className="ticket-pre-body">{ticketPlain}</pre>
           </div>
         )}
 

@@ -17,6 +17,22 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Ticket texto plano (<pre>): mismo ancho térmico, sin degradar layout en POS */
+.ticket-print--thermal-pre {
+  max-width: 80mm;
+}
+
+.ticket-print--thermal-pre .ticket-pre-body {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 html[data-print-format='a4'] .ticket-print {
   max-width: none;
   width: 100%;

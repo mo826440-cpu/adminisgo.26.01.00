@@ -9,7 +9,7 @@ import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
-import { buildVentaThermalPlainText } from './ventaThermalPlainReceipt'
+import { buildVentaThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './VentaDetalle.css'
 
 function VentaDetalle() {
@@ -99,7 +99,7 @@ function VentaDetalle() {
       formatearMoneda,
       formatearFechaHoraTicket
     })
-  }, [venta, comercio])
+  }, [venta, comercio, timezone])
 
   if (loading) {
     return (
@@ -233,7 +233,7 @@ function VentaDetalle() {
             </Card>
 
             {/* Ticket impresión: texto plano POS (solo ventas) — tolera drivers térmicos que ignoran tablas */}
-            <div ref={ticketPrintRef} className="ticket-print ticket-print--venta-pre" translate="no">
+            <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
               <pre className="ticket-pre-body">{ticketPlain}</pre>
             </div>
           </>
