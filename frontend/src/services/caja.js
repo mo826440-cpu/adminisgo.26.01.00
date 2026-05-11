@@ -1,9 +1,10 @@
 // Servicio para gestión de caja
 import { supabase } from './supabase'
 
-/** Método de pago → categoría de caja: efectivo | virtual | credito | otros */
+/** Método de pago → categoría de caja: efectivo | virtual | credito | otros | null (sin ingreso) */
 const metodoPagoToCategoria = (metodo) => {
   const m = (metodo || '').toLowerCase()
+  if (m === 'pendiente') return null
   if (m === 'efectivo') return 'efectivo'
   if (['qr', 'transferencia', 'debito'].includes(m)) return 'virtual'
   if (m === 'credito') return 'credito'
@@ -15,6 +16,7 @@ const sumarPagosPorCategoria = (pagos) => {
   const desglose = { efectivo: 0, virtual: 0, credito: 0, otros: 0 }
   ;(pagos || []).forEach((p) => {
     const cat = metodoPagoToCategoria(p.metodo_pago)
+    if (!cat) return
     desglose[cat] += parseFloat(p.monto_pagado || 0)
   })
   return desglose

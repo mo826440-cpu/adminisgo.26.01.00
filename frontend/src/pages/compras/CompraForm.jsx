@@ -867,6 +867,7 @@ function CompraForm() {
                         <option value="debito">Débito</option>
                         <option value="credito">Crédito</option>
                         <option value="cheque">Cheque</option>
+                        <option value="pendiente">Pendiente</option>
                         <option value="otro">Otro método</option>
                       </select>
                     </label>
