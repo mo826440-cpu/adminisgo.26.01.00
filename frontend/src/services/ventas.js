@@ -324,9 +324,34 @@ export const createVenta = async (ventaData) => {
         await supabase.from('ventas').delete().eq('id', ventaCreada.id)
         throw errorPagos
       }
+    } else {
+      // Sin filas en venta_pagos los triggers no actualizan monto_pagado/monto_deuda (migración 011).
+      const t = parseFloat(ventaData.total) || 0
+      const { error: errorMontos } = await supabase
+        .from('ventas')
+        .update({
+          monto_pagado: 0,
+          monto_deuda: Math.max(0, t),
+        })
+        .eq('id', ventaCreada.id)
+
+      if (errorMontos) {
+        await supabase.from('ventas').delete().eq('id', ventaCreada.id)
+        throw errorMontos
+      }
     }
 
-    return { data: ventaCreada, error: null }
+    return {
+      data:
+        metodosPagoArr.length > 0
+          ? ventaCreada
+          : {
+              ...ventaCreada,
+              monto_pagado: 0,
+              monto_deuda: Math.max(0, parseFloat(ventaData.total) || 0),
+            },
+      error: null,
+    }
   } catch (error) {
     console.error('Error al crear venta:', error)
     // Mensajes más claros para constraints comunes

@@ -1,10 +1,17 @@
 // Servicio de ventas rápidas: solo usa tablas ventas, venta_items, venta_pagos (sin ventas_rapidas).
 import { supabase } from './supabase'
-import { createVenta, deleteVenta, getVentaById, hydrateVentasRowsWithClienteUsuarioNombre } from './ventas'
+import {
+  createVenta,
+  deleteVenta,
+  getVentaById,
+  hydrateVentasRowsWithClienteUsuarioNombre,
+  updateVenta,
+} from './ventas'
 
 const PAGE = 1000
 
 function mapVentaListadoShape(v) {
+  const pagado = parseFloat(v.monto_pagado) || 0
   const deuda = parseFloat(v.monto_deuda) || 0
   const estado = deuda > 0.009 ? 'DEBE' : 'PAGADO'
   return {
@@ -12,7 +19,8 @@ function mapVentaListadoShape(v) {
     fecha_hora: v.fecha_hora,
     total: v.total,
     metodo_pago: v.metodo_pago,
-    monto_pagado: v.monto_pagado,
+    monto_pagado: pagado,
+    monto_pendiente: deuda,
     estado,
     observaciones: v.observaciones,
     clientes: v.clientes,
@@ -97,6 +105,7 @@ export const getVentaRapidaById = async (id) => {
 
     const mapped = {
       id: data.id,
+      cliente_id: data.cliente_id,
       fecha_hora: data.fecha_hora,
       total: data.total,
       metodo_pago: data.metodo_pago,
@@ -128,6 +137,33 @@ export const getVentaRapidaById = async (id) => {
   }
 }
 
+/** Filas que impactan caja / venta_pagos: no «pendiente», monto > 0 */
+function construirPagosDbVentaRapida(ventaRapidaData, total, fechaBase) {
+  if (Array.isArray(ventaRapidaData.pagos)) {
+    return ventaRapidaData.pagos
+      .map((p) => ({
+        metodo_pago: String(p.metodo_pago || '').trim(),
+        monto_pagado: Math.min(total, Math.max(0, parseFloat(p.monto_pagado) || 0)),
+        fecha_pago: p.fecha_pago || fechaBase,
+        observaciones: p.observaciones ?? null,
+      }))
+      .filter((p) => p.metodo_pago && p.metodo_pago !== 'pendiente' && p.monto_pagado > 0)
+  }
+  const raw = ventaRapidaData.monto_pagado
+  const explicitado = !(raw === undefined || raw === null || raw === '')
+  const montoSingle = explicitado ? Math.min(total, Math.max(0, parseFloat(raw))) : total
+  const method = String(ventaRapidaData.metodo_pago || 'efectivo').trim()
+  if (montoSingle <= 0 || !method || method === 'pendiente') return []
+  return [
+    {
+      metodo_pago: method,
+      monto_pagado: montoSingle,
+      fecha_pago: fechaBase,
+      observaciones: null,
+    },
+  ]
+}
+
 /**
  * Crear venta rápida: solo ventas + ítems + pagos (sin ventas_rapidas).
  */
@@ -139,17 +175,21 @@ export const createVentaRapida = async (ventaRapidaData) => {
     }
 
     const total = parseFloat(ventaRapidaData.total || 0)
-    const montoPagado = parseFloat(ventaRapidaData.monto_pagado || total)
+    const fechaBase = ventaRapidaData.fecha_hora || new Date().toISOString()
+
+    const pagosDb = construirPagosDbVentaRapida(ventaRapidaData, total, fechaBase)
+    const metodosUnicos = [...new Set(pagosDb.map((p) => p.metodo_pago))]
+    const metodoResumen = metodosUnicos.length > 0 ? metodosUnicos.join(', ') : 'pendiente'
 
     const ventaData = {
       cliente_id: ventaRapidaData.cliente_id || null,
-      fecha_hora: ventaRapidaData.fecha_hora || new Date().toISOString(),
+      fecha_hora: fechaBase,
       facturacion: null,
       subtotal: total,
       descuento: 0,
       impuestos: 0,
-      total: total,
-      metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
+      total,
+      metodo_pago: metodoResumen,
       observaciones: ventaRapidaData.observaciones || null,
       items: [
         {
@@ -160,17 +200,7 @@ export const createVentaRapida = async (ventaRapidaData) => {
           subtotal: total,
         },
       ],
-      pagos:
-        montoPagado > 0
-          ? [
-              {
-                metodo_pago: ventaRapidaData.metodo_pago || 'efectivo',
-                monto_pagado: montoPagado,
-                fecha_pago: ventaRapidaData.fecha_hora || new Date().toISOString(),
-                observaciones: null,
-              },
-            ]
-          : [],
+      pagos: pagosDb,
     }
 
     const { data: ventaCreada, error: errorVenta } = await createVenta(ventaData)
@@ -179,6 +209,51 @@ export const createVentaRapida = async (ventaRapidaData) => {
     return { data: ventaCreada, error: null }
   } catch (error) {
     console.error('Error al crear venta rápida:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Actualizar venta rápida (mismo shape que create: un ítem genérico + pagos).
+ */
+export const updateVentaRapida = async (ventaId, ventaRapidaData) => {
+  try {
+    const productoId = ventaRapidaData.producto_id
+    if (!productoId) {
+      throw new Error('Debés seleccionar el producto genérico de venta rápida (código de barras 1111111111).')
+    }
+
+    const total = parseFloat(ventaRapidaData.total || 0)
+    const fechaBase = ventaRapidaData.fecha_hora || new Date().toISOString()
+    const pagosDb = construirPagosDbVentaRapida(ventaRapidaData, total, fechaBase)
+    const metodosUnicos = [...new Set(pagosDb.map((p) => p.metodo_pago))]
+    const metodoResumen = metodosUnicos.length > 0 ? metodosUnicos.join(', ') : 'pendiente'
+
+    const ventaData = {
+      cliente_id: ventaRapidaData.cliente_id || null,
+      fecha_hora: fechaBase,
+      facturacion: ventaRapidaData.facturacion ?? null,
+      subtotal: total,
+      descuento: 0,
+      impuestos: 0,
+      total,
+      metodo_pago: metodoResumen,
+      observaciones: ventaRapidaData.observaciones || null,
+      items: [
+        {
+          producto_id: productoId,
+          cantidad: 1,
+          precio_unitario: total,
+          descuento: 0,
+          subtotal: total,
+        },
+      ],
+      pagos: pagosDb,
+    }
+
+    return await updateVenta(ventaId, ventaData)
+  } catch (error) {
+    console.error('Error al actualizar venta rápida:', error)
     return { data: null, error }
   }
 }

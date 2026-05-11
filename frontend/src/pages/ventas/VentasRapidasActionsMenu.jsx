@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/common'
 import './ActionsMenu.css'
 
-function VentasRapidasActionsMenu({ ventaRapidaId, onDelete }) {
+function VentasRapidasActionsMenu({ ventaRapidaId, onDelete, onEditar }) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
@@ -32,6 +32,11 @@ function VentasRapidasActionsMenu({ ventaRapidaId, onDelete }) {
     switch (action) {
       case 'ver':
         navigate(`/ventas-rapidas/${ventaRapidaId}`)
+        break
+      case 'editar':
+        if (onEditar) {
+          onEditar(ventaRapidaId)
+        }
         break
       case 'imprimir':
         navigate(`/ventas-rapidas/${ventaRapidaId}`, { state: { print: true } })
@@ -69,6 +74,14 @@ function VentasRapidasActionsMenu({ ventaRapidaId, onDelete }) {
           >
             <i className="bi bi-eye" />
             <span>Ver detalle</span>
+          </button>
+          <button
+            type="button"
+            className="actions-menu-item"
+            onClick={(e) => handleAction('editar', e)}
+          >
+            <i className="bi bi-pencil" />
+            <span>Editar</span>
           </button>
           <button
             type="button"

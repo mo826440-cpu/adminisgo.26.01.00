@@ -4,7 +4,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
 import { abrirCaja, cerrarCaja, obtenerEstadoCaja } from '../../services/caja'
-import { createVentaRapida, getVentasRapidas, deleteVentaRapida } from '../../services/ventasRapidas'
+import {
+  createVentaRapida,
+  getVentasRapidas,
+  getVentaRapidaById,
+  deleteVentaRapida,
+  updateVentaRapida,
+} from '../../services/ventasRapidas'
 import { getClientes } from '../../services/clientes'
 import { getProductoPorCodigoBarras } from '../../services/productos'
 import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida'
@@ -14,6 +20,25 @@ import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
 import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
+
+const METODOS_PAGO_OPCIONES = [
+  ['efectivo', 'Efectivo'],
+  ['transferencia', 'Transferencia'],
+  ['qr', 'QR'],
+  ['debito', 'Débito'],
+  ['credito', 'Crédito'],
+  ['cheque', 'Cheque'],
+  ['pendiente', 'Pendiente'],
+  ['otro', 'Otro método'],
+]
+
+function nuevaFilaPago() {
+  return {
+    key: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+    metodo_pago: 'efectivo',
+    monto: '0',
+  }
+}
 
 function VentasRapidas() {
   const navigate = useNavigate()
@@ -49,15 +74,16 @@ function VentasRapidas() {
   const [total, setTotal] = useState('0')
   const [totalEditando, setTotalEditando] = useState(false)
   const [totalValorRaw, setTotalValorRaw] = useState('')
-  const [metodoPago, setMetodoPago] = useState('efectivo')
-  const [montoPagado, setMontoPagado] = useState('0')
-  const [montoPagadoEditando, setMontoPagadoEditando] = useState(false)
-  const [montoPagadoValorRaw, setMontoPagadoValorRaw] = useState('')
-  const [montoPagadoManual, setMontoPagadoManual] = useState(false)
+  const [filasPago, setFilasPago] = useState(() => [nuevaFilaPago()])
+  const [editingPagoIdx, setEditingPagoIdx] = useState(null)
+  const [pagoMontoRaw, setPagoMontoRaw] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
+
+  /** Edición en esta misma página (null = alta nueva) */
+  const [edicionVenta, setEdicionVenta] = useState(null)
 
   const [productoVentaRapida, setProductoVentaRapida] = useState(null)
   const [loadingProducto, setLoadingProducto] = useState(true)
@@ -203,12 +229,126 @@ function VentasRapidas() {
     return num.toString()
   }
 
-  // Actualizar monto pagado automáticamente cuando cambia el total (solo si no se editó manualmente)
-  useEffect(() => {
-    if (!montoPagadoManual && !montoPagadoEditando) {
-      setMontoPagado(total)
+  /** Monto que impacta cobro (excluye filas «pendiente»). */
+  const montoCuentaParaCobro = (row) => {
+    if (!row || row.metodo_pago === 'pendiente') return 0
+    return Math.max(0, parseFloat(parsearMoneda(row.monto)) || 0)
+  }
+
+  const saldoAntesDeFila = (idx) => {
+    const totalNum = parseFloat(parsearMoneda(total)) || 0
+    let acum = 0
+    for (let j = 0; j < idx; j++) acum += montoCuentaParaCobro(filasPago[j])
+    return Math.max(0, totalNum - acum)
+  }
+
+  const agregarFilaPago = () => {
+    setFilasPago((prev) => [...prev, nuevaFilaPago()])
+  }
+
+  const quitarFilaPago = (idx) => {
+    setFilasPago((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)))
+    setEditingPagoIdx((cur) => (cur === idx ? null : cur))
+  }
+
+  const actualizarFilaPago = (idx, patch) => {
+    setFilasPago((prev) => prev.map((row, i) => (i === idx ? { ...row, ...patch } : row)))
+  }
+
+  const normalizeMetodoPagoFila = (m) => {
+    const x = String(m || '').trim().toLowerCase()
+    return METODOS_PAGO_OPCIONES.some(([v]) => v === x) ? x : 'otro'
+  }
+
+  const ventaDetalleToFilasPago = (venta) => {
+    const rows = []
+    for (const p of venta.pagos || []) {
+      rows.push({
+        key: `ed-${p.id ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
+        metodo_pago: normalizeMetodoPagoFila(p.metodo_pago),
+        monto: String(parseFloat(p.monto_pagado) || 0),
+      })
     }
-  }, [total, montoPagadoManual, montoPagadoEditando])
+    const deuda = parseFloat(venta.monto_deuda) || 0
+    if (deuda > 0.009) {
+      rows.push({
+        key: `ed-pend-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        metodo_pago: 'pendiente',
+        monto: String(deuda),
+      })
+    }
+    return rows.length > 0 ? rows : [nuevaFilaPago()]
+  }
+
+  const limpiarFormularioVentaRapida = () => {
+    setEdicionVenta(null)
+    setClienteSeleccionado(null)
+    setClienteSearch('')
+    setTotal('0')
+    setTotalEditando(false)
+    setTotalValorRaw('')
+    setFilasPago([nuevaFilaPago()])
+    setEditingPagoIdx(null)
+    setPagoMontoRaw('')
+    setObservaciones('')
+  }
+
+  const iniciarEdicionVenta = async (ventaId) => {
+    setError(null)
+    setSuccessMessage(null)
+    const { data, error: err } = await getVentaRapidaById(ventaId)
+    if (err || !data) {
+      setError(err?.message || 'No se pudo cargar la venta')
+      return
+    }
+    const items = data.items || []
+    if (items.length !== 1) {
+      setError(
+        'Esta venta tiene varios productos. Editála desde el menú Ventas (formulario POS).'
+      )
+      return
+    }
+    const codigo = String(items[0].productos?.codigo_barras || '').trim()
+    if (codigo !== String(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA).trim()) {
+      setError(
+        'Solo podés editar aquí ventas del producto genérico de venta rápida. Las demás se editan en Ventas.'
+      )
+      return
+    }
+    setEdicionVenta({
+      id: data.id,
+      fecha_hora: data.fecha_hora,
+      facturacion: data.facturacion ?? null,
+      numero_ticket: data.numero_ticket,
+    })
+    setTotal(String(parseFloat(data.total) || 0))
+    setTotalEditando(false)
+    setTotalValorRaw('')
+    const cid = data.cliente_id
+    if (cid && data.clientes) {
+      setClienteSeleccionado({
+        id: cid,
+        nombre: data.clientes.nombre,
+        email: data.clientes.email,
+      })
+      setClienteSearch(data.clientes.nombre || '')
+    } else {
+      setClienteSeleccionado(null)
+      setClienteSearch('')
+    }
+    setObservaciones(data.observaciones || '')
+    setFilasPago(ventaDetalleToFilasPago(data))
+    setEditingPagoIdx(null)
+    setPagoMontoRaw('')
+    setTimeout(() => {
+      document.getElementById('venta-rapida-card-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 150)
+  }
+
+  const cancelarEdicionVenta = () => {
+    limpiarFormularioVentaRapida()
+    setError(null)
+  }
 
   // Abrir caja con desglose efectivo / virtual / crédito / otros
   const handleAbrirCaja = async () => {
@@ -330,11 +470,23 @@ function VentasRapidas() {
       return
     }
 
-    const montoPagadoNum = parseFloat(parsearMoneda(montoPagado))
-    if (montoPagadoNum < 0) {
-      setError('El monto pagado no puede ser negativo')
+    let sumPagado = 0
+    for (const row of filasPago) {
+      sumPagado += montoCuentaParaCobro(row)
+    }
+
+    if (sumPagado > totalNum + 0.02) {
+      setError('La suma de los montos pagados no puede superar el total de la venta.')
       return
     }
+
+    const pagosPayload = filasPago
+      .map((row) => ({
+        metodo_pago: row.metodo_pago,
+        monto_pagado: Math.max(0, parseFloat(parsearMoneda(row.monto)) || 0),
+        fecha_pago: new Date().toISOString(),
+      }))
+      .filter((p) => p.metodo_pago && p.metodo_pago !== 'pendiente' && p.monto_pagado > 0)
 
     if (!estadoCaja?.cajaAbierta) {
       setError('Debes abrir la caja antes de registrar una venta')
@@ -355,38 +507,31 @@ function VentasRapidas() {
 
     setSaving(true)
 
+    const eraEdicion = Boolean(edicionVenta?.id)
+
     const ventaData = {
       cliente_id: clienteSeleccionado?.id || null,
-      fecha_hora: new Date().toISOString(),
+      fecha_hora: edicionVenta?.fecha_hora || new Date().toISOString(),
       total: totalNum,
-      metodo_pago: metodoPago,
-      monto_pagado: montoPagadoNum,
+      pagos: pagosPayload,
       observaciones: observaciones.trim() || null,
       producto_id: productoVentaRapida.id,
+      facturacion: edicionVenta?.facturacion ?? null,
     }
 
-    const { error: err } = await createVentaRapida(ventaData)
+    const { error: err } = eraEdicion
+      ? await updateVentaRapida(edicionVenta.id, ventaData)
+      : await createVentaRapida(ventaData)
 
     if (err) {
-      setError(err.message || 'Error al registrar la venta')
+      setError(err.message || (eraEdicion ? 'Error al actualizar la venta' : 'Error al registrar la venta'))
       setSaving(false)
       return
     }
 
-    // Limpiar formulario (incluir estados de edición para que al enviar con Enter también se limpien los campos)
-    setClienteSeleccionado(null)
-    setClienteSearch('')
-    setTotal('0')
-    setTotalEditando(false)
-    setTotalValorRaw('')
-    setMontoPagado('0')
-    setMontoPagadoEditando(false)
-    setMontoPagadoValorRaw('')
-    setMontoPagadoManual(false)
-    setMetodoPago('efectivo')
-    setObservaciones('')
-    
-    setSuccessMessage('Venta registrada correctamente')
+    limpiarFormularioVentaRapida()
+
+    setSuccessMessage(eraEdicion ? 'Venta actualizada correctamente' : 'Venta registrada correctamente')
     await loadVentasRapidas()
     await loadEstadoCaja()
     setSaving(false)
@@ -534,8 +679,27 @@ function VentasRapidas() {
         </div>
 
         {/* Sección de Formulario de Venta */}
-        <Card style={{ marginTop: '1.5rem' }}>
-          <h2>Cargar Venta (F2)</h2>
+        <Card id="venta-rapida-card-form" style={{ marginTop: '1.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+            <h2 style={{ margin: 0 }}>{edicionVenta ? 'Editar venta rápida' : 'Cargar Venta (F2)'}</h2>
+            {edicionVenta && (
+              <Button type="button" variant="outline" size="sm" onClick={cancelarEdicionVenta}>
+                Cancelar edición
+              </Button>
+            )}
+          </div>
+          {edicionVenta && (
+            <div className="venta-rapida-edicion-banner" role="status">
+              Editando venta
+              {edicionVenta.numero_ticket ? (
+                <>
+                  {' '}
+                  — Ticket <strong>{edicionVenta.numero_ticket}</strong>
+                </>
+              ) : null}
+              . Los cambios reemplazan ítems y pagos de esta venta.
+            </div>
+          )}
           <form onSubmit={handleRegistrarVenta}>
             <div className="venta-rapida-form">
               <div className="form-row venta-rapida-producto-row">
@@ -671,71 +835,102 @@ function VentasRapidas() {
                     />
                 </div>
 
-                <div className="form-col">
-                  <label className="form-label" htmlFor="venta-rapida-metodo-pago">
-                    Forma de Pago
-                  </label>
-                  <select
-                    id="venta-rapida-metodo-pago"
-                    name="venta_rapida_metodo_pago"
-                    className="form-control"
-                    autoComplete="off"
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                  >
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia</option>
-                    <option value="qr">QR</option>
-                    <option value="debito">Débito</option>
-                    <option value="credito">Crédito</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="otro">Otro método</option>
-                  </select>
-                </div>
+              </div>
 
-                <div className="form-col">
-                  <label className="form-label" htmlFor="venta-rapida-monto-pagado">
-                    $Pagado
-                  </label>
-                  <input
-                    id="venta-rapida-monto-pagado"
-                    type="text"
-                    name="venta_rapida_monto_pagado"
-                    className="form-control"
-                    autoComplete="off"
-                    inputMode="decimal"
-                    value={montoPagadoEditando ? montoPagadoValorRaw : formatearNumeroMoneda(montoPagado)}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        // Permitir números, puntos, comas y símbolo $
-                        if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                          setMontoPagadoEditando(true)
-                          setMontoPagadoManual(true)
-                          setMontoPagadoValorRaw(valor)
-                          // Actualizar el estado montoPagado con el valor parseado
-                          const valorParseado = parsearMoneda(valor)
-                          setMontoPagado(valorParseado)
-                        }
-                      }}
-                      onFocus={(e) => {
-                        setMontoPagadoEditando(true)
-                        setMontoPagadoManual(true)
-                        // Mostrar el valor sin formato cuando se enfoca
-                        const valorSinFormato = parsearMoneda(e.target.value)
-                        setMontoPagadoValorRaw(valorSinFormato)
-                      }}
-                      onBlur={(e) => {
-                        const valor = parsearMoneda(e.target.value)
-                        setMontoPagado(valor)
-                        setMontoPagadoEditando(false)
-                        setMontoPagadoValorRaw('')
-                        // NO resetear montoPagadoManual aquí - mantenerlo en true para respetar el valor manual
-                        // montoPagadoManual se reseteará solo cuando el usuario cambie $Total y quiera sincronizar
-                      }}
-                      placeholder="$0,00"
-                      required
-                    />
+              <div className="venta-rapida-pagos-section">
+                <span className="form-label" id="venta-rapida-pagos-label">
+                  Pagos (varios métodos como en Ventas)
+                </span>
+                <p className="venta-rapida-pagos-hint text-secondary" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0.75rem' }}>
+                  Saldo: lo que queda por cobrar antes de cada fila. Las filas «Pendiente» no suman al cobrado; si no cargás pagos o el total cobrado es menor al total, la venta queda en estado DEBE.
+                </p>
+                <div className="venta-rapida-pagos-grid" role="group" aria-labelledby="venta-rapida-pagos-label">
+                  <div className="venta-rapida-pagos-head venta-rapida-pagos-row">
+                    <span className="venta-rapida-pagos-cell venta-rapida-pagos-cell--saldo">Saldo</span>
+                    <span className="venta-rapida-pagos-cell">Forma de pago</span>
+                    <span className="venta-rapida-pagos-cell">$Pagado</span>
+                    <span className="venta-rapida-pagos-cell venta-rapida-pagos-cell--accion" aria-hidden />
+                  </div>
+                  {filasPago.map((row, idx) => (
+                    <div key={row.key} className="venta-rapida-pagos-row">
+                      <div
+                        className="venta-rapida-pagos-cell venta-rapida-pagos-cell--saldo venta-rapida-saldo-readonly"
+                        title="Saldo pendiente antes de aplicar esta fila"
+                      >
+                        {formatearMoneda(String(saldoAntesDeFila(idx)))}
+                      </div>
+                      <div className="venta-rapida-pagos-cell">
+                        <select
+                          id={`venta-rapida-metodo-${row.key}`}
+                          name={`venta_rapida_metodo_pago_${idx}`}
+                          className="form-control"
+                          autoComplete="off"
+                          aria-label={`Forma de pago, fila ${idx + 1}`}
+                          value={row.metodo_pago}
+                          onChange={(e) => actualizarFilaPago(idx, { metodo_pago: e.target.value })}
+                        >
+                          {METODOS_PAGO_OPCIONES.map(([val, label]) => (
+                            <option key={val} value={val}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="venta-rapida-pagos-cell">
+                        <input
+                          id={`venta-rapida-monto-${row.key}`}
+                          type="text"
+                          name={`venta_rapida_monto_pagado_${idx}`}
+                          className="form-control"
+                          autoComplete="off"
+                          inputMode="decimal"
+                          aria-label={`Monto pagado, fila ${idx + 1}`}
+                          placeholder="$0,00"
+                          value={
+                            editingPagoIdx === idx ? pagoMontoRaw : formatearNumeroMoneda(row.monto)
+                          }
+                          onChange={(e) => {
+                            const valor = e.target.value
+                            if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                              setPagoMontoRaw(valor)
+                              const valorParseado = parsearMoneda(valor === '' ? '0' : valor)
+                              actualizarFilaPago(idx, { monto: valorParseado })
+                            }
+                          }}
+                          onFocus={() => {
+                            setEditingPagoIdx(idx)
+                            const raw = parsearMoneda(row.monto)
+                            setPagoMontoRaw(raw === '0' ? '' : raw)
+                          }}
+                          onBlur={() => {
+                            let valor = pagoMontoRaw
+                            if (!valor || valor.trim() === '' || valor === '$') valor = '0'
+                            else valor = parsearMoneda(valor)
+                            actualizarFilaPago(idx, { monto: valor })
+                            setEditingPagoIdx(null)
+                            setPagoMontoRaw('')
+                          }}
+                        />
+                      </div>
+                      <div className="venta-rapida-pagos-cell venta-rapida-pagos-cell--accion">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={filasPago.length <= 1}
+                          onClick={() => quitarFilaPago(idx)}
+                          title={filasPago.length <= 1 ? 'Debe haber al menos una fila' : 'Quitar fila'}
+                        >
+                          Quitar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '0.75rem' }}>
+                  <Button type="button" variant="outline" size="sm" onClick={agregarFilaPago}>
+                    + Agregar forma de pago
+                  </Button>
                 </div>
               </div>
 
@@ -761,7 +956,7 @@ function VentasRapidas() {
                             : undefined
                     }
                   >
-                    Registrar Venta
+                    {edicionVenta ? 'Guardar cambios' : 'Registrar Venta'}
                   </Button>
                   {!estadoCaja?.cajaAbierta && !loadingProducto && productoVentaRapida?.id && (
                     <p className="venta-rapida-aviso-caja" role="status">
@@ -879,7 +1074,9 @@ function VentasRapidas() {
                 <thead>
                   <tr>
                     <th>Fecha y Hora</th>
-                    <th>$Total</th>
+                    <th className="ventas-rapidas-th-num">$Total</th>
+                    <th className="ventas-rapidas-th-num">$ Pagado</th>
+                    <th className="ventas-rapidas-th-num">$ Pendiente</th>
                     <th>Forma de Pago</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -889,7 +1086,14 @@ function VentasRapidas() {
                   {ventasRapidas.map((venta) => (
                     <tr key={venta.id}>
                       <td>{formatearFechaHora(venta.fecha_hora)}</td>
-                      <td>{formatearMoneda(venta.total)}</td>
+                      <td className="ventas-rapidas-td-num">{formatearMoneda(venta.total)}</td>
+                      <td className="ventas-rapidas-td-num">{formatearMoneda(venta.monto_pagado)}</td>
+                      <td className="ventas-rapidas-td-num">
+                        {formatearMoneda(
+                          venta.monto_pendiente ??
+                            Math.max(0, Number(venta.total || 0) - Number(venta.monto_pagado || 0))
+                        )}
+                      </td>
                       <td>{venta.metodo_pago}</td>
                       <td>
                         <Badge variant={venta.estado === 'PAGADO' ? 'success' : 'warning'}>
@@ -899,6 +1103,7 @@ function VentasRapidas() {
                       <td>
                         <VentasRapidasActionsMenu
                           ventaRapidaId={venta.id}
+                          onEditar={iniciarEdicionVenta}
                           onDelete={() => {
                             setVentaRapidaToDelete(venta)
                             setShowDeleteVentaRapidaModal(true)
