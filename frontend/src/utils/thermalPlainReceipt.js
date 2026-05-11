@@ -7,9 +7,10 @@ export const DEFAULT_THERMAL_COLS = 42
 /** Compatibilidad con importaciones antiguas. */
 export const DEFAULT_VENTA_TICKET_COLS = DEFAULT_THERMAL_COLS
 
-/** Guiones ~5 caracteres más cortos que cols para no pasarse del ancho del rollo. */
+/** Línea divisoria de exactamente `cols` caracteres (mismo ancho que filas e importes). */
 export function thermalDash(cols = DEFAULT_THERMAL_COLS) {
-  return '-'.repeat(Math.max(26, cols - 5))
+  const n = Math.max(1, cols)
+  return '-'.repeat(n)
 }
 
 /**
@@ -51,16 +52,68 @@ function wrapGreedyChars(text, maxLen) {
   return lines.length ? lines : [t]
 }
 
+/**
+ * Igual que wrapGreedyChars, pero une la última línea con la anterior si queda
+ * muy corta (evita "tiene" solo en una línea, etc.).
+ */
+function wrapGreedyMergeOrphans(text, maxLen, minTail = 10) {
+  const lines = [...wrapGreedyChars(text, maxLen)]
+  while (lines.length >= 2) {
+    const last = lines[lines.length - 1]
+    if (last.length >= minTail) break
+    const prev = lines[lines.length - 2]
+    const merged = `${prev} ${last}`.replace(/\s+/g, ' ').trim()
+    if (merged.length <= maxLen) {
+      lines[lines.length - 2] = merged
+      lines.pop()
+    } else break
+  }
+  return lines
+}
+
+/** Celda alineada a la izquierda (relleno a la derecha), ancho fijo. */
+function thermalCellRpad(text, w) {
+  const t = String(text ?? '')
+  const c = t.length > w ? t.slice(0, w) : t
+  return c + ' '.repeat(Math.max(0, w - c.length))
+}
+
+/** Celda alineada a la derecha (relleno a la izquierda), ancho fijo. */
+function thermalCellLpad(text, w) {
+  const t = String(text ?? '')
+  const c = t.length > w ? t.slice(0, w) : t
+  return ' '.repeat(Math.max(0, w - c.length)) + c
+}
+
+/** Anchos columnas ítems venta: PROD. + UN. + $UN. + $TOT. = cols */
+function ventaItemsColumnWidths(cols = DEFAULT_THERMAL_COLS) {
+  if (cols >= 42) {
+    return { wP: 17, wQ: 4, wU: 11, wT: 10 }
+  }
+  const wQ = Math.min(8, Math.max(5, Math.floor(cols * 0.22)))
+  const wU = Math.max(7, Math.floor((cols - wQ) * 0.34))
+  const wT = Math.max(7, Math.floor((cols - wQ) * 0.34))
+  const wP = Math.max(8, cols - wQ - wU - wT)
+  return { wP, wQ, wU, wT }
+}
+
 export function thermalCenterParagraph(text, cols = DEFAULT_THERMAL_COLS) {
   return wrapGreedyChars(String(text ?? '').trim(), cols).map((ln) => thermalCenterLine(ln, cols))
 }
 
 export function thermalDetailLine(leftWithoutAmount, amountStr, cols = DEFAULT_THERMAL_COLS) {
-  const L = leftWithoutAmount.trimEnd()
-  const R = String(amountStr)
+  const R = String(amountStr ?? '').trim()
+  let L = String(leftWithoutAmount ?? '').trimEnd()
+  if (R.length > cols) {
+    return R.slice(0, cols)
+  }
+  const maxLeft = cols - R.length - 1
+  if (L.length > maxLeft) {
+    if (maxLeft < 1) return R.padStart(cols)
+    L = L.slice(0, maxLeft)
+  }
   const gap = cols - L.length - R.length
-  if (gap >= 1) return `${L}${' '.repeat(gap)}${R}`
-  return `${L}\n${R.padStart(cols)}`
+  return `${L}${' '.repeat(Math.max(0, gap))}${R}`
 }
 
 export function plainLabelLines(label, value, cols = DEFAULT_THERMAL_COLS) {
@@ -77,13 +130,17 @@ export function plainLabelLines(label, value, cols = DEFAULT_THERMAL_COLS) {
 export function thermalFooterStandard(cols = DEFAULT_THERMAL_COLS, { email = null } = {}) {
   const lines = []
   lines.push('')
-  lines.push(...thermalCenterParagraph('¡Gracias por su compra!', cols))
+  lines.push(...thermalCenterParagraph('¡GRACIAS POR SU COMPRA!', cols))
   if (email) {
     lines.push('')
     lines.push(...thermalCenterParagraph(email, cols))
   }
   lines.push('')
-  lines.push(...thermalCenterParagraph('Este ticket no es una factura ni tiene validez fiscal.', cols))
+  lines.push(
+    ...wrapGreedyMergeOrphans('Este ticket no es una factura, ni tiene validez fiscal.', cols).map((ln) =>
+      thermalCenterLine(ln, cols)
+    )
+  )
   lines.push('')
   lines.push(...thermalCenterParagraph('Solo es un comprobante de venta.', cols))
   lines.push('')
@@ -125,38 +182,61 @@ export function buildVentaThermalPlainText({
 }) {
   if (!venta) return ''
 
+  const { wP, wQ, wU, wT } = ventaItemsColumnWidths(cols)
   const lines = []
   lines.push('')
   pushCenteredNombreComercio(lines, comercio, cols)
   lines.push(thermalDash(cols))
   pushDatosComercio(lines, comercio, cols)
 
-  lines.push(...plainLabelLines('Ticket N°', venta.numero_ticket || '-', cols))
+  lines.push(...plainLabelLines('Boleto N°', venta.numero_ticket || '-', cols))
   lines.push(...plainLabelLines('Fecha', formatearFechaHoraTicket(venta.fecha_hora), cols))
   if (venta.facturacion) lines.push(...plainLabelLines('Factura', venta.facturacion, cols))
   if (venta.clientes?.nombre) lines.push(...plainLabelLines('Cliente', venta.clientes.nombre, cols))
   lines.push('')
+  lines.push(thermalDash(cols))
+
+  lines.push(
+    thermalCellRpad('PROD.', wP) +
+      thermalCellLpad('UN.', wQ) +
+      thermalCellLpad('$UN.', wU) +
+      thermalCellLpad('$TOT.', wT)
+  )
+  lines.push(thermalDash(cols))
 
   ;(venta.items || []).forEach((it) => {
-    wrapGreedyChars(String(it.productos?.nombre || '-'), cols).forEach((ln) => lines.push(ln))
-    let detalle = `${it.cantidad} x ${formatearMoneda(it.precio_unitario)}`
-    if ((it.descuento || 0) > 0) detalle += ` -${Number(it.descuento)}%`
-    lines.push(thermalDetailLine(detalle, formatearMoneda(it.subtotal), cols))
-    lines.push('')
+    let nameBase = String(it.productos?.nombre || '-').trim()
+    if ((it.descuento || 0) > 0) nameBase += ` (-${Number(it.descuento)}%)`
+    const wrapLines = nameBase.length ? wrapGreedyChars(nameBase, wP) : ['-']
+    const unitStr = formatearMoneda(it.precio_unitario)
+    const totStr = formatearMoneda(it.subtotal)
+    const qtyStr = String(it.cantidad ?? '')
+    wrapLines.forEach((nameLine, lineIdx) => {
+      if (lineIdx === 0) {
+        lines.push(
+          thermalCellRpad(nameLine, wP) +
+            thermalCellLpad(qtyStr, wQ) +
+            thermalCellLpad(unitStr, wU) +
+            thermalCellLpad(totStr, wT)
+        )
+      } else {
+        lines.push(thermalCellRpad(nameLine, wP) + ' '.repeat(wQ + wU + wT))
+      }
+    })
   })
 
-  lines.push(...plainLabelLines('Subtotal', formatearMoneda(venta.subtotal ?? venta.total), cols))
-
-  if (Number(venta.monto_deuda) > 0) {
-    lines.push(...plainLabelLines('Pagado', formatearMoneda(venta.monto_pagado), cols))
-    lines.push(...plainLabelLines('Saldo', formatearMoneda(venta.monto_deuda), cols))
+  if (!(venta.items || []).length) {
+    lines.push(thermalCellRpad('Sin ítems', wP))
   }
 
-  lines.push(...plainLabelLines('TOTAL', formatearMoneda(venta.total), cols))
+  lines.push(thermalDash(cols))
+  lines.push(thermalDetailLine('TOTAL VENTA', formatearMoneda(venta.total), cols))
 
   if ((venta.pagos || []).length > 0) {
     lines.push('')
-    lines.push('Formas de Pago:')
+    lines.push('')
+    lines.push(thermalDetailLine('FORMA PAGO', '', cols))
+    lines.push(thermalDash(cols))
     ;(venta.pagos || []).forEach((p) => {
       lines.push(
         thermalDetailLine(
@@ -166,6 +246,12 @@ export function buildVentaThermalPlainText({
         )
       )
     })
+    lines.push(thermalDash(cols))
+  }
+
+  lines.push(thermalDetailLine('TOTAL PAGADO', formatearMoneda(venta.monto_pagado ?? 0), cols))
+  if (Number(venta.monto_deuda) > 0.01) {
+    lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(venta.monto_deuda), cols))
   }
 
   lines.push(...thermalFooterStandard(cols, { email: comercio?.email }))
@@ -181,55 +267,29 @@ export function buildVentaRapidaThermalPlainText({
 }) {
   if (!ventaRapida) return ''
 
-  const lines = []
-  lines.push('')
-  pushCenteredNombreComercio(lines, comercio, cols)
-  lines.push(thermalDash(cols))
-  pushDatosComercio(lines, comercio, cols)
-
-  lines.push(...plainLabelLines('Boleto N°', ventaRapida.ventas?.numero_ticket || '-', cols))
-  lines.push(...plainLabelLines('Fecha', formatearFechaHoraTicket(ventaRapida.fecha_hora), cols))
-  if (ventaRapida.clientes?.nombre) {
-    lines.push(...plainLabelLines('Cliente', ventaRapida.clientes.nombre, cols))
-  }
-  lines.push('')
-
-  lines.push(
-    thermalDetailLine('Total parcial:', formatearMoneda(ventaRapida.total), cols)
-  )
-
-  if (ventaRapida?.monto_pagado > 0) {
-    lines.push(...plainLabelLines('Pagado', formatearMoneda(ventaRapida.monto_pagado), cols))
-  }
-  if (
-    ventaRapida.estado === 'DEBE' &&
-    ventaRapida.total - ventaRapida.monto_pagado > 0.01
-  ) {
-    lines.push(
-      ...plainLabelLines(
-        'Saldo',
-        formatearMoneda(ventaRapida.total - ventaRapida.monto_pagado),
-        cols
-      )
-    )
+  const venta = {
+    numero_ticket: ventaRapida.numero_ticket ?? ventaRapida.ventas?.numero_ticket,
+    fecha_hora: ventaRapida.fecha_hora,
+    facturacion: ventaRapida.facturacion ?? null,
+    clientes: ventaRapida.clientes,
+    total: ventaRapida.total,
+    subtotal: ventaRapida.subtotal ?? ventaRapida.total,
+    monto_pagado: ventaRapida.monto_pagado,
+    monto_deuda:
+      ventaRapida.monto_deuda ??
+      ventaRapida.ventas?.monto_deuda ??
+      Math.max(0, Number(ventaRapida.total || 0) - Number(ventaRapida.monto_pagado || 0)),
+    items: ventaRapida.items || [],
+    pagos: ventaRapida.pagos || [],
   }
 
-  lines.push(thermalDetailLine('TOTAL:', formatearMoneda(ventaRapida.total), cols))
-
-  if (ventaRapida.metodo_pago) {
-    lines.push('')
-    lines.push('Formas de Pago:')
-    lines.push(
-      thermalDetailLine(
-        String(ventaRapida.metodo_pago).trimEnd(),
-        formatearMoneda(ventaRapida.monto_pagado),
-        cols
-      )
-    )
-  }
-
-  lines.push(...thermalFooterStandard(cols, { email: comercio?.email }))
-  return lines.join('\n')
+  return buildVentaThermalPlainText({
+    venta,
+    comercio,
+    formatearMoneda,
+    formatearFechaHoraTicket,
+    cols,
+  })
 }
 
 export function buildCompraThermalPlainText({
