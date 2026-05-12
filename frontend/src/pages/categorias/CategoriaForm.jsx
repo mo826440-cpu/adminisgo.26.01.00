@@ -161,18 +161,6 @@ function CategoriaForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Categoría' : 'Nueva Categoría'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información de la categoría' : 'Completa los datos de la nueva categoría'}
-            </p>
-          </div>
-          <Link to="/categorias">
-            <Button variant="outline">← Volver a Categorías</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

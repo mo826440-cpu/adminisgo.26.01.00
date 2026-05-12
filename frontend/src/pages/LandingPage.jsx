@@ -1,4 +1,4 @@
-// Landing Page - Página de Inicio
+// Landing pública (visitantes / registro incompleto) — la navegación por módulos está en /inicio dentro del sistema
 import { useEffect, useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
@@ -18,14 +18,17 @@ function LandingPage() {
     sinAccesoNingunModulo,
   } = useAuthContext()
   const [verificandoComercio, setVerificandoComercio] = useState(false)
+  const [tieneComercio, setTieneComercio] = useState(null)
 
   useEffect(() => {
-    // Si hay errores de autenticación en la URL, redirigir a /auth/callback para manejarlos
+    document.title = 'AdminisGo · Inicio'
+  }, [])
+
+  useEffect(() => {
     const errorParam = searchParams.get('error')
     const errorCode = searchParams.get('error_code')
-    
+
     if (errorParam || errorCode) {
-      // Construir URL con todos los parámetros de error
       const params = new URLSearchParams()
       if (errorParam) params.set('error', errorParam)
       if (errorCode) params.set('error_code', errorCode)
@@ -33,64 +36,59 @@ function LandingPage() {
       if (errorDescription) params.set('error_description', errorDescription)
       const email = searchParams.get('email')
       if (email) params.set('email', email)
-      
+
       navigate(`/auth/callback?${params.toString()}`, { replace: true })
       return
     }
 
     const verificarYRedirigir = async () => {
-      // Si está cargando la autenticación, esperar
       if (authLoading || loadingPermisos) return
 
-      // Solo redirigir automáticamente si está autenticado Y tiene comercio
-      // Si está autenticado pero NO tiene comercio, mostrar la landing page
-      // (el usuario puede continuar con el registro desde ahí)
       if (isAuthenticated) {
         setVerificandoComercio(true)
         try {
           const { data: comercio } = await getComercio()
-          
+          setTieneComercio(!!comercio)
+
           if (comercio) {
             const dest = firstNavigatePath('/')
             if (dest !== '/') {
               navigate(dest, { replace: true })
             }
           }
-          // Si no tiene comercio, NO redirigir - mostrar la landing page
         } catch (err) {
-          // Error al verificar, no redirigir - mostrar la landing page
           console.error('Error al verificar comercio:', err)
+          setTieneComercio(false)
         } finally {
           setVerificandoComercio(false)
         }
+      } else {
+        setTieneComercio(null)
       }
     }
 
     verificarYRedirigir()
   }, [isAuthenticated, authLoading, loadingPermisos, navigate, searchParams, firstNavigatePath])
 
-  // Mostrar spinner mientras verifica (incluye permisos para no mostrar CTA incorrecta)
-  if (authLoading || verificandoComercio || (isAuthenticated && loadingPermisos)) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-secondary)'
-      }}>
-        <Spinner size="lg" />
-      </div>
-    )
-  }
-
-  // Si está autenticado y tiene comercio, el useEffect ya redirigió
-  // Si está autenticado pero no tiene comercio, mostrar la landing page
-  // con opciones para continuar el registro
-
   const handleCerrarSesionSinAcceso = async () => {
     await signOut()
     navigate('/', { replace: true })
+  }
+
+  if (authLoading || verificandoComercio || (isAuthenticated && loadingPermisos)) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'var(--bg-secondary)',
+        }}
+      >
+        <Spinner size="lg" />
+      </div>
+    )
   }
 
   return (
@@ -102,41 +100,37 @@ function LandingPage() {
             al menos un permiso para tu rol en <strong>Usuarios → Permisos por rol</strong>. Si cerrás sesión podés
             volver a intentar cuando esté resuelto.
           </Alert>
+          <div className="landing-cta" style={{ justifyContent: 'center', marginTop: '1rem' }}>
+            <Button type="button" variant="outline" size="lg" onClick={() => void handleCerrarSesionSinAcceso()}>
+              Cerrar sesión
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Hero Section */}
       <section className="landing-hero">
         <div className="landing-container">
           <div className="landing-hero-content">
-            <h1 className="landing-title">
-              Adminis Go
-            </h1>
-            <p className="landing-subtitle">
-              Sistema integral de gestión para tu comercio
-            </p>
+            <h1 className="landing-title">AdminisGo</h1>
+            <p className="landing-subtitle">Sistema integral de gestión para tu comercio</p>
             <p className="landing-description">
-              Gestiona ventas, inventario, compras y clientes desde una sola plataforma.
-              Simple, rápido y accesible desde cualquier dispositivo.
+              Gestión de ventas, inventario, compras y clientes en una sola plataforma. Simple, rápido y desde cualquier
+              dispositivo.
             </p>
             <div className="landing-cta">
               {isAuthenticated ? (
-                sinAccesoNingunModulo ? (
-                  <Button type="button" variant="outline" size="lg" onClick={() => void handleCerrarSesionSinAcceso()}>
-                    Cerrar sesión
-                  </Button>
-                ) : (
+                tieneComercio === false && !sinAccesoNingunModulo ? (
                   <Link to="/auth/select-plan" className="btn btn-primary btn-lg">
-                    Continuar con el Registro
+                    Continuar con el registro
                   </Link>
-                )
+                ) : null
               ) : (
                 <>
                   <Link to="/auth/register" className="btn btn-primary btn-lg">
-                    Comenzar Gratis
+                    Comenzar gratis
                   </Link>
                   <Link to="/auth/login" className="btn btn-outline btn-lg">
-                    Iniciar Sesión
+                    Iniciar sesión
                   </Link>
                 </>
               )}
@@ -145,141 +139,67 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="landing-features">
         <div className="landing-container">
-          <h2 className="landing-section-title">Todo lo que necesitas para gestionar tu negocio</h2>
+          <h2 className="landing-section-title">Funciones principales</h2>
           <div className="landing-features-grid">
             <div className="landing-feature-card">
               <div className="landing-feature-icon">💰</div>
-              <h3>Punto de Venta (POS)</h3>
-              <p>Procesa ventas rápidamente con nuestro sistema de punto de venta intuitivo y eficiente.</p>
+              <h3>Punto de venta</h3>
+              <p>Ventas rápidas con POS y cobros con varios medios de pago.</p>
             </div>
             <div className="landing-feature-card">
               <div className="landing-feature-icon">📦</div>
-              <h3>Gestión de Inventario</h3>
-              <p>Controla tu stock en tiempo real, recibe alertas de productos con stock bajo.</p>
+              <h3>Inventario</h3>
+              <p>Productos, stock y alertas para no quedarte sin mercadería.</p>
             </div>
             <div className="landing-feature-card">
               <div className="landing-feature-icon">🛒</div>
-              <h3>Gestión de Compras</h3>
-              <p>Administra tus órdenes de compra, proveedores y pagos de manera organizada.</p>
+              <h3>Compras</h3>
+              <p>Órdenes a proveedores y seguimiento de pagos.</p>
             </div>
             <div className="landing-feature-card">
               <div className="landing-feature-icon">👥</div>
-              <h3>CRM de Clientes</h3>
-              <p>Mantén un registro completo de tus clientes y su historial de compras.</p>
+              <h3>Clientes</h3>
+              <p>Base de clientes y seguimiento comercial.</p>
             </div>
             <div className="landing-feature-card">
               <div className="landing-feature-icon">📊</div>
-              <h3>Reportes y Analytics</h3>
-              <p>Visualiza el rendimiento de tu negocio con reportes detallados y métricas clave.</p>
+              <h3>Reportes</h3>
+              <p>Indicadores para decidir con datos.</p>
             </div>
             <div className="landing-feature-card">
               <div className="landing-feature-icon">📱</div>
-              <h3>Multiplataforma</h3>
-              <p>Accede desde cualquier dispositivo. Funciona en web, móvil y como app instalable (PWA).</p>
+              <h3>En la nube</h3>
+              <p>Acceso web responsive; podés instalarla como PWA.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Plans Section */}
-      <section className="landing-plans">
-        <div className="landing-container">
-          <h2 className="landing-section-title">Elige el plan que mejor se adapte a tu negocio</h2>
-          <div className="landing-plans-grid">
-            <div className="landing-plan-card">
-              <h3>Plan Gratuito</h3>
-              <div className="landing-plan-price">$0<span>/mes</span></div>
-              <ul className="landing-plan-features">
-                <li>✓ 1 usuario</li>
-                <li>✓ 400 ventas mensuales</li>
-                <li>✓ 3 meses de prueba gratis</li>
-                <li>✓ Funciones básicas</li>
-              </ul>
-              {isAuthenticated ? (
-                <Link to="/auth/select-plan" className="btn btn-outline btn-block">
-                  Continuar Registro
-                </Link>
-              ) : (
-                <Link to="/auth/register" className="btn btn-outline btn-block">
-                  Comenzar Gratis
-                </Link>
-              )}
-            </div>
-            <div className="landing-plan-card landing-plan-featured">
-              <div className="landing-plan-badge">Más Popular</div>
-              <h3>Plan Pago</h3>
-              <div className="landing-plan-price">$25.000,00<span>/mes</span></div>
-              <div className="landing-plan-price-alt">o $250.000,00/año</div>
-              <ul className="landing-plan-features">
-                <li>✓ 1 usuario principal</li>
-                <li>✓ Hasta 10 usuarios adicionales</li>
-                <li>✓ Ventas ilimitadas</li>
-                <li>✓ Compras ilimitadas</li>
-                <li>✓ Productos ilimitados</li>
-                <li>✓ Soporte prioritario</li>
-              </ul>
-              {isAuthenticated ? (
-                <Link to="/auth/select-plan" className="btn btn-primary btn-block">
-                  Continuar Registro
-                </Link>
-              ) : (
-                <Link to="/auth/register" className="btn btn-primary btn-block">
-                  Comenzar Ahora
-                </Link>
-              )}
-            </div>
-            <div className="landing-plan-card">
-              <h3>Plan Personalizado</h3>
-              <div className="landing-plan-price">A medida</div>
-              <ul className="landing-plan-features">
-                <li>✓ Para negocios grandes</li>
-                <li>✓ Usuarios ilimitados</li>
-                <li>✓ Registros ilimitados</li>
-                <li>✓ Reunión personalizada</li>
-                <li>✓ Soporte dedicado</li>
-              </ul>
-              {isAuthenticated ? (
-                <Link to="/auth/select-plan" className="btn btn-outline btn-block">
-                  Continuar Registro
-                </Link>
-              ) : (
-                <Link to="/auth/register" className="btn btn-outline btn-block">
-                  Solicitar Información
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
       <section className="landing-cta-section">
         <div className="landing-container">
           <h2>¿Listo para comenzar?</h2>
-          <p>Únete a cientos de comercios que ya están gestionando su negocio con Adminis Go</p>
+          <p>Creá tu cuenta o ingresá para abrir el panel de navegación en AdminisGo.</p>
           <div className="landing-cta">
-            {isAuthenticated ? (
-              <Link to="/auth/select-plan" className="btn btn-primary btn-lg">
-                Continuar con el Registro
-              </Link>
-            ) : (
+            {!isAuthenticated ? (
               <>
                 <Link to="/auth/register" className="btn btn-primary btn-lg">
-                  Crear Cuenta Gratis
+                  Crear cuenta
                 </Link>
                 <Link to="/auth/login" className="btn btn-outline btn-lg">
                   Ya tengo cuenta
                 </Link>
               </>
-            )}
+            ) : tieneComercio === false && !sinAccesoNingunModulo ? (
+              <Link to="/auth/select-plan" className="btn btn-primary btn-lg">
+                Completar datos del comercio
+              </Link>
+            ) : null}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="landing-footer">
         <div className="landing-container">
           <div className="landing-footer-links">
@@ -287,7 +207,7 @@ function LandingPage() {
             <span className="landing-footer-sep">·</span>
             <Link to="/privacidad">Política de Privacidad</Link>
           </div>
-          <p>&copy; 2026 Adminis Go. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} AdminisGo. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>
@@ -295,4 +215,3 @@ function LandingPage() {
 }
 
 export default LandingPage
-

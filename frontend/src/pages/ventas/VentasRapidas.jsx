@@ -40,6 +40,17 @@ function nuevaFilaPago() {
   }
 }
 
+/** Misma ventana por defecto que el listado de Ventas (últimos 3 meses hasta hoy). */
+function ymdRangoUltimos3Meses() {
+  const ahora = new Date()
+  const d = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
+  const pad = (n) => String(n).padStart(2, '0')
+  return {
+    desde: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    hasta: `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`,
+  }
+}
+
 function VentasRapidas() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -97,6 +108,14 @@ function VentasRapidas() {
   const [ventaRapidaToDelete, setVentaRapidaToDelete] = useState(null)
   const [showDeleteVentaRapidaModal, setShowDeleteVentaRapidaModal] = useState(false)
   const [deletingVentaRapida, setDeletingVentaRapida] = useState(false)
+  const [mostrarFiltrosRegistro, setMostrarFiltrosRegistro] = useState(false)
+  const [filtroRegistroClienteId, setFiltroRegistroClienteId] = useState('')
+  const [filtroRegistroEstado, setFiltroRegistroEstado] = useState('')
+
+  /** Paneles principales colapsables (prioridad: tabla de registros a la vista). */
+  const [panelCajaAbierto, setPanelCajaAbierto] = useState(false)
+  const [panelFormAbierto, setPanelFormAbierto] = useState(false)
+  const [panelFiltrosAbierto, setPanelFiltrosAbierto] = useState(false)
 
   // Formatear moneda
   const formatearMoneda = (valor) => {
@@ -165,14 +184,32 @@ function VentasRapidas() {
       fechaHasta = filtroFechaHasta ? `${filtroFechaHasta}T23:59:59` : null
     }
     
-    const { data, error: err } = await getVentasRapidas(fechaDesde, fechaHasta)
+    const { data, error: err } = await getVentasRapidas(fechaDesde, fechaHasta, {
+      clienteId: filtroRegistroClienteId || null,
+      estadoPago: filtroRegistroEstado || null,
+    })
     if (err) {
       console.error('Error al cargar ventas rápidas:', err)
     } else {
       setVentasRapidas(data || [])
     }
     setLoadingVentas(false)
-  }, [estadoCaja, filtroFechaDesde, filtroFechaHasta, usarFiltroAutomatico])
+  }, [
+    estadoCaja,
+    filtroFechaDesde,
+    filtroFechaHasta,
+    usarFiltroAutomatico,
+    filtroRegistroClienteId,
+    filtroRegistroEstado,
+  ])
+
+  const aplicarRangoUltimos3MesesComoVentas = useCallback(() => {
+    const { desde, hasta } = ymdRangoUltimos3Meses()
+    setUsarFiltroAutomatico(false)
+    setFiltroFechaDesde(desde)
+    setFiltroFechaHasta(hasta)
+    setMostrarFiltrosRegistro(true)
+  }, [])
 
   useEffect(() => {
     loadEstadoCaja()
@@ -185,6 +222,10 @@ function VentasRapidas() {
       loadVentasRapidas()
     }
   }, [loadVentasRapidas])
+
+  useEffect(() => {
+    if (edicionVenta) setPanelFormAbierto(true)
+  }, [edicionVenta])
 
   // Filtrar clientes para autocompletado
   useEffect(() => {
@@ -235,11 +276,38 @@ function VentasRapidas() {
     return Math.max(0, parseFloat(parsearMoneda(row.monto)) || 0)
   }
 
-  const saldoAntesDeFila = (idx) => {
-    const totalNum = parseFloat(parsearMoneda(total)) || 0
+  const totalNumeroNoNegativo = (totalStr) =>
+    Math.max(0, parseFloat(parsearMoneda(totalStr)) || 0)
+
+  const saldoAntesDeFilaEnFilas = (rows, totalStr, idx) => {
+    const totalNum = totalNumeroNoNegativo(totalStr)
     let acum = 0
-    for (let j = 0; j < idx; j++) acum += montoCuentaParaCobro(filasPago[j])
+    for (let j = 0; j < idx; j++) acum += montoCuentaParaCobro(rows[j])
     return Math.max(0, totalNum - acum)
+  }
+
+  const saldoAntesDeFila = (idx) => saldoAntesDeFilaEnFilas(filasPago, total, idx)
+
+  /**
+   * Al cambiar $Total: refleja el mismo importe en la primera fila que cuenta como cobro
+   * y recorta filas siguientes para que la suma no supere el total (misma regla que el saldo).
+   */
+  const mirrorFilasPagoAlTotal = (prevFilas, totalStr) => {
+    const totalNum = totalNumeroNoNegativo(totalStr)
+    const mirrorIdx = prevFilas.findIndex((r) => r.metodo_pago !== 'pendiente')
+    if (mirrorIdx < 0) return prevFilas
+    const next = prevFilas.map((r) => ({ ...r }))
+    next[mirrorIdx] = { ...next[mirrorIdx], monto: String(totalNum) }
+    let acum = 0
+    for (let i = 0; i < next.length; i++) {
+      if (next[i].metodo_pago === 'pendiente') continue
+      const saldo = Math.max(0, totalNum - acum)
+      let m = Math.max(0, parseFloat(parsearMoneda(next[i].monto)) || 0)
+      m = Math.min(m, saldo)
+      next[i] = { ...next[i], monto: String(m) }
+      acum += m
+    }
+    return next
   }
 
   const agregarFilaPago = () => {
@@ -293,12 +361,20 @@ function VentasRapidas() {
     setObservaciones('')
   }
 
+  const scrollVentasRapidasMensajes = () => {
+    requestAnimationFrame(() => {
+      document.getElementById('ventas-rapidas-mensajes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
   const iniciarEdicionVenta = async (ventaId) => {
     setError(null)
     setSuccessMessage(null)
-    const { data, error: err } = await getVentaRapidaById(ventaId)
+    const id = Number(ventaId)
+    const { data, error: err } = await getVentaRapidaById(Number.isFinite(id) ? id : ventaId)
     if (err || !data) {
       setError(err?.message || 'No se pudo cargar la venta')
+      scrollVentasRapidasMensajes()
       return
     }
     const items = data.items || []
@@ -306,6 +382,7 @@ function VentasRapidas() {
       setError(
         'Esta venta tiene varios productos. Editála desde el menú Ventas (formulario POS).'
       )
+      scrollVentasRapidasMensajes()
       return
     }
     const codigo = String(items[0].productos?.codigo_barras || '').trim()
@@ -313,6 +390,7 @@ function VentasRapidas() {
       setError(
         'Solo podés editar aquí ventas del producto genérico de venta rápida. Las demás se editan en Ventas.'
       )
+      scrollVentasRapidasMensajes()
       return
     }
     setEdicionVenta({
@@ -545,9 +623,11 @@ function VentasRapidas() {
   if (loadingCaja) {
     return (
       <Layout>
-        <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Spinner size="lg" />
-          <p style={{ marginTop: '1rem' }}>Cargando...</p>
+        <div className="container">
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <Spinner size="lg" />
+            <p style={{ marginTop: '1rem' }}>Cargando...</p>
+          </div>
         </div>
       </Layout>
     )
@@ -555,32 +635,44 @@ function VentasRapidas() {
 
   return (
     <Layout>
-      <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Ventas Rápidas</h1>
-            <p className="text-secondary">Gestión de caja y ventas rápidas</p>
-          </div>
-          <Link to="/ventas">
-            <Button variant="outline">← Volver a Ventas</Button>
-          </Link>
+      <div className="container ventas-rapidas-page">
+        <div id="ventas-rapidas-mensajes">
+          {error && (
+            <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
+              {successMessage}
+            </Alert>
+          )}
         </div>
 
-        {error && (
-          <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {successMessage && (
-          <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
-            {successMessage}
-          </Alert>
-        )}
-
-        {/* Sección de Gestión de Caja */}
-        <div className="ventas-rapidas-caja-section">
-          <Card>
+        {/* Gestión de caja (colapsable) */}
+        <section className="vr-glass-disclosure" aria-label="Gestión de caja">
+          <button
+            type="button"
+            className="vr-glass-disclosure__trigger"
+            aria-expanded={panelCajaAbierto}
+            onClick={() => setPanelCajaAbierto((v) => !v)}
+          >
+            <span className="vr-glass-disclosure__chevron" aria-hidden>
+              <i className={`bi bi-chevron-${panelCajaAbierto ? 'up' : 'down'}`} />
+            </span>
+            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
+              <i className="bi bi-cash-stack" />
+            </span>
+            <span className="vr-glass-disclosure__label">
+              <span className="vr-glass-disclosure__title">Gestión de caja</span>
+              <span className="vr-glass-disclosure__subtitle">Apertura, cierre e indicadores</span>
+            </span>
+          </button>
+          {panelCajaAbierto ? (
+            <div className="vr-glass-disclosure__body">
+              <div className="ventas-rapidas-caja-section">
+                <Card>
             <div className="caja-header">
               <h2>Gestión de Caja</h2>
               <div className="caja-buttons">
@@ -675,11 +767,37 @@ function VentasRapidas() {
                 </div>
               ) : null}
             </div>
-          </Card>
-        </div>
+                </Card>
+              </div>
+            </div>
+          ) : null}
+        </section>
 
-        {/* Sección de Formulario de Venta */}
-        <Card id="venta-rapida-card-form" style={{ marginTop: '1.5rem' }}>
+        <section className="vr-glass-disclosure" aria-label="Registrar o editar venta rápida">
+          <button
+            type="button"
+            className="vr-glass-disclosure__trigger"
+            aria-expanded={panelFormAbierto}
+            onClick={() => setPanelFormAbierto((v) => !v)}
+          >
+            <span className="vr-glass-disclosure__chevron" aria-hidden>
+              <i className={`bi bi-chevron-${panelFormAbierto ? 'up' : 'down'}`} />
+            </span>
+            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
+              <i className="bi bi-receipt-cutoff" />
+            </span>
+            <span className="vr-glass-disclosure__label">
+              <span className="vr-glass-disclosure__title">
+                {edicionVenta ? 'Editar venta rápida' : 'Nueva venta rápida'}
+              </span>
+              <span className="vr-glass-disclosure__subtitle">
+                {edicionVenta ? 'Modificá pagos y total' : 'Atajo de teclado F2'}
+              </span>
+            </span>
+          </button>
+          {panelFormAbierto ? (
+            <div className="vr-glass-disclosure__body">
+              <Card id="venta-rapida-card-form">
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
             <h2 style={{ margin: 0 }}>{edicionVenta ? 'Editar venta rápida' : 'Cargar Venta (F2)'}</h2>
             {edicionVenta && (
@@ -806,9 +924,14 @@ function VentasRapidas() {
                         if (/^[\d.,$]*$/.test(valor) || valor === '') {
                           setTotalEditando(true)
                           setTotalValorRaw(valor)
-                          // Actualizar el estado total con el valor parseado
-                          const valorParseado = parsearMoneda(valor)
-                          setTotal(valorParseado)
+                          const valorParseado = parsearMoneda(valor === '' ? '0' : valor)
+                          const totalClamped = String(totalNumeroNoNegativo(valorParseado))
+                          setTotal(totalClamped)
+                          setFilasPago((prev) => mirrorFilasPagoAlTotal(prev, totalClamped))
+                          const mirrorIdx = filasPago.findIndex((r) => r.metodo_pago !== 'pendiente')
+                          if (mirrorIdx >= 0 && editingPagoIdx === mirrorIdx) {
+                            setPagoMontoRaw(totalClamped === '0' ? '' : totalClamped)
+                          }
                         }
                       }}
                       onFocus={(e) => {
@@ -825,7 +948,16 @@ function VentasRapidas() {
                         } else {
                           valor = parsearMoneda(valor)
                         }
-                        setTotal(valor)
+                        const totalClamped = String(totalNumeroNoNegativo(valor))
+                        const prevNum = totalNumeroNoNegativo(total)
+                        const nextNum = totalNumeroNoNegativo(totalClamped)
+                        setTotal(totalClamped)
+                        // Solo redistribuir pagos cuando el total cambió (p. ej. al editar el importe).
+                        // Si solo hubo blur sin cambio — típico al pasar del Total en foco a otro campo —
+                        // mirrorFilasPagoAlTotal pondría todo en la 1.ª fila no pendiente y anularía el resto.
+                        if (Math.abs(prevNum - nextNum) > 0.009) {
+                          setFilasPago((prev) => mirrorFilasPagoAlTotal(prev, totalClamped))
+                        }
                         setTotalEditando(false)
                         setTotalValorRaw('')
                       }}
@@ -892,9 +1024,16 @@ function VentasRapidas() {
                           onChange={(e) => {
                             const valor = e.target.value
                             if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                              setPagoMontoRaw(valor)
-                              const valorParseado = parsearMoneda(valor === '' ? '0' : valor)
-                              actualizarFilaPago(idx, { monto: valorParseado })
+                              const parsed = Math.max(
+                                0,
+                                parseFloat(parsearMoneda(valor === '' ? '0' : valor)) || 0
+                              )
+                              const saldo = saldoAntesDeFilaEnFilas(filasPago, total, idx)
+                              const capped = Math.min(parsed, saldo)
+                              setPagoMontoRaw(
+                                valor === '' ? '' : capped === parsed ? valor : String(capped)
+                              )
+                              actualizarFilaPago(idx, { monto: String(capped) })
                             }
                           }}
                           onFocus={() => {
@@ -903,10 +1042,17 @@ function VentasRapidas() {
                             setPagoMontoRaw(raw === '0' ? '' : raw)
                           }}
                           onBlur={() => {
-                            let valor = pagoMontoRaw
-                            if (!valor || valor.trim() === '' || valor === '$') valor = '0'
-                            else valor = parsearMoneda(valor)
-                            actualizarFilaPago(idx, { monto: valor })
+                            setFilasPago((prev) => {
+                              let valor = pagoMontoRaw
+                              if (!valor || valor.trim() === '' || valor === '$') valor = '0'
+                              else valor = parsearMoneda(valor)
+                              let parsed = Math.max(0, parseFloat(valor) || 0)
+                              const saldo = saldoAntesDeFilaEnFilas(prev, total, idx)
+                              parsed = Math.min(parsed, saldo)
+                              return prev.map((r, i) =>
+                                i === idx ? { ...r, monto: String(parsed) } : r
+                              )
+                            })
                             setEditingPagoIdx(null)
                             setPagoMontoRaw('')
                           }}
@@ -952,7 +1098,7 @@ function VentasRapidas() {
                         : !productoVentaRapida?.id
                           ? 'No hay producto activo con el código de venta rápida. Creá o activá el producto en Referencias.'
                           : !estadoCaja?.cajaAbierta
-                            ? 'Primero abrí la caja con el botón «Abrir Caja» arriba (sin caja abierta no se pueden registrar ventas rápidas).'
+                            ? 'Abrí la caja desde el panel «Gestión de caja» (sin caja abierta no se pueden registrar ventas rápidas).'
                             : undefined
                     }
                   >
@@ -960,51 +1106,147 @@ function VentasRapidas() {
                   </Button>
                   {!estadoCaja?.cajaAbierta && !loadingProducto && productoVentaRapida?.id && (
                     <p className="venta-rapida-aviso-caja" role="status">
-                      Abrí la caja desde «Gestión de Caja» para poder registrar ventas.
+                      Abrí la caja desde el panel «Gestión de caja» (etiqueta superior) para poder registrar ventas.
                     </p>
                   )}
                 </div>
               </div>
             </div>
           </form>
-        </Card>
+              </Card>
+            </div>
+          ) : null}
+        </section>
 
-        {/* Tabla de Registros de Ventas Rápidas */}
-        <Card style={{ marginTop: '1.5rem' }}>
-          <div className="section-label">SECCIÓN</div>
-          <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS RAPIDAS</h3>
-
-          {/* Filtros de fecha */}
-          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {/* Filtros del listado (colapsable, aparte de la tabla) */}
+        <section className="vr-glass-disclosure" aria-label="Filtros de registros">
+          <button
+            type="button"
+            className="vr-glass-disclosure__trigger"
+            aria-expanded={panelFiltrosAbierto}
+            onClick={() => setPanelFiltrosAbierto((v) => !v)}
+          >
+            <span className="vr-glass-disclosure__chevron" aria-hidden>
+              <i className={`bi bi-chevron-${panelFiltrosAbierto ? 'up' : 'down'}`} />
+            </span>
+            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
+              <i className="bi bi-funnel" />
+            </span>
+            <span className="vr-glass-disclosure__label">
+              <span className="vr-glass-disclosure__title">Filtros de registros</span>
+              <span className="vr-glass-disclosure__subtitle">Caja actual, cliente, fechas y estado</span>
+            </span>
+          </button>
+          {panelFiltrosAbierto ? (
+            <div className="vr-glass-disclosure__body">
+              <div className="ventas-rapidas-registros-filtros">
+            <div className="ventas-rapidas-registros-filtros__row">
+              <div className="ventas-rapidas-registros-filtros__caja-check">
                 <input
                   type="checkbox"
                   id="filtro-automatico"
                   name="ventas_rapidas_filtro_desde_apertura_caja"
                   checked={usarFiltroAutomatico}
                   onChange={(e) => {
-                    setUsarFiltroAutomatico(e.target.checked)
-                    if (e.target.checked) {
+                    const on = e.target.checked
+                    setUsarFiltroAutomatico(on)
+                    if (on) {
                       setFiltroFechaDesde('')
                       setFiltroFechaHasta('')
+                    } else {
+                      setMostrarFiltrosRegistro(true)
                     }
                   }}
                 />
-                <label htmlFor="filtro-automatico" style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                <label htmlFor="filtro-automatico" className="ventas-rapidas-registros-filtros__caja-label">
                   Filtrar desde última apertura de caja
                 </label>
               </div>
-              
-              {!usarFiltroAutomatico && (
-                <>
-                  <div style={{ flex: 1, minWidth: '150px' }}>
-                    <label
-                      className="form-label"
-                      htmlFor="ventas-rapidas-fecha-desde"
-                      style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}
+              <button
+                type="button"
+                className={`ventas-rapidas-filtro-panel-toggle${
+                  mostrarFiltrosRegistro ||
+                  filtroRegistroClienteId ||
+                  filtroRegistroEstado ||
+                  (!usarFiltroAutomatico && (filtroFechaDesde || filtroFechaHasta))
+                    ? ' ventas-rapidas-filtro-panel-toggle--active'
+                    : ''
+                }`}
+                onClick={() => setMostrarFiltrosRegistro((v) => !v)}
+                aria-expanded={mostrarFiltrosRegistro}
+                aria-controls="ventas-rapidas-filtros-panel"
+                id="ventas-rapidas-filtros-panel-trigger"
+              >
+                <i className="bi bi-funnel-fill" aria-hidden />
+                <span>Filtros</span>
+              </button>
+            </div>
+
+            {usarFiltroAutomatico && estadoCaja?.inicioCaja && (
+              <div className="ventas-rapidas-registros-filtros__hint-block">
+                <p className="ventas-rapidas-registros-filtros__hint">
+                  <strong>Solo ventas de la caja actual:</strong> se listan únicamente las operaciones con fecha y hora
+                  posteriores a {formatearFechaHora(estadoCaja.inicioCaja.fecha_hora)}.
+                  {filtroRegistroClienteId
+                    ? ' Por eso, si filtrás por un cliente, pueden aparecer menos filas que en el menú Ventas.'
+                    : ' En el menú Ventas, por defecto se muestran los últimos 3 meses hasta hoy.'}
+                </p>
+                <button
+                  type="button"
+                  className="ventas-rapidas-rango-como-ventas-btn"
+                  onClick={aplicarRangoUltimos3MesesComoVentas}
+                >
+                  Usar últimos 3 meses (mismo criterio que Ventas)
+                </button>
+              </div>
+            )}
+
+            {mostrarFiltrosRegistro && (
+              <div
+                id="ventas-rapidas-filtros-panel"
+                className="ventas-rapidas-filtros-panel"
+                role="region"
+                aria-labelledby="ventas-rapidas-filtros-panel-trigger"
+              >
+                <div className="ventas-rapidas-filtros-panel__grid">
+                  <div>
+                    <label className="form-label" htmlFor="ventas-rapidas-filtro-cliente">
+                      Cliente
+                    </label>
+                    <select
+                      id="ventas-rapidas-filtro-cliente"
+                      name="ventas_rapidas_filtro_cliente"
+                      className="form-control"
+                      value={filtroRegistroClienteId}
+                      onChange={(e) => setFiltroRegistroClienteId(e.target.value)}
                     >
-                      Fecha Desde
+                      <option value="">Todos los clientes</option>
+                      {clientes.map((c) => (
+                        <option key={c.id} value={String(c.id)}>
+                          {c.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="ventas-rapidas-filtro-estado">
+                      Estado
+                    </label>
+                    <select
+                      id="ventas-rapidas-filtro-estado"
+                      name="ventas_rapidas_filtro_estado"
+                      className="form-control"
+                      value={filtroRegistroEstado}
+                      onChange={(e) => setFiltroRegistroEstado(e.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      <option value="PAGADO">PAGADO</option>
+                      <option value="DEBE">DEBE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="ventas-rapidas-fecha-desde">
+                      Fecha desde
                     </label>
                     <input
                       id="ventas-rapidas-fecha-desde"
@@ -1012,19 +1254,14 @@ function VentasRapidas() {
                       type="date"
                       className="form-control"
                       autoComplete="off"
+                      disabled={usarFiltroAutomatico}
                       value={filtroFechaDesde}
                       onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                      style={{ fontSize: '0.9rem' }}
                     />
                   </div>
-                  
-                  <div style={{ flex: 1, minWidth: '150px' }}>
-                    <label
-                      className="form-label"
-                      htmlFor="ventas-rapidas-fecha-hasta"
-                      style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}
-                    >
-                      Fecha Hasta
+                  <div>
+                    <label className="form-label" htmlFor="ventas-rapidas-fecha-hasta">
+                      Fecha hasta
                     </label>
                     <input
                       id="ventas-rapidas-fecha-hasta"
@@ -1032,45 +1269,59 @@ function VentasRapidas() {
                       type="date"
                       className="form-control"
                       autoComplete="off"
+                      disabled={usarFiltroAutomatico}
                       value={filtroFechaHasta}
                       onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                      style={{ fontSize: '0.9rem' }}
                     />
                   </div>
-                  
+                </div>
+                {usarFiltroAutomatico && (
+                  <p className="ventas-rapidas-filtros-panel__nota">
+                    Para filtrar por rango de fechas, desactivá «Filtrar desde última apertura de caja» arriba.
+                  </p>
+                )}
+                <div className="ventas-rapidas-filtros-panel__acciones">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      setFiltroRegistroClienteId('')
+                      setFiltroRegistroEstado('')
                       setFiltroFechaDesde('')
                       setFiltroFechaHasta('')
+                      setUsarFiltroAutomatico(true)
                     }}
-                    disabled={!filtroFechaDesde && !filtroFechaHasta}
                   >
-                    Limpiar Filtros
+                    Limpiar filtros
                   </Button>
-                </>
-              )}
-            </div>
-            
-            {usarFiltroAutomatico && estadoCaja?.inicioCaja && (
-              <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                Mostrando ventas desde: {formatearFechaHora(estadoCaja.inicioCaja.fecha_hora)}
+                </div>
               </div>
             )}
-          </div>
-          
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <Card style={{ marginTop: '1.5rem' }}>
+          <div className="section-label">SECCIÓN</div>
+          <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS RAPIDAS</h3>
+
           {loadingVentas ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <Spinner />
             </div>
           ) : ventasRapidas.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-              No hay ventas rápidas registradas
+              {filtroRegistroClienteId ||
+              filtroRegistroEstado ||
+              (!usarFiltroAutomatico && (filtroFechaDesde || filtroFechaHasta))
+                ? 'No hay ventas que coincidan con los filtros aplicados.'
+                : 'No hay ventas rápidas registradas'}
             </p>
           ) : (
-            <div className="table-container">
-              <table className="table">
+            <div className="ventas-rapidas-registros-scroll table-container">
+              <table className="table ventas-rapidas-registros-table table-sticky-header">
                 <thead>
                   <tr>
                     <th>Fecha y Hora</th>

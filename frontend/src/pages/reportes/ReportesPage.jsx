@@ -43,16 +43,6 @@ function ReportesPage() {
   return (
     <Layout>
       <div className="container reportes-page">
-        <div className="page-header">
-          <div>
-            <div className="section-label">SECCIÓN</div>
-            <h1 className="registros-seccion-titulo reportes-page-title">Módulo de informes</h1>
-            <p className="text-secondary reportes-page-subtitle">
-              Consultá reportes por área de tu negocio.
-            </p>
-          </div>
-        </div>
-
         <Card className="reportes-card">
           <div
             className="reportes-tabs"

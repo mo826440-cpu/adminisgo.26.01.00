@@ -577,13 +577,7 @@ function POS() {
   return (
     <Layout>
       <div className="container">
-        <div className="pos-header">
-          <div>
-            <h1>{isEditing ? 'Editar Venta' : 'Formulario Registrar Venta'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica los datos de la venta' : 'Completa los datos para registrar una nueva venta'}
-            </p>
-          </div>
+        <div className="page-header page-header--actions-only">
           <Button variant="outline" onClick={handleCancelarVenta}>
             Cancelar Venta
           </Button>

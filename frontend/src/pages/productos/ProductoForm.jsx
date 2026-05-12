@@ -259,18 +259,6 @@ function ProductoForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Producto' : 'Nuevo Producto'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información del producto' : 'Completa los datos del nuevo producto'}
-            </p>
-          </div>
-          <Link to="/productos">
-            <Button variant="outline">← Volver a Productos</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

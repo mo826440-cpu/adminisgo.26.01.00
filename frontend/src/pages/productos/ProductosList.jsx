@@ -119,18 +119,6 @@ function ProductosList() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Productos</h1>
-            <p className="text-secondary">Gestiona tu catálogo de productos</p>
-          </div>
-          <Link to="/productos/nuevo">
-            <Button variant="primary">
-              + Nuevo Producto
-            </Button>
-          </Link>
-        </div>
-
         {successMessage && (
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}

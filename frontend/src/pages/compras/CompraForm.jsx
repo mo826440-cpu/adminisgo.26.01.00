@@ -514,18 +514,6 @@ function CompraForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Orden de Compra' : 'Nueva Orden de Compra'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información de la orden de compra' : 'Completa los datos de la nueva orden de compra'}
-            </p>
-          </div>
-          <Link to="/compras">
-            <Button variant="outline">← Volver a Compras</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

@@ -336,3 +336,289 @@
   }
 }
 
+/* Filtros del listado de registros (caja + panel) */
+.ventas-rapidas-registros-filtros {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.ventas-rapidas-registros-filtros__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.ventas-rapidas-registros-filtros__caja-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.ventas-rapidas-registros-filtros__caja-label {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin: 0;
+  cursor: pointer;
+}
+
+.ventas-rapidas-registros-filtros__hint-block {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+}
+
+.ventas-rapidas-registros-filtros__hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ventas-rapidas-rango-como-ventas-btn {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.ventas-rapidas-rango-como-ventas-btn:hover {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--text-primary);
+}
+
+.ventas-rapidas-filtro-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ventas-rapidas-filtro-panel-toggle:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.ventas-rapidas-filtro-panel-toggle--active {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.ventas-rapidas-filtros-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  animation: ventasRapidasFiltrosPanelIn 0.2s ease-out;
+}
+
+@keyframes ventasRapidasFiltrosPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ventas-rapidas-filtros-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.ventas-rapidas-filtros-panel__nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ventas-rapidas-filtros-panel__acciones {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Registros: scroll interno + thead fijo (evita overflow:hidden global de .table) */
+#ventas-rapidas-mensajes {
+  scroll-margin-top: 5.5rem;
+}
+
+.ventas-rapidas-registros-scroll {
+  margin-top: 1rem;
+  max-height: min(70vh, 36rem);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table {
+  overflow: visible !important;
+  margin-bottom: 0;
+}
+
+.ventas-rapidas-registros-scroll .table.table-sticky-header {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.ventas-rapidas-registros-scroll .table.table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bg-tertiary) !important;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .ventas-rapidas-registros-scroll .table.table-sticky-header thead th {
+  background: var(--bg-secondary) !important;
+}
+
+/* Etiquetas colapsables (lenguaje glass alineado con ModuleGlassPageHeader) */
+.ventas-rapidas-page .vr-glass-disclosure {
+  margin-bottom: 0.85rem;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.06));
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__trigger:hover {
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12);
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__trigger:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 1.75rem;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__chevron .bi {
+  font-size: 1.1rem;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__iconWrap {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--color-primary);
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__iconWrap .bi {
+  font-size: 1.15rem;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.ventas-rapidas-page .vr-glass-disclosure__body {
+  margin-top: 0.65rem;
+  padding-bottom: 0.15rem;
+  animation: vrGlassDisclosureIn 0.2s ease-out;
+}
+
+@keyframes vrGlassDisclosureIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-theme='dark'] .ventas-rapidas-page .vr-glass-disclosure__trigger {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 24px -12px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='dark'] .ventas-rapidas-page .vr-glass-disclosure__iconWrap {
+  background: rgba(24, 24, 27, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #a5f3fc;
+}

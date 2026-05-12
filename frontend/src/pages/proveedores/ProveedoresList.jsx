@@ -85,18 +85,6 @@ function ProveedoresList() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Proveedores</h1>
-            <p className="text-secondary">Gestiona tus proveedores</p>
-          </div>
-          <Link to="/proveedores/nuevo">
-            <Button variant="primary">
-              + Nuevo Proveedor
-            </Button>
-          </Link>
-        </div>
-
         {successMessage && (
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}

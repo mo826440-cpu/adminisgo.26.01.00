@@ -83,18 +83,6 @@ function CategoriasList() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Categorías</h1>
-            <p className="text-secondary">Gestiona las categorías de productos</p>
-          </div>
-          <Link to="/categorias/nuevo">
-            <Button variant="primary">
-              + Nueva Categoría
-            </Button>
-          </Link>
-        </div>
-
         {successMessage && (
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}

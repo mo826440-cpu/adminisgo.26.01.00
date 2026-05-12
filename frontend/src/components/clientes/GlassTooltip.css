@@ -1,0 +1,93 @@
+/* Tooltip glassmorphism — clientes y reutilizable */
+.glass-tooltip__anchor {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  cursor: default;
+  outline: none;
+}
+
+.glass-tooltip__anchor--interactive {
+  cursor: help;
+}
+
+.glass-tooltip__panel {
+  position: fixed;
+  z-index: 10850;
+  min-width: 200px;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 0.85rem 1.05rem;
+  border-radius: 14px;
+  background: rgba(12, 18, 36, 0.78);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(34, 211, 238, 0.08);
+  color: rgba(240, 253, 255, 0.95);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0) scale(0.97);
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-tooltip__panel--open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.glass-tooltip__panel[data-placement='top'] {
+  transform-origin: bottom center;
+}
+
+.glass-tooltip__panel[data-placement='bottom'] {
+  transform-origin: top center;
+}
+
+.glass-tooltip__panel--open[data-placement='top'] {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.glass-tooltip__panel--open[data-placement='bottom'] {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.glass-tooltip__title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(165, 243, 252, 0.98);
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.glass-tooltip__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.glass-tooltip__label {
+  flex: 0 0 auto;
+  color: rgba(148, 163, 184, 0.95);
+  min-width: 4.5rem;
+}
+
+.glass-tooltip__value {
+  color: rgba(226, 232, 240, 0.98);
+  word-break: break-word;
+}
+
+.glass-tooltip__deuda-monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fda4af;
+  text-shadow: 0 0 18px rgba(251, 113, 133, 0.35);
+}

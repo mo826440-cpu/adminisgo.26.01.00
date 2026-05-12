@@ -36,8 +36,12 @@ function mapVentaListadoShape(v) {
  * (misma ventana razonable que el listado de ventas). Así no se paginan miles de filas
  * cuando la pantalla abre sin caja ni filtros manuales; si hace falta más historial, usar
  * filtros de fecha en la UI.
+ *
+ * @param {string|null} fechaDesde
+ * @param {string|null} fechaHasta
+ * @param {{ clienteId?: number|string|null, estadoPago?: 'PAGADO'|'DEBE'|null }} [opts]
  */
-export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => {
+export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null, opts = {}) => {
   try {
     let desde = fechaDesde
     let hasta = fechaHasta
@@ -49,6 +53,10 @@ export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => 
       desde = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
       hasta = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T23:59:59`
     }
+
+    const cid = Number(opts.clienteId)
+    const clienteId = Number.isFinite(cid) && cid > 0 ? cid : null
+    const estadoPago = opts.estadoPago === 'PAGADO' || opts.estadoPago === 'DEBE' ? opts.estadoPago : null
 
     const rawChunks = []
     let from = 0
@@ -72,6 +80,9 @@ export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null) => 
 
       if (desde) q = q.gte('fecha_hora', desde)
       if (hasta) q = q.lte('fecha_hora', hasta)
+      if (clienteId) q = q.eq('cliente_id', clienteId)
+      if (estadoPago === 'DEBE') q = q.gt('monto_deuda', 0.009)
+      if (estadoPago === 'PAGADO') q = q.lte('monto_deuda', 0.009)
 
       const { data, error } = await q.range(from, from + PAGE - 1)
       if (error) throw error

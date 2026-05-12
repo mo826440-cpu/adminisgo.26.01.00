@@ -44,10 +44,7 @@ function Configuracion() {
   })
   const [showPasswordModal, setShowPasswordModal] = useState(false)
 
-  // Estados para tema y formato de impresión
-  const [tema, setTema] = useState(() => {
-    return localStorage.getItem('tema') || 'claro'
-  })
+  // Estado para formato de impresión
   const [formatoImpresion, setFormatoImpresion] = useState(() => {
     return localStorage.getItem('formatoImpresion') || 'pos80'
   })
@@ -65,13 +62,7 @@ function Configuracion() {
 
   useEffect(() => {
     loadData()
-    // Aplicar tema al cargar usando data-theme attribute
-    if (tema === 'oscuro') {
-      document.documentElement.setAttribute('data-theme', 'dark')
-    } else {
-      document.documentElement.removeAttribute('data-theme')
-    }
-  }, [tema])
+  }, [])
 
   // Cargar estado de suscripción
   useEffect(() => {
@@ -251,17 +242,6 @@ function Configuracion() {
     }
   }
 
-  const handleTemaChange = (newTema) => {
-    setTema(newTema)
-    localStorage.setItem('tema', newTema)
-    // Aplicar tema usando data-theme attribute (el CSS usa [data-theme="dark"])
-    if (newTema === 'oscuro') {
-      document.documentElement.setAttribute('data-theme', 'dark')
-    } else {
-      document.documentElement.removeAttribute('data-theme')
-    }
-  }
-
   const handleFormatoImpresionChange = (newFormato) => {
     setFormatoImpresion(newFormato)
     localStorage.setItem('formatoImpresion', newFormato)
@@ -301,13 +281,6 @@ function Configuracion() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Configuración</h1>
-            <p className="text-secondary">Gestiona la configuración de tu comercio y perfil</p>
-          </div>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}
@@ -500,29 +473,6 @@ function Configuracion() {
             >
               Cambiar Contraseña
             </Button>
-          </div>
-        </Card>
-
-        {/* Tema */}
-        <Card title="Tema" className="config-section">
-          <div className="theme-section">
-            <p className="text-secondary">Elegí el tema de la aplicación.</p>
-            <div className="theme-options">
-              <button
-                type="button"
-                className={`theme-option ${tema === 'claro' ? 'active' : ''}`}
-                onClick={() => handleTemaChange('claro')}
-              >
-                ☀️ Claro
-              </button>
-              <button
-                type="button"
-                className={`theme-option ${tema === 'oscuro' ? 'active' : ''}`}
-                onClick={() => handleTemaChange('oscuro')}
-              >
-                🌙 Oscuro
-              </button>
-            </div>
           </div>
         </Card>
 

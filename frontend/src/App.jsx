@@ -15,6 +15,9 @@ import LandingPage from './pages/LandingPage'
 import TerminosPublic from './pages/legal/TerminosPublic'
 import PrivacidadPublic from './pages/legal/PrivacidadPublic'
 import Dashboard from './pages/dashboard/Dashboard'
+import InicioLayout from './pages/inicio/InicioLayout'
+import InicioHub from './pages/inicio/InicioHub'
+import InicioReferencias from './pages/inicio/InicioReferencias'
 import ProductosList from './pages/productos/ProductosList'
 import ProductoForm from './pages/productos/ProductoForm'
 import ClientesList from './pages/clientes/ClientesList'
@@ -111,6 +114,17 @@ function App() {
           />
             
             {/* Rutas protegidas */}
+            <Route
+              path="/inicio"
+              element={
+                <ProtectedRoute>
+                  <InicioLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<InicioHub />} />
+              <Route path="referencias" element={<InicioReferencias />} />
+            </Route>
             <Route 
               path="/dashboard" 
               element={

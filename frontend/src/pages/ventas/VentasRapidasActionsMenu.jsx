@@ -17,11 +17,12 @@ function VentasRapidasActionsMenu({ ventaRapidaId, onDelete, onEditar }) {
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      // Fase captura: evita que otro listener de mousedown cierre el menú antes del click del ítem
+      document.addEventListener('click', handleClickOutside, true)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside, true)
     }
   }, [isOpen])
 

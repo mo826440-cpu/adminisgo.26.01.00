@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Aplicar tema guardado al cargar la aplicación
-const temaGuardado = localStorage.getItem('tema')
-if (temaGuardado === 'oscuro') {
-  document.documentElement.setAttribute('data-theme', 'dark')
-} else {
-  document.documentElement.removeAttribute('data-theme')
+// Tema fijo oscuro (sin conmutador a claro por ahora)
+document.documentElement.setAttribute('data-theme', 'dark')
+try {
+  localStorage.removeItem('tema')
+} catch {
+  /* ignore */
 }
 
 // Registrar Service Worker (solo en producción).

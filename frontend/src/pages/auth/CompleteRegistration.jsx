@@ -190,11 +190,6 @@ function CompleteRegistration() {
     <Layout>
       <div className="container" style={{ padding: '2rem 0', maxWidth: '600px', margin: '0 auto' }}>
         <Card>
-          <h1 style={{ marginBottom: '0.5rem', textAlign: 'center' }}>Completar Registro</h1>
-          <p style={{ marginBottom: '2rem', textAlign: 'center', fontSize: 'var(--font-size-small)', color: 'var(--text-secondary)' }}>
-            Paso 3 de 3: Completa los datos de tu comercio
-          </p>
-
           {solicitudEnviada && (
             <Alert variant="success" style={{ marginBottom: '1.5rem' }}>
               ✅ Tu solicitud de plan personalizado ha sido enviada. Nos pondremos en contacto contigo pronto.

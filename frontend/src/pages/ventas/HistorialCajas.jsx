@@ -233,16 +233,6 @@ function HistorialCajas() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Historial de Cajas</h1>
-            <p className="text-secondary">Registro de aperturas y cierres de caja</p>
-          </div>
-          <Link to="/ventas-rapidas">
-            <Button variant="outline">← Volver a Ventas Rápidas</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

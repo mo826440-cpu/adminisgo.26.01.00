@@ -83,18 +83,6 @@ function MarcasList() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Marcas</h1>
-            <p className="text-secondary">Gestiona las marcas de productos</p>
-          </div>
-          <Link to="/marcas/nuevo">
-            <Button variant="primary">
-              + Nueva Marca
-            </Button>
-          </Link>
-        </div>
-
         {successMessage && (
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}

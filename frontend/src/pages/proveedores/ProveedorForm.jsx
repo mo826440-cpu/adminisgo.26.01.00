@@ -222,18 +222,6 @@ function ProveedorForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información del proveedor' : 'Completa los datos del nuevo proveedor'}
-            </p>
-          </div>
-          <Link to="/proveedores">
-            <Button variant="outline">← Volver a Proveedores</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

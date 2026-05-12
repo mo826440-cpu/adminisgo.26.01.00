@@ -161,18 +161,6 @@ function MarcaForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Marca' : 'Nueva Marca'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información de la marca' : 'Completa los datos de la nueva marca'}
-            </p>
-          </div>
-          <Link to="/marcas">
-            <Button variant="outline">← Volver a Marcas</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

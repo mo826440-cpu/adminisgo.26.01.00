@@ -274,14 +274,18 @@ function CompraDetalle() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Detalle de Orden de Compra</h1>
-            <p className="text-secondary">
-              Número de orden: {compra.numero_orden || '-'}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+          Número de orden: {compra.numero_orden || '-'}
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            marginBottom: '1.5rem',
+          }}
+        >
             <Link to="/compras">
               <Button variant="outline">← Volver a Compras</Button>
             </Link>
@@ -304,7 +308,6 @@ function CompraDetalle() {
             >
               Eliminar
             </Button>
-          </div>
         </div>
 
         {error && (

@@ -901,8 +901,9 @@ function Dashboard() {
       <div className="container">
         <div className="dashboard-header">
           <div>
-            <h1>Dashboard</h1>
-            <p className="text-secondary">Bienvenido, {user?.email}</p>
+            <p className="text-secondary" style={{ marginBottom: '0.5rem' }}>
+              Bienvenido, {user?.email}
+            </p>
             <div className="dashboard-clock">
               <span className="clock-label">Fecha y Hora:</span>
               <span className="clock-time">{formatDateTime(currentDateTime, dateFormat, timezone)}</span>

@@ -55,6 +55,15 @@ function Navbar({ onToggleSidebar, sidebarOpen }) {
             />
           </button>
         </div>
+        <Link
+          to="/inicio"
+          className="navbar-home"
+          title="Volver al panel de navegación"
+          aria-label="Panel de inicio"
+        >
+          <i className="bi bi-grid-1x2-fill" aria-hidden />
+          <span>Panel de inicio</span>
+        </Link>
         <div className="navbar-menu">
           {user && (
             <div className="navbar-user">

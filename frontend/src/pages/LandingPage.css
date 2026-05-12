@@ -21,251 +21,112 @@
   text-align: left;
 }
 
-/* Hero Section */
 .landing-hero {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
-  padding: 6rem 0;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark, #4c63d2) 100%);
+  color: #fff;
+  padding: 5rem 0;
   text-align: center;
 }
 
 .landing-hero-content {
-  max-width: 800px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
 .landing-title {
-  font-size: 3.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
 }
 
 .landing-subtitle {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
   opacity: 0.95;
 }
 
 .landing-description {
-  font-size: 1.1rem;
-  margin-bottom: 2.5rem;
-  opacity: 0.9;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  margin: 0 0 2rem;
+  opacity: 0.92;
 }
 
 .landing-cta {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
-.landing-cta .btn {
-  min-width: 180px;
-  padding: 0.875rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: var(--radius-lg);
-  transition: all 0.3s ease;
-}
-
-.landing-cta .btn-primary {
-  background: white;
-  color: #1a1a1a !important; /* Color oscuro para asegurar contraste */
-  border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  font-weight: 600;
-}
-
-.landing-cta .btn-primary:hover {
-  background: rgba(255, 255, 255, 0.95);
-  color: #1a1a1a !important; /* Mantener color oscuro en hover */
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.landing-cta .btn-outline {
-  background: transparent;
-  color: white;
-  border: 2px solid white;
-}
-
-.landing-cta .btn-outline:hover {
-  background: white;
-  color: var(--primary);
-  transform: translateY(-2px);
-}
-
-/* Features Section */
 .landing-features {
-  padding: 5rem 0;
+  padding: 4rem 0;
   background: var(--bg-secondary);
 }
 
 .landing-section-title {
   text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 3rem;
+  font-size: 1.75rem;
+  margin: 0 0 2.5rem;
   color: var(--text-primary);
 }
 
 .landing-features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
 }
 
 .landing-feature-card {
   background: var(--bg-primary);
-  padding: 2rem;
-  border-radius: var(--radius-lg);
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s ease;
-}
-
-.landing-feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.landing-feature-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-feature-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.15rem;
 }
 
 .landing-feature-card p {
+  margin: 0;
   color: var(--text-secondary);
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-/* Plans Section */
-.landing-plans {
-  padding: 5rem 0;
-  background: var(--bg-primary);
+.landing-feature-icon {
+  font-size: 2rem;
 }
 
-.landing-plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
-}
-
-.landing-plan-card {
-  background: var(--bg-secondary);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s ease;
-  position: relative;
-  border: 2px solid transparent;
-}
-
-.landing-plan-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.landing-plan-featured {
-  border-color: var(--primary);
-  background: var(--bg-primary);
-}
-
-.landing-plan-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--primary);
-  color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: var(--radius-full);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.landing-plan-card h3 {
-  font-size: 1.75rem;
-  margin-bottom: 1rem;
-  text-align: center;
-  color: var(--text-primary);
-}
-
-.landing-plan-price {
-  font-size: 2.5rem;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  color: var(--primary);
-}
-
-.landing-plan-price span {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  font-weight: normal;
-}
-
-.landing-plan-price-alt {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-}
-
-.landing-plan-features {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 2rem;
-}
-
-.landing-plan-features li {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.landing-plan-features li:last-child {
-  border-bottom: none;
-}
-
-.landing-plan-card .btn {
-  margin-top: auto;
-}
-
-/* CTA Section */
 .landing-cta-section {
-  padding: 5rem 0;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
+  padding: 4rem 0;
   text-align: center;
+  background: var(--bg-primary);
 }
 
 .landing-cta-section h2 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
 }
 
-.landing-cta-section p {
-  font-size: 1.2rem;
-  margin-bottom: 2.5rem;
-  opacity: 0.9;
-}
-
-/* Footer */
-.landing-footer {
-  background: var(--bg-secondary);
-  padding: 2rem 0;
-  text-align: center;
+.landing-cta-section > .landing-container > p {
+  margin: 0 0 1.75rem;
   color: var(--text-secondary);
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-footer {
+  padding: 2rem 0;
   border-top: 1px solid var(--border-color);
+  text-align: center;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .landing-footer-links {
@@ -273,9 +134,8 @@
 }
 
 .landing-footer-links a {
-  color: var(--primary);
+  color: var(--color-primary);
   text-decoration: none;
-  font-size: var(--font-size-small);
 }
 
 .landing-footer-links a:hover {
@@ -283,152 +143,21 @@
 }
 
 .landing-footer-sep {
-  margin: 0 0.5rem;
-  color: var(--text-secondary);
+  margin: 0 0.35rem;
+  opacity: 0.6;
 }
 
-/* ============================================
-   TEMA CLARO: más contraste en texto y botones
-   (solo cuando NO está activo tema oscuro)
-   ============================================ */
-html:not([data-theme="dark"]) .landing-hero .landing-title {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-html:not([data-theme="dark"]) .landing-hero .landing-subtitle,
-html:not([data-theme="dark"]) .landing-hero .landing-description {
-  color: rgba(255, 255, 255, 0.98);
-}
-
-/* Hero: botones más visibles en tema claro */
-html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-primary {
-  background: #fff;
-  color: #1a1a2e !important;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-outline {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 2px solid #fff;
-}
-html:not([data-theme="dark"]) .landing-hero .landing-cta .btn-outline:hover {
-  background: #fff;
-  color: var(--primary);
-}
-
-/* Features: texto más oscuro y tarjetas con borde visible */
-html:not([data-theme="dark"]) .landing-section-title {
-  color: #1a1a2e;
-}
-html:not([data-theme="dark"]) .landing-feature-card {
-  background: #fff;
-  border: 1px solid #dee2e6;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-html:not([data-theme="dark"]) .landing-feature-card h3 {
-  color: #1a1a2e;
-}
-html:not([data-theme="dark"]) .landing-feature-card p {
-  color: #495057;
-}
-
-/* Planes: tarjetas con borde claro y texto legible */
-html:not([data-theme="dark"]) .landing-plan-card {
-  background: #fff;
-  border: 2px solid #dee2e6;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-html:not([data-theme="dark"]) .landing-plan-featured {
-  border-color: var(--primary);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
-}
-html:not([data-theme="dark"]) .landing-plan-card h3 {
-  color: #1a1a2e;
-}
-html:not([data-theme="dark"]) .landing-plan-price,
-html:not([data-theme="dark"]) .landing-plan-price span {
-  color: var(--primary);
-}
-html:not([data-theme="dark"]) .landing-plan-price-alt {
-  color: #495057;
-}
-html:not([data-theme="dark"]) .landing-plan-features li {
-  color: #212529;
-  border-bottom-color: #e9ecef;
-}
-/* Botones de planes: outline más visible en tema claro */
-html:not([data-theme="dark"]) .landing-plan-card .btn-outline {
-  border: 2px solid var(--primary);
-  color: var(--primary);
-  font-weight: 600;
-}
-html:not([data-theme="dark"]) .landing-plan-card .btn-outline:hover {
-  background: var(--primary);
-  color: #fff;
-}
-html:not([data-theme="dark"]) .landing-plan-card .btn-primary {
-  background: var(--primary);
-  color: #fff !important;
-  border: 2px solid var(--primary);
-  font-weight: 600;
-}
-
-/* CTA final: texto más visible */
-html:not([data-theme="dark"]) .landing-cta-section h2,
-html:not([data-theme="dark"]) .landing-cta-section p {
-  color: #fff;
-  opacity: 1;
-}
-html:not([data-theme="dark"]) .landing-cta-section .btn-primary {
-  background: #fff;
-  color: #1a1a2e !important;
-  border: 2px solid #fff;
-  font-weight: 600;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-html:not([data-theme="dark"]) .landing-cta-section .btn-outline {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 2px solid #fff;
-}
-
-/* Footer: texto más oscuro */
-html:not([data-theme="dark"]) .landing-footer {
-  color: #495057;
-  border-top-color: #dee2e6;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .landing-title {
-    font-size: 2.5rem;
+  .landing-container {
+    padding: 0 1.25rem;
   }
 
-  .landing-subtitle {
-    font-size: 1.25rem;
-  }
-
-  .landing-description {
-    font-size: 1rem;
-  }
-
-  .landing-cta {
-    flex-direction: column;
-    align-items: stretch;
+  .landing-hero {
+    padding: 3.5rem 0;
   }
 
   .landing-cta .btn {
     width: 100%;
-  }
-
-  .landing-features-grid,
-  .landing-plans-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-section-title {
-    font-size: 2rem;
+    justify-content: center;
   }
 }
-

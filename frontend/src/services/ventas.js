@@ -916,3 +916,72 @@ export const getVentaById = async (id) => {
     return { data: null, error }
   }
 }
+
+/**
+ * Suma `monto_deuda` por cliente (ventas no eliminadas, con cliente asignado).
+ * @param {Array<number|string>} clienteIds
+ * @returns {Promise<Map<number, number>>}
+ */
+export const getMapaDeudaPorClienteIds = async (clienteIds) => {
+  const map = new Map()
+  if (!clienteIds?.length) return map
+  const unique = [
+    ...new Set(
+      clienteIds.map((id) => Number(id)).filter((id) => !Number.isNaN(id) && id > 0)
+    ),
+  ]
+  if (unique.length === 0) return map
+  try {
+    const idChunks = chunkIds(unique, 200)
+    for (const part of idChunks) {
+      const rows = await fetchAllQueryPages(
+        () =>
+          supabase
+            .from('ventas')
+            .select('cliente_id, monto_deuda')
+            .in('cliente_id', part)
+            .is('deleted_at', null)
+            .not('cliente_id', 'is', null),
+        SUPABASE_PAGE_SIZE,
+        { interPageDelayMs: 0 }
+      )
+      for (const r of rows || []) {
+        const cid = Number(r.cliente_id)
+        if (!cid) continue
+        const d = parseFloat(r.monto_deuda) || 0
+        map.set(cid, (map.get(cid) || 0) + d)
+      }
+    }
+    return map
+  } catch (error) {
+    console.error('Error al armar mapa de deuda por cliente:', error)
+    return map
+  }
+}
+
+/**
+ * Historial de ventas (movimientos) de un cliente — para listados y exportación.
+ * @param {number|string} clienteId
+ */
+export const getVentasMovimientosPorClienteId = async (clienteId) => {
+  try {
+    if (clienteId == null || clienteId === '') return { data: [], error: null }
+    const ventasBase = await fetchAllQueryPages(
+      () =>
+        supabase
+          .from('ventas')
+          .select(
+            'id, fecha_hora, total, monto_pagado, monto_deuda, numero_ticket, facturacion, observaciones, metodo_pago, estado'
+          )
+          .eq('cliente_id', clienteId)
+          .is('deleted_at', null)
+          .order('fecha_hora', { ascending: false }),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
+    )
+    return { data: ventasBase || [], error: null }
+  } catch (error) {
+    console.error('Error al obtener ventas por cliente:', error)
+    return { data: null, error }
+  }
+}

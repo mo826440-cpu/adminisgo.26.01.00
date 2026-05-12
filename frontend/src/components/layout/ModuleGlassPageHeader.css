@@ -1,0 +1,114 @@
+.module-glass-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin-bottom: 1.25rem;
+  /* Evita que el contenido que pasa por detrás se mezcle demasiado al hacer scroll */
+  background: rgba(10, 10, 14, 0.88) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.55);
+}
+
+.module-glass-page-header__head {
+  align-items: flex-start;
+}
+
+.module-glass-page-header__leftCluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.module-glass-page-header__icon-stack {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.4rem;
+  padding-top: 0.15rem;
+}
+
+.module-glass-page-header__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.65rem;
+  background: rgba(24, 24, 27, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #e4e4e7;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.module-glass-page-header__icon-btn:hover {
+  color: #fff;
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(39, 39, 42, 0.75);
+}
+
+.module-glass-page-header__icon-btn:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+.module-glass-page-header__icon-btn .bi {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.module-glass-page-header__brand {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.module-glass-page-header__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.module-glass-page-header__desc {
+  margin: 0;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.module-glass-page-header__desc-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.module-glass-page-header__toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (max-width: 639px) {
+  .module-glass-page-header__toolbar {
+    width: 100%;
+  }
+
+  .module-glass-page-header__toolbar .btn {
+    width: 100%;
+  }
+}

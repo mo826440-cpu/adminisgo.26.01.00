@@ -1,0 +1,194 @@
+/* Panel de inicio dentro del Layout: bloque oscuro acotado al contenido principal */
+.inicio-app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+
+.inicio-app-scope {
+  position: relative;
+  margin: -1rem -1.5rem 0;
+  padding: 1.25rem 1rem 2rem;
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+}
+
+.inicio-app-scope.lh-root {
+  min-height: 0;
+  background: #050508;
+}
+
+@media (min-width: 769px) {
+  .inicio-app-scope {
+    margin: -1rem -2rem 0;
+    padding: 1.5rem 1.5rem 2rem;
+  }
+}
+
+.inicio-app-scope__glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.inicio-app-scope__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 80rem;
+}
+
+.inicio-app-hero {
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.25rem;
+  border-radius: 1rem;
+}
+
+.inicio-app-hero__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  width: 100%;
+}
+
+.inicio-app-hero__head .lh-brand-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inicio-app-hero__user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.inicio-app-hero__user-email {
+  font-size: 0.8125rem;
+  color: #a1a1aa;
+  max-width: min(100%, 18rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inicio-app-hero__user-logout {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.inicio-app-hero__user-logout:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.inicio-app-hero__subnav {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 639px) {
+  .inicio-app-hero__user-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+.inicio-app-hero__title {
+  font-size: 1.35rem;
+}
+
+@media (min-width: 640px) {
+  .inicio-app-hero__title {
+    font-size: 1.5rem;
+  }
+}
+
+.inicio-app-hero__desc {
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.inicio-app-nav {
+  margin-bottom: 0;
+}
+
+/* Pantalla completa dentro de .layout-main (hub) */
+.inicio-hub-page {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+/* El fondo degradado lo pinta Layout; evitamos tapar los blobs con el sólido de .lh-root */
+.layout-main__content > .inicio-hub-page.lh-root {
+  background: transparent;
+}
+
+.inicio-hub-page__inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+  .inicio-hub-page__inner {
+    padding: 1.25rem 1.5rem 2.5rem;
+  }
+}
+
+.inicio-hub-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #c4b5fd;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.inicio-hub-back-link:hover {
+  color: #e9d5ff;
+}
+
+.inicio-hub-kbd {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #67e8f9;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+}

@@ -1,8 +1,8 @@
 // Página de detalle de venta
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { Link, useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Spinner, Alert, Button, Badge } from '../../components/common'
+import { Card, Spinner, Alert, Badge } from '../../components/common'
 import { getVentaById } from '../../services/ventas'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
@@ -115,15 +115,9 @@ function VentaDetalle() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header" style={{ marginBottom: '1.5rem' }}>
-          <div>
-            <h1>Detalle de Venta</h1>
-            <p className="text-secondary">Ticket: {venta?.numero_ticket || '-'}</p>
-          </div>
-          <Link to="/ventas">
-            <Button variant="outline">← Volver a Ventas</Button>
-          </Link>
-        </div>
+        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+          Ticket: {venta?.numero_ticket || '-'}
+        </p>
 
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>

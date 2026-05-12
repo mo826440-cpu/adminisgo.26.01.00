@@ -1,6 +1,5 @@
 // Matriz de permisos por rol (solo dueño; por comercio)
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert } from '../../components/common'
 import { getRoles } from '../../services/usuarios'
@@ -120,19 +119,10 @@ function RolesPermisosPage() {
   return (
     <Layout>
       <div className="container roles-permisos-page">
-        <div className="page-header roles-permisos-header">
-          <div>
-            <div className="section-label">SECCIÓN</div>
-            <h1 className="registros-seccion-titulo">Permisos por rol</h1>
-            <p className="text-secondary">
-              Definí qué módulos puede usar cada rol en tu comercio. El rol <strong>dueño</strong> siempre tiene
-              acceso total y no se configura aquí.
-            </p>
-          </div>
-          <Link to="/usuarios">
-            <Button variant="outline">Volver a usuarios</Button>
-          </Link>
-        </div>
+        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+          Definí qué módulos puede usar cada rol en tu comercio. El rol <strong>dueño</strong> siempre tiene acceso
+          total y no se configura aquí.
+        </p>
 
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>

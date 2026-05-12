@@ -98,18 +98,10 @@ function UsuarioForm() {
   return (
     <Layout>
       <div className="container usuario-form-container">
-        <div className="page-header">
-          <div>
-            <h1>Invitar usuario</h1>
-            <p className="text-secondary">
-              Se enviará un correo para que el usuario confirme y defina su contraseña. Entrará al mismo comercio con el rol elegido.
-            </p>
-          </div>
-          <Link to="/usuarios">
-            <Button variant="secondary">Volver a usuarios</Button>
-          </Link>
-        </div>
-
+        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+          Se enviará un correo para que el usuario confirme y defina su contraseña. Entrará al mismo comercio con el
+          rol elegido.
+        </p>
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

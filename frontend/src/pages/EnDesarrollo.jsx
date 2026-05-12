@@ -10,7 +10,7 @@ function EnDesarrollo({ modulo = 'Este módulo' }) {
         <Card className="en-desarrollo-card">
           <div className="en-desarrollo-content">
             <div className="en-desarrollo-icon">🚧</div>
-            <h1 className="en-desarrollo-title">{modulo}</h1>
+            <h2 className="en-desarrollo-title">{modulo}</h2>
             <p className="en-desarrollo-message">
               Este módulo se encuentra en desarrollo y estará disponible próximamente.
             </p>

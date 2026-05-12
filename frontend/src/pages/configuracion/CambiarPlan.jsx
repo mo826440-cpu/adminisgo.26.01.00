@@ -205,13 +205,6 @@ function CambiarPlan() {
     <Layout>
       <div className="container" style={{ padding: '2rem 0', maxWidth: '900px', margin: '0 auto' }}>
         <Card>
-          <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ marginBottom: '0.5rem' }}>Cambiar Plan</h1>
-            <p className="text-secondary">
-              Selecciona el plan que mejor se adapte a las necesidades de tu negocio.
-            </p>
-          </div>
-
           {planActual && (
             <Alert variant="info" style={{ marginBottom: '1.5rem' }}>
               <strong>Plan actual:</strong> {getNombrePlan(planActual.tipo)}

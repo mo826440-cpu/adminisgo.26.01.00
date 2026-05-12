@@ -1,6 +1,6 @@
 /* Estilos para Sidebar */
 .sidebar {
-  width: 250px;
+  width: 260px;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   height: calc(100vh - 64px); /* Altura total menos navbar */
@@ -8,6 +8,7 @@
   left: 0;
   top: 64px;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 100;
   transition: transform 0.3s ease;
   transform: translateX(-100%);
@@ -18,81 +19,196 @@
 }
 
 .sidebar-nav {
-  padding: 1rem 0;
+  padding: 0.65rem 0 1rem;
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
-.sidebar-item {
+/* —— Mini tarjetas (mismo lenguaje visual que el panel /inicio) —— */
+.sidebar-mini-card {
   display: flex;
   align-items: center;
-  padding: 0.75rem 1.5rem;
-  color: var(--text-primary);
+  gap: 0.5rem;
+  margin: 0 0.5rem 0.4rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 0.65rem;
   text-decoration: none;
-  transition: var(--transition-fast);
-  border-left: 3px solid transparent;
-  font-size: var(--font-size-body);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.sidebar-mini-card:hover {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 24px -10px rgba(34, 211, 238, 0.25);
+}
+
+.sidebar-mini-card.active {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 28px -8px rgba(34, 211, 238, 0.35);
+}
+
+.sidebar-mini-card:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, 0.8);
+  outline-offset: 2px;
+}
+
+.sidebar-mini-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-mini-card__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.sidebar-mini-card__sub {
+  font-size: 0.65rem;
+  line-height: 1.25;
+  color: var(--text-secondary, #a1a1aa);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sidebar-mini-card__icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  transition: background 0.15s ease;
+}
+
+.sidebar-mini-card__icon--sm {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: 0.78rem;
+  border-radius: 0.4rem;
+}
+
+.sidebar-mini-card__icon--cyan {
+  background: rgba(34, 211, 238, 0.12);
+  color: #67e8f9;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28);
+}
+
+.sidebar-mini-card__icon--violet {
+  background: rgba(167, 139, 250, 0.12);
+  color: #c4b5fd;
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.28);
+}
+
+.sidebar-mini-card__icon--emerald {
+  background: rgba(52, 211, 153, 0.12);
+  color: #6ee7b7;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.28);
+}
+
+.sidebar-mini-card--toggle {
+  width: calc(100% - 1rem);
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
   cursor: pointer;
-  background: none;
-  border-right: none;
-  border-top: none;
-  border-bottom: none;
-  width: 100%;
   text-align: left;
 }
 
-.sidebar-item:hover {
-  background: var(--bg-secondary);
-  border-left-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.sidebar-item.active {
-  background: var(--bg-secondary);
-  border-left-color: var(--color-primary);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.sidebar-toggle {
-  font-weight: var(--font-weight-semibold);
-}
-
-.sidebar-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-submenu {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-secondary);
-  padding-left: 1rem;
-}
-
-.sidebar-subitem {
+.sidebar-mini-card__chev {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0.5rem 1.5rem;
-  padding-left: 2.5rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: var(--transition-fast);
-  border-left: 3px solid transparent;
-  font-size: var(--font-size-small);
+  justify-content: center;
+  color: var(--text-secondary, #a1a1aa);
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
 }
 
-.sidebar-subitem:hover {
-  background: rgba(102, 126, 234, 0.1);
-  border-left-color: var(--color-primary);
-  color: var(--color-primary);
+.sidebar-mini-card--toggle.open .sidebar-mini-card__chev {
+  transform: rotate(180deg);
 }
 
-.sidebar-subitem.active {
-  background: rgba(102, 126, 234, 0.15);
-  border-left-color: var(--color-primary);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
+.sidebar-section--mini {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-submenu--mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.15rem 0 0.35rem 0.35rem;
+  margin: 0 0 0.15rem;
+  border-left: 2px solid rgba(167, 139, 250, 0.25);
+  margin-left: 0.85rem;
+}
+
+.sidebar-mini-card--sub {
+  margin-left: 0;
+  margin-right: 0.35rem;
+  padding: 0.4rem 0.45rem;
+}
+
+.sidebar-mini-card--sub .sidebar-mini-card__title {
+  font-size: 0.75rem;
+}
+
+.sidebar-mini-card--sub .sidebar-mini-card__sub {
+  font-size: 0.62rem;
+  -webkit-line-clamp: 2;
+}
+
+[data-theme='light'] .sidebar-mini-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.06));
+}
+
+[data-theme='light'] .sidebar-mini-card:hover {
+  border-color: var(--color-primary);
+  background: var(--bg-primary);
+}
+
+[data-theme='light'] .sidebar-mini-card.active {
+  border-color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='light'] .sidebar-mini-card--toggle {
+  border-color: var(--border-color);
+}
+
+[data-theme='light'] .sidebar-submenu--mini {
+  border-left-color: rgba(99, 102, 241, 0.35);
 }
 
 /* Scrollbar personalizado */
@@ -115,7 +231,6 @@
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 280px;
+    width: min(300px, 92vw);
   }
 }
-

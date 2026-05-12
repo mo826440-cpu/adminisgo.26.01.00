@@ -131,17 +131,9 @@ function VentaRapidaDetalle() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>Detalle de Venta Rápida</h1>
-            <p className="text-secondary">
-              Ticket: {ventaRapida.ventas?.numero_ticket || '-'}
-            </p>
-          </div>
-          <Link to="/ventas-rapidas">
-            <Button variant="outline">← Volver a Ventas Rápidas</Button>
-          </Link>
-        </div>
+        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
+          Ticket: {ventaRapida.ventas?.numero_ticket || '-'}
+        </p>
 
         <div className="venta-rapida-detalle-grid">
           <Card>

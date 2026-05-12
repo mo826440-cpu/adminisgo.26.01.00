@@ -225,18 +225,6 @@ function ClienteForm() {
   return (
     <Layout>
       <div className="container">
-        <div className="page-header">
-          <div>
-            <h1>{isEditing ? 'Editar Cliente' : 'Nuevo Cliente'}</h1>
-            <p className="text-secondary">
-              {isEditing ? 'Modifica la información del cliente' : 'Completa los datos del nuevo cliente'}
-            </p>
-          </div>
-          <Link to="/clientes">
-            <Button variant="outline">← Volver a Clientes</Button>
-          </Link>
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

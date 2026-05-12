@@ -232,15 +232,9 @@ export default function OtrosCostosPage() {
   return (
     <Layout>
       <div className="container otros-costos-page">
-        <div className="page-header otros-costos-header">
-          <div>
-            <div className="section-label">MÓDULO</div>
-            <h1 className="registros-seccion-titulo otros-costos-title">Otros costos</h1>
-            <p className="text-secondary otros-costos-subtitle">
-              Registrá gastos fijos, variables o inversiones. Visible solo para el dueño del comercio.
-            </p>
-          </div>
-        </div>
+        <p className="text-secondary otros-costos-subtitle" style={{ marginBottom: '1rem' }}>
+          Registrá gastos fijos, variables o inversiones. Visible solo para el dueño del comercio.
+        </p>
 
         {error && (
           <Alert variant="danger" className="otros-costos-alert" dismissible onDismiss={() => setError(null)}>

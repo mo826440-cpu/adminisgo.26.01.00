@@ -129,13 +129,21 @@ export const AuthProvider = ({ children }) => {
   const firstNavigatePath = useCallback(
     (excludePathname) => {
       const ex = excludePathname || ''
+      const puedeIrInicio =
+        isAdmin ||
+        (permisosMap &&
+          !permisosMap.__dueno &&
+          NAV_ORDER_PATHS.some(([codigo]) => permisosMap[codigo] === true))
+      if (puedeIrInicio && ex !== '/inicio') {
+        return '/inicio'
+      }
       for (const [codigo, path] of NAV_ORDER_PATHS) {
         if (ex === path) continue
         if (puedeModulo(codigo)) return path
       }
       return '/'
     },
-    [puedeModulo]
+    [isAdmin, permisosMap, puedeModulo]
   )
 
   /** Usuario autenticado con rol no dueño y ningún módulo de la matriz en true */

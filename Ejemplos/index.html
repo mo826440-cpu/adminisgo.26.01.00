@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Pantalla de inicio — Sistema de gestión para kioscos" />
+    <title>Kiosco Hub · Inicio</title>
+
+    <!-- Tipografía moderna (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;1,500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS (CDN — útil para prototipos y páginas estáticas; en apps grandes preferir build) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              display: ["Playfair Display", "Georgia", "serif"],
+            },
+            colors: {
+              neon: {
+                cyan: "#22d3ee",
+                violet: "#a78bfa",
+                emerald: "#34d399",
+              },
+            },
+            boxShadow: {
+              glow:
+                "0 0 40px -10px rgba(34, 211, 238, 0.35), 0 0 80px -20px rgba(167, 139, 250, 0.25)",
+              "glow-sm":
+                "0 0 24px -8px rgba(34, 211, 238, 0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Glassmorphism: CSS plano para máxima compatibilidad con Tailwind CDN -->
+    <style>
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      .glass-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        transition:
+          transform 300ms ease-out,
+          box-shadow 300ms ease-out;
+      }
+
+      /* Borde con gradiente neón (efecto vidrio premium) */
+      .glass-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(
+          135deg,
+          rgba(34, 211, 238, 0.35),
+          rgba(167, 139, 250, 0.25),
+          rgba(52, 211, 153, 0.2)
+        );
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.65;
+        transition: opacity 300ms ease-out;
+      }
+
+      .glass-card:hover::before {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body
+    class="min-h-dvh font-sans antialiased text-zinc-100 bg-[#050508] selection:bg-cyan-400/30 selection:text-white"
+  >
+    <!-- Fondo atmosférico (órbitas neón + rejilla suave) -->
+    <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+      <div
+        class="absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-500/15 blur-[120px]"
+      ></div>
+      <div
+        class="absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-violet-600/20 blur-[100px]"
+      ></div>
+      <div
+        class="absolute bottom-1/4 left-[-5%] h-[380px] w-[380px] rounded-full bg-emerald-400/10 blur-[90px]"
+      ></div>
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40"
+      ></div>
+    </div>
+
+    <div class="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <!-- ========== HEADER ========== -->
+      <header class="glass-panel mb-8 rounded-2xl px-4 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <!-- Marca + logo -->
+          <div class="flex items-center gap-4">
+            <!-- Espacio reservado para logo corporativo -->
+            <div
+              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-cyan-400/20 via-violet-500/15 to-emerald-400/15 shadow-glow-sm"
+              aria-label="Espacio para logo"
+            >
+              <i data-lucide="store" class="h-7 w-7 text-cyan-300" aria-hidden="true"></i>
+            </div>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Sistema de gestión
+              </p>
+              <h1 class="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                Nexus<span class="text-cyan-400">Kiosk</span>
+              </h1>
+            </div>
+          </div>
+
+          <!-- Usuario + cerrar sesión -->
+          <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+            <div
+              class="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 backdrop-blur-md"
+            >
+              <img
+                src="https://api.dicebear.com/7.x/avataaars/svg?seed=NexusKiosk"
+                alt=""
+                width="40"
+                height="40"
+                class="h-10 w-10 rounded-full border border-white/15 bg-zinc-800 object-cover"
+              />
+              <div class="text-left">
+                <p class="text-xs text-zinc-500">Sesión activa</p>
+                <p class="text-sm font-medium text-white">María González</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-emerald-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 shadow-glow transition hover:scale-[1.02] hover:shadow-[0_0_48px_-12px_rgba(34,211,238,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050508]"
+            >
+              <i data-lucide="log-out" class="h-4 w-4 transition group-hover:-translate-x-0.5" aria-hidden="true"></i>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ========== CUERPO: GRID DE NAVEGACIÓN ========== -->
+      <main class="flex flex-1 flex-col">
+        <div class="mb-8 text-center sm:text-left">
+          <p class="text-sm font-medium text-cyan-400/90">Panel principal</p>
+          <h2 class="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            ¿Qué deseas gestionar hoy?
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm text-zinc-400">
+            Accede a cada módulo desde las tarjetas. Diseño optimizado para uso táctil en kioscos y pantallas amplias.
+          </p>
+        </div>
+
+        <!-- Grid responsivo: 1 col móvil → 2 tablet → 3 desktop → 4 xl -->
+        <nav
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          aria-label="Módulos del sistema"
+        >
+          <!-- Cada enlace es una tarjeta interactiva -->
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25 transition group-hover:bg-cyan-400/20">
+              <i data-lucide="layout-dashboard" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Dashboard</span>
+            <span class="text-xs text-zinc-500">Resumen en tiempo real</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300 ring-1 ring-violet-400/25 transition group-hover:bg-violet-400/20">
+              <i data-lucide="book-marked" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Referencias</span>
+            <span class="text-xs text-zinc-500">Catálogos y tablas maestras</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/25 transition group-hover:bg-emerald-400/20">
+              <i data-lucide="users" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Usuarios</span>
+            <span class="text-xs text-zinc-500">Roles y permisos</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25 transition group-hover:bg-cyan-400/20">
+              <i data-lucide="shopping-cart" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Compras</span>
+            <span class="text-xs text-zinc-500">Proveedores y órdenes</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300 ring-1 ring-violet-400/25 transition group-hover:bg-violet-400/20">
+              <i data-lucide="trending-up" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Ventas</span>
+            <span class="text-xs text-zinc-500">Transacciones y caja</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/25 transition group-hover:bg-emerald-400/20">
+              <i data-lucide="zap" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Ventas rápidas</span>
+            <span class="text-xs text-zinc-500">Checkout exprés</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25 transition group-hover:bg-cyan-400/20">
+              <i data-lucide="file-bar-chart-2" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Reportes</span>
+            <span class="text-xs text-zinc-500">Indicadores y exportación</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300 ring-1 ring-violet-400/25 transition group-hover:bg-violet-400/20">
+              <i data-lucide="wallet" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Otros costos</span>
+            <span class="text-xs text-zinc-500">Gastos operativos</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/25 transition group-hover:bg-emerald-400/20">
+              <i data-lucide="settings-2" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Configuraciones</span>
+            <span class="text-xs text-zinc-500">Preferencias del sistema</span>
+          </a>
+
+          <a href="#" class="glass-card group flex flex-col gap-4 p-6 hover:-translate-y-1 hover:shadow-glow focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25 transition group-hover:bg-cyan-400/20">
+              <i data-lucide="wrench" class="h-6 w-6" aria-hidden="true"></i>
+            </span>
+            <span class="text-lg font-semibold text-white">Mantenimiento</span>
+            <span class="text-xs text-zinc-500">Herramientas y soporte</span>
+          </a>
+        </nav>
+      </main>
+
+      <!-- ========== FOOTER ========== -->
+      <footer class="mt-12 border-t border-white/10 pt-8">
+        <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Desarrollo</p>
+            <p class="mt-2 text-sm text-zinc-300">
+              © <span id="year"></span> NexusKiosk Labs · Experiencias digitales para retail.
+            </p>
+            <p class="mt-1 text-xs text-zinc-500">Versión UI 1.0 · Pantalla de inicio</p>
+          </div>
+
+          <!-- Redes y contacto -->
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
+            <div class="flex items-center gap-2">
+              <a
+                href="mailto:hola@ejemplo.com"
+                class="glass-panel flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 transition hover:text-cyan-300 hover:shadow-glow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                aria-label="Correo electrónico"
+              >
+                <i data-lucide="mail" class="h-5 w-5" aria-hidden="true"></i>
+              </a>
+              <a
+                href="#"
+                class="glass-panel flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 transition hover:text-violet-300 hover:shadow-glow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                aria-label="LinkedIn"
+              >
+                <i data-lucide="linkedin" class="h-5 w-5" aria-hidden="true"></i>
+              </a>
+              <a
+                href="#"
+                class="glass-panel flex h-11 w-11 items-center justify-center rounded-xl text-zinc-300 transition hover:text-emerald-300 hover:shadow-glow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                aria-label="GitHub"
+              >
+                <i data-lucide="github" class="h-5 w-5" aria-hidden="true"></i>
+              </a>
+            </div>
+
+            <blockquote class="font-display text-lg italic leading-snug text-zinc-200 sm:max-w-xs lg:text-right">
+              «La eficiencia silenciosa es la nueva elegancia del punto de venta.»
+            </blockquote>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Lucide Icons: reemplaza data-lucide por SVG en tiempo de ejecución -->
+    <!-- Versión fijada de Lucide para despliegues reproducibles -->
+    <script src="https://unpkg.com/lucide@1.14.0/dist/umd/lucide.min.js"></script>
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+      // Convierte cada [data-lucide] en SVG accesible
+      lucide.createIcons({ attrs: { "stroke-width": 1.75 } });
+    </script>
+  </body>
+</html>
