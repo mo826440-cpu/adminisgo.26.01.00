@@ -1047,24 +1047,9 @@ function VentasRapidas() {
               </div>
 
               <div className="form-row">
-                <div className="form-col autocomplete-wrapper">
-                  <label
-                    className="form-label"
-                    htmlFor="venta-rapida-cliente-search"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}
-                  >
-                    <span>Cliente (opcional)</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={openNuevoClienteModal}
-                      title="Agregar cliente"
-                      aria-label="Agregar cliente"
-                      style={{ padding: '0.25rem 0.45rem', lineHeight: 1 }}
-                    >
-                      <i className="bi bi-person-plus" aria-hidden />
-                    </Button>
+                <div className="form-col autocomplete-wrapper venta-rapida-cliente-col">
+                  <label className="form-label" htmlFor="venta-rapida-cliente-search">
+                    Cliente (opcional)
                   </label>
                   <input
                     id="venta-rapida-cliente-search"
@@ -1105,6 +1090,20 @@ function VentasRapidas() {
                       ))}
                     </ul>
                   )}
+                </div>
+
+                <div className="venta-rapida-cliente-add-btn-col">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openNuevoClienteModal}
+                    title="Agregar cliente"
+                    aria-label="Agregar cliente"
+                    className="venta-rapida-cliente-add-btn"
+                  >
+                    <i className="bi bi-person-plus" aria-hidden />
+                  </Button>
                 </div>
 
                 <div className="form-col">
