@@ -233,6 +233,12 @@ function ClientesList() {
 
   const canPrint = useMemo(() => Boolean(printCliente), [printCliente])
 
+  const deudaTotalPagoCliente = useMemo(() => {
+    const cid = Number(pagoCliente?.id)
+    if (!Number.isFinite(cid) || cid <= 0) return 0
+    return mapaDeuda.get(cid) || 0
+  }, [pagoCliente, mapaDeuda])
+
   if (loading) {
     return (
       <Layout>
@@ -442,6 +448,12 @@ function ClientesList() {
           </>
         }
       >
+        {pagoCliente ? (
+          <p className="text-secondary" style={{ margin: '0 0 0.75rem', fontSize: '0.9rem' }}>
+            <strong>Deuda total:</strong> {formatMoneyAR(deudaTotalPagoCliente)}
+          </p>
+        ) : null}
+
         {pagoError ? (
           <Alert variant="danger" dismissible onDismiss={() => setPagoError(null)}>
             {pagoError}
