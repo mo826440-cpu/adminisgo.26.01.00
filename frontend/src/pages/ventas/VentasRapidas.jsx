@@ -11,7 +11,13 @@ import {
   deleteVentaRapida,
   updateVentaRapida,
 } from '../../services/ventasRapidas'
-import { getClientes } from '../../services/clientes'
+import {
+  createCliente,
+  getClientes,
+  verificarEmailCliente,
+  verificarNombreCliente,
+  verificarNumeroDocumentoCliente,
+} from '../../services/clientes'
 import { getProductoPorCodigoBarras } from '../../services/productos'
 import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida'
 import { useAuthContext } from '../../context/AuthContext'
@@ -103,6 +109,22 @@ function VentasRapidas() {
 
   /** Edición en esta misma página (null = alta nueva) */
   const [edicionVenta, setEdicionVenta] = useState(null)
+
+  // Alta rápida de cliente (modal mini-form)
+  const [showNuevoClienteModal, setShowNuevoClienteModal] = useState(false)
+  const [showNuevoClienteNombreWarningModal, setShowNuevoClienteNombreWarningModal] = useState(false)
+  const [nuevoClienteSaving, setNuevoClienteSaving] = useState(false)
+  const [nuevoClienteError, setNuevoClienteError] = useState(null)
+  const [nuevoClienteForm, setNuevoClienteForm] = useState({
+    nombre: '',
+    tipo_documento: 'DNI',
+    numero_documento: '',
+    email: '',
+    telefono: '',
+    direccion: '',
+    activo: true,
+  })
+  const [nuevoClienteValidated, setNuevoClienteValidated] = useState(null)
 
   // Impresión ticket (modal sin navegar al detalle)
   const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
@@ -562,6 +584,115 @@ function VentasRapidas() {
     setClienteActiveIndex(-1)
   }
 
+  const openNuevoClienteModal = () => {
+    setNuevoClienteError(null)
+    setNuevoClienteValidated(null)
+    setNuevoClienteForm((prev) => ({
+      ...prev,
+      nombre: (clienteSearch || '').trim(),
+    }))
+    setShowNuevoClienteModal(true)
+  }
+
+  const closeNuevoClienteModal = () => {
+    if (nuevoClienteSaving) return
+    setShowNuevoClienteModal(false)
+    setShowNuevoClienteNombreWarningModal(false)
+    setNuevoClienteError(null)
+    setNuevoClienteValidated(null)
+  }
+
+  const validarNuevoCliente = async () => {
+    const errores = []
+    if (!nuevoClienteForm.nombre.trim()) errores.push('El nombre es obligatorio')
+    if (!nuevoClienteForm.numero_documento.trim()) errores.push('El número de documento es obligatorio')
+
+    if (nuevoClienteForm.email && nuevoClienteForm.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(nuevoClienteForm.email.trim())) {
+        errores.push('El email no tiene un formato válido')
+      }
+    }
+
+    if (errores.length) {
+      setNuevoClienteError(errores.join('. '))
+      return null
+    }
+
+    const clienteData = {
+      nombre: nuevoClienteForm.nombre.trim(),
+      email: nuevoClienteForm.email?.trim() || null,
+      telefono: nuevoClienteForm.telefono?.trim() || null,
+      direccion: nuevoClienteForm.direccion?.trim() || null,
+      numero_documento: nuevoClienteForm.numero_documento.trim(),
+      tipo_documento: nuevoClienteForm.tipo_documento || 'DNI',
+      activo: true,
+    }
+
+    // Documento duplicado: bloquear
+    const { existe: existeDoc, error: errDoc } = await verificarNumeroDocumentoCliente(clienteData.numero_documento)
+    if (errDoc) {
+      setNuevoClienteError('Error al verificar el número de documento. Por favor, intenta nuevamente.')
+      return null
+    }
+    if (existeDoc) {
+      setNuevoClienteError('El número de documento ya está registrado. Por favor, verifica los datos.')
+      return null
+    }
+
+    // Email duplicado: bloquear
+    if (clienteData.email) {
+      const { existe: existeEmail, error: errEmail } = await verificarEmailCliente(clienteData.email)
+      if (errEmail) {
+        setNuevoClienteError('Error al verificar el email. Por favor, intenta nuevamente.')
+        return null
+      }
+      if (existeEmail) {
+        setNuevoClienteError('El email ya está en uso. Por favor, usa un email diferente.')
+        return null
+      }
+    }
+
+    // Nombre duplicado: advertencia (no bloquea)
+    const { existe: existeNombre, error: errNom } = await verificarNombreCliente(clienteData.nombre)
+    if (errNom) {
+      setNuevoClienteError('Error al verificar el nombre. Por favor, intenta nuevamente.')
+      return null
+    }
+    if (existeNombre) {
+      setNuevoClienteValidated(clienteData)
+      setShowNuevoClienteNombreWarningModal(true)
+      return null
+    }
+
+    return clienteData
+  }
+
+  const handleGuardarNuevoCliente = async () => {
+    if (nuevoClienteSaving) return
+    setNuevoClienteError(null)
+
+    const validated = nuevoClienteValidated || (await validarNuevoCliente())
+    if (!validated) return
+
+    setNuevoClienteSaving(true)
+    const { data, error: err } = await createCliente(validated)
+    if (err || !data) {
+      setNuevoClienteError(err?.message || 'Error al crear cliente')
+      setNuevoClienteSaving(false)
+      return
+    }
+
+    const { data: clientesData } = await getClientes()
+    if (clientesData) setClientes(clientesData)
+
+    aplicarClienteSeleccionado(data)
+    setShowNuevoClienteNombreWarningModal(false)
+    setShowNuevoClienteModal(false)
+    setNuevoClienteValidated(null)
+    setNuevoClienteSaving(false)
+  }
+
   // Manejar teclado en autocompletado de cliente
   const handleClienteKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -917,8 +1048,23 @@ function VentasRapidas() {
 
               <div className="form-row">
                 <div className="form-col autocomplete-wrapper">
-                  <label className="form-label" htmlFor="venta-rapida-cliente-search">
-                    Cliente (opcional)
+                  <label
+                    className="form-label"
+                    htmlFor="venta-rapida-cliente-search"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}
+                  >
+                    <span>Cliente (opcional)</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={openNuevoClienteModal}
+                      title="Agregar cliente"
+                      aria-label="Agregar cliente"
+                      style={{ padding: '0.25rem 0.45rem', lineHeight: 1 }}
+                    >
+                      <i className="bi bi-person-plus" aria-hidden />
+                    </Button>
                   </label>
                   <input
                     id="venta-rapida-cliente-search"
@@ -1432,6 +1578,161 @@ function VentasRapidas() {
             </div>
           )}
         </Card>
+
+        {/* Modal: alta rápida de cliente (sin salir de Ventas Rápidas) */}
+        <Modal
+          isOpen={showNuevoClienteModal}
+          onClose={closeNuevoClienteModal}
+          title="Nuevo cliente"
+          closeOnOverlayClick={!nuevoClienteSaving}
+          footer={
+            <>
+              <Button variant="outline" onClick={closeNuevoClienteModal} disabled={nuevoClienteSaving}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleGuardarNuevoCliente}
+                loading={nuevoClienteSaving}
+                disabled={nuevoClienteSaving}
+              >
+                Crear cliente
+              </Button>
+            </>
+          }
+        >
+          {nuevoClienteError ? (
+            <Alert variant="danger" dismissible onDismiss={() => setNuevoClienteError(null)}>
+              {nuevoClienteError}
+            </Alert>
+          ) : null}
+
+          <div className="form-row">
+            <div className="form-col form-col-full">
+              <Input
+                label="Nombre completo"
+                name="nuevo_cliente_nombre"
+                value={nuevoClienteForm.nombre}
+                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, nombre: e.target.value }))}
+                required
+                placeholder="Nombre del cliente"
+                disabled={nuevoClienteSaving}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-col">
+              <label className="form-label">
+                Tipo de documento <span className="required">*</span>
+                <select
+                  className="form-control"
+                  value={nuevoClienteForm.tipo_documento}
+                  onChange={(e) => setNuevoClienteForm((p) => ({ ...p, tipo_documento: e.target.value }))}
+                  disabled={nuevoClienteSaving}
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="CUIT">CUIT</option>
+                  <option value="CUIL">CUIL</option>
+                  <option value="LC">LC</option>
+                  <option value="LE">LE</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                </select>
+              </label>
+            </div>
+            <div className="form-col">
+              <Input
+                label="Número de documento"
+                name="nuevo_cliente_numero_documento"
+                value={nuevoClienteForm.numero_documento}
+                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, numero_documento: e.target.value }))}
+                required
+                placeholder="Número de documento"
+                disabled={nuevoClienteSaving}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-col">
+              <Input
+                label="Email"
+                name="nuevo_cliente_email"
+                type="email"
+                value={nuevoClienteForm.email}
+                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="cliente@email.com (opcional)"
+                disabled={nuevoClienteSaving}
+              />
+            </div>
+            <div className="form-col">
+              <Input
+                label="Teléfono"
+                name="nuevo_cliente_telefono"
+                value={nuevoClienteForm.telefono}
+                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, telefono: e.target.value }))}
+                placeholder="Teléfono (opcional)"
+                disabled={nuevoClienteSaving}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-col form-col-full">
+              <label className="form-label">
+                Dirección
+                <textarea
+                  className="form-control"
+                  rows="2"
+                  value={nuevoClienteForm.direccion}
+                  onChange={(e) => setNuevoClienteForm((p) => ({ ...p, direccion: e.target.value }))}
+                  placeholder="Dirección (opcional)"
+                  disabled={nuevoClienteSaving}
+                />
+              </label>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Modal: advertencia por nombre duplicado (no bloquea) */}
+        <Modal
+          isOpen={showNuevoClienteNombreWarningModal}
+          onClose={() => {
+            if (nuevoClienteSaving) return
+            setShowNuevoClienteNombreWarningModal(false)
+            setNuevoClienteValidated(null)
+          }}
+          title="Advertencia: nombre duplicado"
+          variant="warning"
+          closeOnOverlayClick={false}
+          footer={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowNuevoClienteNombreWarningModal(false)
+                  setNuevoClienteValidated(null)
+                }}
+                disabled={nuevoClienteSaving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleGuardarNuevoCliente}
+                loading={nuevoClienteSaving}
+                disabled={nuevoClienteSaving}
+              >
+                Continuar y crear
+              </Button>
+            </>
+          }
+        >
+          <p>
+            Ya existe un cliente registrado con el nombre <strong>"{nuevoClienteForm.nombre}"</strong>.
+          </p>
+          <p style={{ marginTop: '0.75rem' }}>¿Deseas continuar con la carga de todos modos?</p>
+        </Modal>
 
         {/* Modal Abrir Caja */}
         <Modal
