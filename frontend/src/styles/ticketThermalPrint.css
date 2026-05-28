@@ -9,7 +9,7 @@
   margin: 0 auto;
   padding: 1rem;
   background: white;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 9px;
   line-height: 1.4;
   color: #000;
@@ -23,7 +23,7 @@
 }
 
 .ticket-print--thermal-pre .ticket-pre-body {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 9px;
   line-height: 1.4;
   margin: 0;
@@ -32,7 +32,17 @@
   white-space: pre;
   word-break: normal;
   overflow-wrap: normal;
-  overflow-x: auto;
+  overflow: visible;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0;
+  font-synthesis: none;
+  letter-spacing: 0;
+}
+
+.ticket-print--thermal-pre .ticket-pre-body strong {
+  font-weight: 700;
+  font-family: inherit;
+  font-synthesis: none;
 }
 
 html[data-print-format='a4'] .ticket-print {
@@ -53,6 +63,13 @@ html[data-print-format='a4'] .ticket-print {
   margin-top: 0.35rem;
   padding-top: 0.35rem;
   border-top: 1px dashed #000;
+}
+
+/* Permite "salto de línea" en lugar de separador punteado para pares específicos. */
+.ticket-sheet--no-divider-after + .ticket-sheet {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: none !important;
 }
 
 .ticket-sheet td {
@@ -159,7 +176,24 @@ html[data-print-format='a4'] .ticket-print {
   font-size: 8px;
 }
 
+/*
+  Host offscreen para tickets: en pantalla lo mandamos fuera del viewport,
+  pero en impresión debe ser "estático" para que .ticket-print (absolute) se posicione
+  respecto de la página y no de este contenedor.
+*/
+.ticket-print-host {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+}
+
 @media print {
+  .ticket-print-host {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
   body * {
     visibility: hidden;
   }
@@ -178,10 +212,11 @@ html[data-print-format='a4'] .ticket-print {
     width: 80mm !important;
     max-width: 80mm !important;
     margin: 0 !important;
-    padding: 4mm !important;
+    /* Más ancho útil (80mm) para que entren las ~42 columnas sin desbordar */
+    padding: 2mm !important;
     background: white !important;
-    font-family: 'Courier New', Courier, monospace !important;
-    font-size: 8px !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+    font-size: 7px !important;
     line-height: 1.4 !important;
     color: #000 !important;
     display: block !important;
@@ -191,10 +226,35 @@ html[data-print-format='a4'] .ticket-print {
   }
 
   .ticket-print--thermal-pre .ticket-pre-body {
-    font-size: 8px !important;
+    font-size: 7px !important;
     white-space: pre !important;
     word-break: normal !important;
     overflow-wrap: normal !important;
+    overflow: visible !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
+    font-variant-ligatures: none !important;
+    font-feature-settings: 'liga' 0 !important;
+    font-synthesis: none !important;
+    letter-spacing: 0 !important;
+  }
+
+  /*
+    Importante: en algunos entornos de impresión Chromium "bold" cambia el métrico
+    (o sintetiza negrita) y rompe el alineado de un ticket monoespaciado.
+    Simulamos negrita sin cambiar el ancho de los glifos.
+  */
+  .ticket-print--thermal-pre .ticket-pre-body strong {
+    font-family: inherit !important;
+    font-synthesis: none !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+  }
+
+  /* Fuerza herencia monoespaciada para todos los nodos dentro del <pre> */
+  .ticket-print--thermal-pre .ticket-pre-body * {
+    font-family: inherit !important;
+    font-synthesis: none !important;
+    letter-spacing: 0 !important;
   }
 
   .ticket-sheet td {

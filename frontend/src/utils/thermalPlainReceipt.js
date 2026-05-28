@@ -283,13 +283,78 @@ export function buildVentaRapidaThermalPlainText({
     pagos: ventaRapida.pagos || [],
   }
 
-  return buildVentaThermalPlainText({
+  const base = buildVentaThermalPlainText({
     venta,
     comercio,
     formatearMoneda,
     formatearFechaHoraTicket,
     cols,
   })
+
+  // Bloque de firmas al pie (solo en tickets de venta rápida).
+  // Se inserta después de la línea "Conserve este ticket.".
+  const lines = String(base || '').split('\n')
+  const idx = lines.findIndex((ln) => String(ln || '').includes('Conserve este ticket.'))
+  const insertAt = idx >= 0 ? idx + 1 : lines.length
+  const firmaBlock = [
+    '',
+    '',
+    '',
+    '',
+    '',
+    '______________________________',
+    'Firma Cliente',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '______________________________',
+    'Firma Representante',
+    '',
+    '',
+    '',
+    '',
+    '',
+  ]
+  lines.splice(insertAt, 0, ...firmaBlock)
+  return lines.join('\n')
+}
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
+ * Convierte un ticket en texto plano (con saltos de línea) a HTML seguro para renderizar dentro de <pre>.
+ * Permite poner ciertas líneas en negrita (envolviendo la línea completa en <strong>).
+ */
+export function thermalPlainTextToHtml(
+  plainText,
+  { boldLinePrefixes = [], boldFirstNonEmptyLine = false } = {}
+) {
+  const prefixes = Array.isArray(boldLinePrefixes) ? boldLinePrefixes.filter(Boolean) : []
+  const lines = String(plainText ?? '').split('\n')
+  let firstBoldDone = false
+  return lines
+    .map((ln) => {
+      const raw = String(ln ?? '')
+      const trimmed = raw.trim()
+      const trimmedStart = raw.trimStart()
+      const boldByPrefix = prefixes.some((p) => trimmedStart.startsWith(p))
+      const boldByFirst =
+        Boolean(boldFirstNonEmptyLine) && !firstBoldDone && trimmed.length > 0
+      const safe = escapeHtml(raw)
+      const isBold = boldByPrefix || boldByFirst
+      if (boldByFirst) firstBoldDone = true
+      return isBold ? `<strong>${safe}</strong>` : safe
+    })
+    .join('\n')
 }
 
 export function buildCompraThermalPlainText({

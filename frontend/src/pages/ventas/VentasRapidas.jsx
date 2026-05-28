@@ -17,6 +17,11 @@ import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
+import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import VentaRapidaTicketThermal from '../../components/common/VentaRapidaTicketThermal'
+import { getComercio } from '../../services/comercio'
+import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
 import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
@@ -57,6 +62,9 @@ function VentasRapidas() {
   const { user } = useAuthContext()
   const { timezone, dateFormat } = useDateTime()
   const clienteInputRef = useRef(null)
+  const ticketPrintRef = useRef(null)
+
+  useTicketPrintFormat()
 
   // Estados de caja
   const [estadoCaja, setEstadoCaja] = useState(null)
@@ -96,6 +104,11 @@ function VentasRapidas() {
   /** Edición en esta misma página (null = alta nueva) */
   const [edicionVenta, setEdicionVenta] = useState(null)
 
+  // Impresión ticket (modal sin navegar al detalle)
+  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
+  const [ventaParaImprimir, setVentaParaImprimir] = useState(null)
+  const [comercioParaImprimir, setComercioParaImprimir] = useState(null)
+
   const [productoVentaRapida, setProductoVentaRapida] = useState(null)
   const [loadingProducto, setLoadingProducto] = useState(true)
 
@@ -127,6 +140,37 @@ function VentasRapidas() {
   const formatearFechaHora = (fecha) => {
     if (!fecha) return '-'
     return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
+  }
+
+  const formatearFechaHoraTicket = (fecha) => {
+    if (!fecha) return '-'
+    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
+  }
+
+  const clearPrintIntent = () => {
+    // Ojo: ThermalPrintPreviewModal llama onClose() ANTES de window.print().
+    // Si vaciamos el ticket acá, la vista de impresión queda en blanco.
+    setThermalPreviewOpen(false)
+  }
+
+  const abrirModalImpresion = async (ventaId) => {
+    const idNum = Number(ventaId)
+    const id = Number.isFinite(idNum) ? idNum : ventaId
+    const [ventaData, comercioData] = await Promise.all([getVentaRapidaById(id), getComercio()])
+    if (ventaData.error || !ventaData.data) {
+      throw ventaData.error || new Error('No se pudo cargar la venta para imprimir.')
+    }
+    // Mantener el builder de texto plano por compatibilidad con otras pantallas,
+    // pero la impresión usa HTML/tablas para garantizar alineado en el diálogo de impresión.
+    buildVentaRapidaThermalPlainText({
+      ventaRapida: ventaData.data,
+      comercio: comercioData.data || null,
+      formatearMoneda,
+      formatearFechaHoraTicket,
+    })
+    setVentaParaImprimir(ventaData.data)
+    setComercioParaImprimir(comercioData.data || null)
+    setThermalPreviewOpen(true)
   }
 
   // Cargar estado de caja
@@ -597,7 +641,7 @@ function VentasRapidas() {
       facturacion: edicionVenta?.facturacion ?? null,
     }
 
-    const { error: err } = eraEdicion
+    const { data: ventaGuardada, error: err } = eraEdicion
       ? await updateVentaRapida(edicionVenta.id, ventaData)
       : await createVentaRapida(ventaData)
 
@@ -610,9 +654,20 @@ function VentasRapidas() {
     limpiarFormularioVentaRapida()
 
     setSuccessMessage(eraEdicion ? 'Venta actualizada correctamente' : 'Venta registrada correctamente')
-    await loadVentasRapidas()
-    await loadEstadoCaja()
     setSaving(false)
+
+    // Alta nueva: mostrar automáticamente la opción de imprimir el ticket (sin navegar).
+    const ventaId = !eraEdicion ? ventaGuardada?.id : null
+
+    await Promise.all([loadVentasRapidas(), loadEstadoCaja()])
+
+    if (ventaId) {
+      try {
+        await abrirModalImpresion(ventaId)
+      } catch (e2) {
+        setError(e2?.message || 'No se pudo preparar la impresión del ticket.')
+      }
+    }
 
     // Enfocar campo total para siguiente venta
     setTimeout(() => {
@@ -1322,6 +1377,15 @@ function VentasRapidas() {
           ) : (
             <div className="ventas-rapidas-registros-scroll table-container">
               <table className="table ventas-rapidas-registros-table table-sticky-header">
+                <colgroup>
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '90px' }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Fecha y Hora</th>
@@ -1704,6 +1768,31 @@ function VentasRapidas() {
           </p>
         </Modal>
       </div>
+
+      {/* Contenido (oculto) que se clona en el modal de vista previa.
+          Ojo: el modal clona el nodo referenciado; por eso el "oculto" va en el wrapper,
+          y el nodo con `ref` no debe tener estilos que lo oculten. */}
+      <div
+        className="ticket-print-host"
+        aria-hidden="true"
+      >
+        <div ref={ticketPrintRef}>
+          {ventaParaImprimir ? (
+            <VentaRapidaTicketThermal
+              ventaRapida={ventaParaImprimir}
+              comercio={comercioParaImprimir}
+              formatearMoneda={formatearMoneda}
+              formatearFechaHoraTicket={formatearFechaHoraTicket}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <ThermalPrintPreviewModal
+        isOpen={thermalPreviewOpen}
+        onClose={clearPrintIntent}
+        sourceRef={ticketPrintRef}
+      />
     </Layout>
   )
 }

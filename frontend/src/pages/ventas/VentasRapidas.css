@@ -280,6 +280,11 @@
   white-space: nowrap;
 }
 
+/* Asegura que el header numérico alinee igual que los valores */
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table thead th.ventas-rapidas-th-num {
+  text-align: right;
+}
+
 .venta-rapida-pagos-section {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -479,10 +484,17 @@
   max-height: min(70vh, 36rem);
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  /* Reserva el espacio de la barra vertical para no desalinear thead vs tbody */
+  scrollbar-gutter: stable;
   position: relative;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-primary);
+}
+
+/* Evita doble scroll horizontal (este contenedor ya scrollea). */
+.ventas-rapidas-registros-scroll.table-container {
+  overflow-x: hidden;
 }
 
 .ventas-rapidas-registros-scroll .ventas-rapidas-registros-table {
@@ -493,6 +505,8 @@
 .ventas-rapidas-registros-scroll .table.table-sticky-header {
   border-collapse: separate !important;
   border-spacing: 0 !important;
+  table-layout: fixed;
+  width: 100%;
 }
 
 .ventas-rapidas-registros-scroll .table.table-sticky-header thead th {
@@ -505,6 +519,27 @@
 
 [data-theme='dark'] .ventas-rapidas-registros-scroll .table.table-sticky-header thead th {
   background: var(--bg-secondary) !important;
+}
+
+/* Guías visuales: separadores verticales por columna (thead y tbody). */
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table th,
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table td {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='light'] .ventas-rapidas-registros-scroll .ventas-rapidas-registros-table th,
+[data-theme='light'] .ventas-rapidas-registros-scroll .ventas-rapidas-registros-table td {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table th:last-child,
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table td:last-child {
+  border-right: none;
+}
+
+.ventas-rapidas-registros-scroll .ventas-rapidas-registros-table thead th {
+  /* Mantener el borde visible en sticky header */
+  background-clip: padding-box;
 }
 
 /* Etiquetas colapsables (lenguaje glass alineado con ModuleGlassPageHeader) */
