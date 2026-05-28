@@ -239,6 +239,12 @@
   color: #fca5a5;
 }
 
+.clientes-btn-icon--pago:hover:not(:disabled) {
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.18);
+}
+
 .clientes-reporte-spinner {
   border-width: 0.14em;
   border-color: rgba(56, 189, 248, 0.35);

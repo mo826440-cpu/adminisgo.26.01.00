@@ -985,3 +985,95 @@ export const getVentasMovimientosPorClienteId = async (clienteId) => {
     return { data: null, error }
   }
 }
+
+/**
+ * Ventas con deuda de un cliente (para imputar pagos más antiguos primero).
+ * Orden ascendente: más antigua → más reciente.
+ * @param {number|string} clienteId
+ */
+export const getVentasConDeudaPorClienteId = async (clienteId) => {
+  try {
+    if (clienteId == null || clienteId === '') return { data: [], error: null }
+    const rows = await fetchAllQueryPages(
+      () =>
+        supabase
+          .from('ventas')
+          .select('id, fecha_hora, total, monto_pagado, monto_deuda, numero_ticket, facturacion')
+          .eq('cliente_id', clienteId)
+          .is('deleted_at', null)
+          .gt('monto_deuda', 0.009)
+          .order('fecha_hora', { ascending: true }),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
+    )
+    return { data: rows || [], error: null }
+  } catch (error) {
+    console.error('Error al obtener ventas con deuda por cliente:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Registra un pago para un cliente y lo distribuye en ventas con deuda (FIFO).
+ * Inserta filas en `venta_pagos` para disparar triggers de monto_pagado/monto_deuda.
+ *
+ * Nota: esto se hace en el cliente (no hay transacción). Si querés atomicidad total,
+ * conviene una RPC en la base. En la práctica, inserta pagos secuencialmente.
+ *
+ * @param {{
+ *  clienteId: number|string,
+ *  monto: number,
+ *  metodo_pago?: string,
+ *  observaciones?: string|null,
+ *  fecha_pago?: string
+ * }} params
+ */
+export const registrarPagoClienteDistribuido = async (params) => {
+  const clienteId = params?.clienteId
+  const monto = Number(params?.monto || 0)
+  const metodo_pago = String(params?.metodo_pago || 'efectivo').trim() || 'efectivo'
+  const observaciones = params?.observaciones ?? null
+  const fecha_pago = params?.fecha_pago || new Date().toISOString()
+
+  if (!clienteId) return { data: null, error: new Error('Cliente inválido') }
+  if (!Number.isFinite(monto) || monto <= 0) return { data: null, error: new Error('Monto inválido') }
+
+  try {
+    const { data: ventasDeuda, error: errDeuda } = await getVentasConDeudaPorClienteId(clienteId)
+    if (errDeuda) throw errDeuda
+    const ventas = Array.isArray(ventasDeuda) ? ventasDeuda : []
+    if (ventas.length === 0) {
+      return { data: { imputaciones: [], remanente: monto }, error: null }
+    }
+
+    let restante = monto
+    const imputaciones = []
+
+    for (const v of ventas) {
+      if (restante <= 0.009) break
+      const deuda = Math.max(0, parseFloat(v.monto_deuda) || 0)
+      if (deuda <= 0.009) continue
+      const aplicar = Math.min(deuda, restante)
+      if (aplicar <= 0.009) continue
+
+      const { error: errPago } = await supabase.from('venta_pagos').insert([
+        {
+          venta_id: v.id,
+          metodo_pago,
+          monto_pagado: aplicar,
+          fecha_pago,
+          observaciones,
+        },
+      ])
+      if (errPago) throw errPago
+
+      imputaciones.push({ venta_id: v.id, monto: aplicar })
+      restante -= aplicar
+    }
+
+    return { data: { imputaciones, remanente: Math.max(0, restante) }, error: null }
+  } catch (error) {
+    console.error('Error al registrar pago distribuido:', error)
+    return { data: null, error }
+  }
+}

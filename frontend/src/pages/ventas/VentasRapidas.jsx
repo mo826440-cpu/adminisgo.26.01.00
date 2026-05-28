@@ -605,7 +605,6 @@ function VentasRapidas() {
   const validarNuevoCliente = async () => {
     const errores = []
     if (!nuevoClienteForm.nombre.trim()) errores.push('El nombre es obligatorio')
-    if (!nuevoClienteForm.numero_documento.trim()) errores.push('El número de documento es obligatorio')
 
     if (nuevoClienteForm.email && nuevoClienteForm.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -624,20 +623,22 @@ function VentasRapidas() {
       email: nuevoClienteForm.email?.trim() || null,
       telefono: nuevoClienteForm.telefono?.trim() || null,
       direccion: nuevoClienteForm.direccion?.trim() || null,
-      numero_documento: nuevoClienteForm.numero_documento.trim(),
+      numero_documento: nuevoClienteForm.numero_documento?.trim() || null,
       tipo_documento: nuevoClienteForm.tipo_documento || 'DNI',
       activo: true,
     }
 
     // Documento duplicado: bloquear
-    const { existe: existeDoc, error: errDoc } = await verificarNumeroDocumentoCliente(clienteData.numero_documento)
-    if (errDoc) {
-      setNuevoClienteError('Error al verificar el número de documento. Por favor, intenta nuevamente.')
-      return null
-    }
-    if (existeDoc) {
-      setNuevoClienteError('El número de documento ya está registrado. Por favor, verifica los datos.')
-      return null
+    if (clienteData.numero_documento) {
+      const { existe: existeDoc, error: errDoc } = await verificarNumeroDocumentoCliente(clienteData.numero_documento)
+      if (errDoc) {
+        setNuevoClienteError('Error al verificar el número de documento. Por favor, intenta nuevamente.')
+        return null
+      }
+      if (existeDoc) {
+        setNuevoClienteError('El número de documento ya está registrado. Por favor, verifica los datos.')
+        return null
+      }
     }
 
     // Email duplicado: bloquear
@@ -1623,7 +1624,7 @@ function VentasRapidas() {
           <div className="form-row">
             <div className="form-col">
               <label className="form-label">
-                Tipo de documento <span className="required">*</span>
+                Tipo de documento
                 <select
                   className="form-control"
                   value={nuevoClienteForm.tipo_documento}
@@ -1645,8 +1646,7 @@ function VentasRapidas() {
                 name="nuevo_cliente_numero_documento"
                 value={nuevoClienteForm.numero_documento}
                 onChange={(e) => setNuevoClienteForm((p) => ({ ...p, numero_documento: e.target.value }))}
-                required
-                placeholder="Número de documento"
+                placeholder="Número de documento (opcional)"
                 disabled={nuevoClienteSaving}
               />
             </div>
