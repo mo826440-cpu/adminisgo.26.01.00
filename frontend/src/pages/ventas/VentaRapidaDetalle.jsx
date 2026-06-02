@@ -9,7 +9,7 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
-import VentaRapidaTicketThermal from '../../components/common/VentaRapidaTicketThermal'
+import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './VentaRapidaDetalle.css'
 
 function VentaRapidaDetalle() {
@@ -92,7 +92,15 @@ function VentaRapidaDetalle() {
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, ventaRapida])
 
-  const ticketReady = useMemo(() => Boolean(ventaRapida), [ventaRapida])
+  const ticketPlain = useMemo(() => {
+    if (!ventaRapida) return ''
+    return buildVentaRapidaThermalPlainText({
+      ventaRapida,
+      comercio,
+      formatearMoneda,
+      formatearFechaHoraTicket,
+    })
+  }, [ventaRapida, comercio, timezone])
 
   if (loading) {
     return (
@@ -222,17 +230,12 @@ function VentaRapidaDetalle() {
           </Card>
         )}
 
-        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que Ventas */}
-        {ticketReady && (
-          <div ref={ticketPrintRef}>
-            <VentaRapidaTicketThermal
-              ventaRapida={ventaRapida}
-              comercio={comercio}
-              formatearMoneda={formatearMoneda}
-              formatearFechaHoraTicket={formatearFechaHoraTicket}
-            />
+        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que ventas */}
+        <div className="ticket-print-host" aria-hidden="true">
+          <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
+            <pre className="ticket-pre-body">{ticketPlain}</pre>
           </div>
-        )}
+        </div>
       </div>
 
       <ThermalPrintPreviewModal

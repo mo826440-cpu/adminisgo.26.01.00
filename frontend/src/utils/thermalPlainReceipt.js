@@ -97,6 +97,17 @@ function ventaItemsColumnWidths(cols = DEFAULT_THERMAL_COLS) {
   return { wP, wQ, wU, wT }
 }
 
+/** Venta rápida: PROD. + UN. + $TOT. (sin $UN.; drivers POS degradan tablas HTML) */
+function ventaRapidaItemsColumnWidths(cols = DEFAULT_THERMAL_COLS) {
+  if (cols >= 42) {
+    return { wP: 24, wQ: 5, wT: 13 }
+  }
+  const wQ = Math.max(4, Math.floor(cols * 0.12))
+  const wT = Math.max(10, Math.floor(cols * 0.32))
+  const wP = Math.max(10, cols - wQ - wT)
+  return { wP, wQ, wT }
+}
+
 export function thermalCenterParagraph(text, cols = DEFAULT_THERMAL_COLS) {
   return wrapGreedyChars(String(text ?? '').trim(), cols).map((ln) => thermalCenterLine(ln, cols))
 }
@@ -178,11 +189,19 @@ export function buildVentaThermalPlainText({
   comercio,
   formatearMoneda,
   formatearFechaHoraTicket,
-  cols = DEFAULT_THERMAL_COLS
+  cols = DEFAULT_THERMAL_COLS,
+  /** 'full' = PROD/UN/$UN/$TOT; 'rapida' = PROD/UN/$TOT (ventas rápidas) */
+  itemColumns = 'full',
+  /** Si true, imprime TOTAL DEUDA aunque sea 0 (ventas rápidas) */
+  alwaysShowDeuda = false,
 }) {
   if (!venta) return ''
 
-  const { wP, wQ, wU, wT } = ventaItemsColumnWidths(cols)
+  const rapida = itemColumns === 'rapida'
+  const widths = rapida ? ventaRapidaItemsColumnWidths(cols) : ventaItemsColumnWidths(cols)
+  const { wP, wQ } = widths
+  const wU = rapida ? 0 : widths.wU
+  const wT = widths.wT
   const lines = []
   lines.push('')
   pushCenteredNombreComercio(lines, comercio, cols)
@@ -197,12 +216,16 @@ export function buildVentaThermalPlainText({
   lines.push(thermalDash(cols))
 
   lines.push(
-    thermalCellRpad('PROD.', wP) +
-      thermalCellLpad('UN.', wQ) +
-      thermalCellLpad('$UN.', wU) +
-      thermalCellLpad('$TOT.', wT)
+    rapida
+      ? thermalCellRpad('PROD.', wP) + thermalCellLpad('UN.', wQ) + thermalCellLpad('$TOT.', wT)
+      : thermalCellRpad('PROD.', wP) +
+          thermalCellLpad('UN.', wQ) +
+          thermalCellLpad('$UN.', wU) +
+          thermalCellLpad('$TOT.', wT)
   )
   lines.push(thermalDash(cols))
+
+  const tailPad = rapida ? wQ + wT : wQ + wU + wT
 
   ;(venta.items || []).forEach((it) => {
     let nameBase = String(it.productos?.nombre || '-').trim()
@@ -214,13 +237,15 @@ export function buildVentaThermalPlainText({
     wrapLines.forEach((nameLine, lineIdx) => {
       if (lineIdx === 0) {
         lines.push(
-          thermalCellRpad(nameLine, wP) +
-            thermalCellLpad(qtyStr, wQ) +
-            thermalCellLpad(unitStr, wU) +
-            thermalCellLpad(totStr, wT)
+          rapida
+            ? thermalCellRpad(nameLine, wP) + thermalCellLpad(qtyStr, wQ) + thermalCellLpad(totStr, wT)
+            : thermalCellRpad(nameLine, wP) +
+                thermalCellLpad(qtyStr, wQ) +
+                thermalCellLpad(unitStr, wU) +
+                thermalCellLpad(totStr, wT)
         )
       } else {
-        lines.push(thermalCellRpad(nameLine, wP) + ' '.repeat(wQ + wU + wT))
+        lines.push(thermalCellRpad(nameLine, wP) + ' '.repeat(tailPad))
       }
     })
   })
@@ -250,8 +275,9 @@ export function buildVentaThermalPlainText({
   }
 
   lines.push(thermalDetailLine('TOTAL PAGADO', formatearMoneda(venta.monto_pagado ?? 0), cols))
-  if (Number(venta.monto_deuda) > 0.01) {
-    lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(venta.monto_deuda), cols))
+  const deudaNum = Number(venta.monto_deuda ?? 0)
+  if (alwaysShowDeuda || deudaNum > 0.01) {
+    lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(deudaNum), cols))
   }
 
   lines.push(...thermalFooterStandard(cols, { email: comercio?.email }))
@@ -289,6 +315,8 @@ export function buildVentaRapidaThermalPlainText({
     formatearMoneda,
     formatearFechaHoraTicket,
     cols,
+    itemColumns: 'rapida',
+    alwaysShowDeuda: true,
   })
 
   // Bloque de firmas al pie (solo en tickets de venta rápida).

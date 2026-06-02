@@ -225,6 +225,13 @@ html[data-print-format='a4'] .ticket-print {
     box-sizing: border-box !important;
   }
 
+  /* Texto plano: flujo normal; evita reordenar firmas/columnas en drivers POS */
+  .ticket-print.ticket-print--thermal-pre {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
   .ticket-print--thermal-pre .ticket-pre-body {
     font-size: 7px !important;
     white-space: pre !important;
