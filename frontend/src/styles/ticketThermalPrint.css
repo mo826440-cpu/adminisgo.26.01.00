@@ -225,11 +225,9 @@ html[data-print-format='a4'] .ticket-print {
     box-sizing: border-box !important;
   }
 
-  /* Texto plano: flujo normal; evita reordenar firmas/columnas en drivers POS */
-  .ticket-print.ticket-print--thermal-pre {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
+  .ticket-print-host {
+    display: block !important;
+    visibility: visible !important;
   }
 
   .ticket-print--thermal-pre .ticket-pre-body {
@@ -284,7 +282,7 @@ html[data-print-format='a4'] .ticket-print {
   .btn,
   a:not(.ticket-print a),
   .card:not(.ticket-print),
-  .container > *:not(.ticket-print) {
+  .container > *:not(.ticket-print):not(.ticket-print-host) {
     display: none !important;
     visibility: hidden !important;
   }

@@ -230,11 +230,12 @@ function VentaRapidaDetalle() {
           </Card>
         )}
 
-        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que ventas */}
-        <div className="ticket-print-host" aria-hidden="true">
-          <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-            <pre className="ticket-pre-body">{ticketPlain}</pre>
-          </div>
+      </div>
+
+      {/* Fuera de .container: el CSS @media print oculta hijos del container salvo .ticket-print */}
+      <div className="ticket-print-host" aria-hidden="true">
+        <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
+          <pre className="ticket-pre-body">{ticketPlain}</pre>
         </div>
       </div>
 
