@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
-import { getProductos, deleteProducto } from '../../services/productos'
+import { getProductos, getCategorias, deleteProducto } from '../../services/productos'
+import { downloadProductosCategoriaPdf } from '../../utils/productosCategoriaPdf'
 import ProductosActionsMenu from './ProductosActionsMenu'
 import './ProductosList.css'
 import '../../styles/registros-seccion.css'
@@ -17,6 +18,8 @@ function ProductosList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [categorias, setCategorias] = useState([])
+  const [filtroCategoriaId, setFiltroCategoriaId] = useState('')
   const [successMessage, setSuccessMessage] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -41,10 +44,18 @@ function ProductosList() {
     }
   }, [location.state, navigate, location.pathname])
 
-  // Resetear a página 1 cuando cambia la búsqueda
+  // Resetear a página 1 cuando cambia la búsqueda o categoría
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm])
+  }, [searchTerm, filtroCategoriaId])
+
+  useEffect(() => {
+    const loadCategorias = async () => {
+      const { data } = await getCategorias()
+      setCategorias(data || [])
+    }
+    loadCategorias()
+  }, [])
 
   const loadProductos = async () => {
     setLoading(true)
@@ -61,11 +72,37 @@ function ProductosList() {
     setLoading(false)
   }
 
-  // Filtrar productos por búsqueda
-  const filteredProductos = productos.filter(producto => 
-    producto.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    producto.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const categoriaSeleccionadaNombre = filtroCategoriaId
+    ? categorias.find((c) => String(c.id) === String(filtroCategoriaId))?.nombre || 'Categoría'
+    : 'Todas las categorías'
+
+  // Filtrar por categoría y búsqueda de texto
+  const filteredProductos = productos.filter((producto) => {
+    if (filtroCategoriaId && String(producto.categoria_id) !== String(filtroCategoriaId)) {
+      return false
+    }
+    if (!searchTerm.trim()) return true
+    const term = searchTerm.toLowerCase()
+    return (
+      producto.nombre?.toLowerCase().includes(term) ||
+      producto.codigo_barras?.toLowerCase().includes(term)
+    )
+  })
+
+  const puedeExportarPdf = Boolean(filtroCategoriaId) && filteredProductos.length > 0
+
+  const handleExportarPdfCategoria = () => {
+    if (!filtroCategoriaId) return
+    downloadProductosCategoriaPdf({
+      categoriaNombre: categoriaSeleccionadaNombre,
+      productos: filteredProductos.map((p) => ({
+        nombre: p.nombre,
+        codigo_barras: p.codigo_barras,
+        codigo_interno: p.codigo_interno,
+        precio_venta: p.precio_venta,
+      })),
+    })
+  }
 
   // Calcular paginación
   const totalItems = filteredProductos.length
@@ -135,17 +172,53 @@ function ProductosList() {
           <div className="section-label">SECCIÓN</div>
           <h3 className="registros-seccion-titulo">REGISTROS DE PRODUCTOS</h3>
           <div className="productos-filters">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Buscar por nombre o código de barras..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ maxWidth: '400px' }}
-            />
+            <div className="productos-filters__inputs">
+              <select
+                id="productos-filtro-categoria"
+                className="form-control productos-filtro-categoria"
+                value={filtroCategoriaId}
+                onChange={(e) => setFiltroCategoriaId(e.target.value)}
+                aria-label="Filtrar por categoría"
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={String(cat.id)}>
+                    {cat.nombre}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                className="form-control productos-busqueda-texto"
+                placeholder="Buscar por nombre o código de barras..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button
+                type="button"
+                className="productos-btn-pdf"
+                onClick={handleExportarPdfCategoria}
+                disabled={!puedeExportarPdf}
+                title={
+                  filtroCategoriaId
+                    ? 'Generar reporte PDF de la categoría seleccionada'
+                    : 'Seleccioná una categoría para generar el PDF'
+                }
+                aria-label="Generar reporte PDF"
+              >
+                <i className="bi bi-file-earmark-pdf" aria-hidden />
+                <span className="productos-btn-pdf__label">PDF</span>
+              </button>
+            </div>
             {totalItems > 0 && (
               <div className="table-info">
                 Mostrando {startIndex + 1}-{Math.min(endIndex, totalItems)} de {totalItems} productos
+                {filtroCategoriaId ? (
+                  <span className="productos-filters__categoria-activa">
+                    {' '}
+                    · Categoría: <strong>{categoriaSeleccionadaNombre}</strong>
+                  </span>
+                ) : null}
               </div>
             )}
           </div>
@@ -160,7 +233,11 @@ function ProductosList() {
                   </Link>
                 </>
               ) : (
-                <p>No se encontraron productos que coincidan con "{searchTerm}"</p>
+                <p>
+                  No se encontraron productos
+                  {filtroCategoriaId ? ` en "${categoriaSeleccionadaNombre}"` : ''}
+                  {searchTerm ? ` que coincidan con "${searchTerm}"` : ''}.
+                </p>
               )}
             </div>
           ) : (
