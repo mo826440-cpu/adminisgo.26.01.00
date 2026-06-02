@@ -580,6 +580,108 @@
   max-width: 0;
 }
 
+/* Anchos desktop (colgroup) */
+.ventas-rapidas-registros-scroll .vr-reg-col--fecha {
+  width: 15%;
+}
+.ventas-rapidas-registros-scroll .vr-reg-col--cliente {
+  width: 18%;
+}
+.ventas-rapidas-registros-scroll .vr-reg-col--total {
+  width: 11%;
+}
+.ventas-rapidas-registros-scroll .vr-reg-col--estado {
+  width: 9%;
+}
+.ventas-rapidas-registros-scroll .vr-reg-col--acciones {
+  width: 90px;
+}
+.ventas-rapidas-registros-scroll .vr-reg-col:not(.vr-reg-col--fecha):not(.vr-reg-col--cliente):not(.vr-reg-col--total):not(.vr-reg-col--estado):not(.vr-reg-col--acciones) {
+  width: 11%;
+}
+
+.vr-reg-label--mobile {
+  display: none;
+}
+
+/* Móvil: solo Fecha, Total, Estado y Acciones */
+@media (max-width: 768px) {
+  .ventas-rapidas-registros-scroll.table-container {
+    overflow-x: hidden;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--hide-mobile,
+  .ventas-rapidas-registros-scroll th.vr-reg-col--hide-mobile,
+  .ventas-rapidas-registros-scroll td.vr-reg-col--hide-mobile {
+    display: none !important;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-label--desktop {
+    display: none;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-label--mobile {
+    display: inline;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--fecha {
+    width: 34%;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--total {
+    width: 28%;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--estado {
+    width: 22%;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--acciones {
+    width: 72px;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--fecha,
+  .ventas-rapidas-registros-scroll td.vr-reg-col--fecha {
+    white-space: normal;
+    line-height: 1.35;
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+
+  .ventas-rapidas-registros-scroll .ventas-rapidas-td-num.vr-reg-col--total {
+    font-size: 0.85rem;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .ventas-rapidas-registros-scroll th.ventas-rapidas-th-num,
+  .ventas-rapidas-registros-scroll td.ventas-rapidas-td-num {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--estado {
+    text-align: center;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--estado .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .ventas-rapidas-registros-scroll .vr-reg-col--acciones {
+    text-align: center;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  .ventas-rapidas-registros-scroll .ventas-rapidas-registros-table th,
+  .ventas-rapidas-registros-scroll .ventas-rapidas-registros-table td {
+    padding: 0.5rem 0.35rem;
+    font-size: 0.8rem;
+  }
+}
+
 /* Etiquetas colapsables (lenguaje glass alineado con ModuleGlassPageHeader) */
 .ventas-rapidas-page .vr-glass-disclosure {
   margin-bottom: 0.85rem;

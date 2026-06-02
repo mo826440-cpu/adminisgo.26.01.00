@@ -1526,49 +1526,57 @@ function VentasRapidas() {
             <div className="ventas-rapidas-registros-scroll table-container">
               <table className="table ventas-rapidas-registros-table table-sticky-header">
                 <colgroup>
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '11%' }} />
-                  <col style={{ width: '11%' }} />
-                  <col style={{ width: '11%' }} />
-                  <col style={{ width: '14%' }} />
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '90px' }} />
+                  <col className="vr-reg-col vr-reg-col--fecha" />
+                  <col className="vr-reg-col vr-reg-col--hide-mobile vr-reg-col--cliente" />
+                  <col className="vr-reg-col vr-reg-col--total" />
+                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                  <col className="vr-reg-col vr-reg-col--estado" />
+                  <col className="vr-reg-col vr-reg-col--acciones" />
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Fecha y Hora</th>
-                    <th>Cliente</th>
-                    <th className="ventas-rapidas-th-num">$Total</th>
-                    <th className="ventas-rapidas-th-num">$ Pagado</th>
-                    <th className="ventas-rapidas-th-num">$ Pendiente</th>
-                    <th>Forma de Pago</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th className="vr-reg-col--fecha">
+                      <span className="vr-reg-label vr-reg-label--desktop">Fecha y Hora</span>
+                      <span className="vr-reg-label vr-reg-label--mobile">Fecha</span>
+                    </th>
+                    <th className="vr-reg-col--hide-mobile">Cliente</th>
+                    <th className="ventas-rapidas-th-num vr-reg-col--total">
+                      <span className="vr-reg-label vr-reg-label--desktop">$Total</span>
+                      <span className="vr-reg-label vr-reg-label--mobile">Total</span>
+                    </th>
+                    <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pagado</th>
+                    <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pendiente</th>
+                    <th className="vr-reg-col--hide-mobile">Forma de Pago</th>
+                    <th className="vr-reg-col--estado">Estado</th>
+                    <th className="vr-reg-col--acciones">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ventasRapidas.map((venta) => (
                     <tr key={venta.id}>
-                      <td>{formatearFechaHora(venta.fecha_hora)}</td>
-                      <td className="ventas-rapidas-td-cliente">
+                      <td className="vr-reg-col--fecha">{formatearFechaHora(venta.fecha_hora)}</td>
+                      <td className="ventas-rapidas-td-cliente vr-reg-col--hide-mobile">
                         {venta.clientes?.nombre?.trim() || 'Cliente genérico'}
                       </td>
-                      <td className="ventas-rapidas-td-num">{formatearMoneda(venta.total)}</td>
-                      <td className="ventas-rapidas-td-num">{formatearMoneda(venta.monto_pagado)}</td>
-                      <td className="ventas-rapidas-td-num">
+                      <td className="ventas-rapidas-td-num vr-reg-col--total">{formatearMoneda(venta.total)}</td>
+                      <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
+                        {formatearMoneda(venta.monto_pagado)}
+                      </td>
+                      <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
                         {formatearMoneda(
                           venta.monto_pendiente ??
                             Math.max(0, Number(venta.total || 0) - Number(venta.monto_pagado || 0))
                         )}
                       </td>
-                      <td>{venta.metodo_pago}</td>
-                      <td>
+                      <td className="vr-reg-col--hide-mobile">{venta.metodo_pago}</td>
+                      <td className="vr-reg-col--estado">
                         <Badge variant={venta.estado === 'PAGADO' ? 'success' : 'warning'}>
                           {venta.estado}
                         </Badge>
                       </td>
-                      <td>
+                      <td className="vr-reg-col--acciones">
                         <VentasRapidasActionsMenu
                           ventaRapidaId={venta.id}
                           onEditar={iniciarEdicionVenta}
