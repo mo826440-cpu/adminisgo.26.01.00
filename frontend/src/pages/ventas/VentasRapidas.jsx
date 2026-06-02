@@ -1526,17 +1526,19 @@ function VentasRapidas() {
             <div className="ventas-rapidas-registros-scroll table-container">
               <table className="table ventas-rapidas-registros-table table-sticky-header">
                 <colgroup>
+                  <col style={{ width: '15%' }} />
                   <col style={{ width: '18%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '9%' }} />
                   <col style={{ width: '90px' }} />
                 </colgroup>
                 <thead>
                   <tr>
                     <th>Fecha y Hora</th>
+                    <th>Cliente</th>
                     <th className="ventas-rapidas-th-num">$Total</th>
                     <th className="ventas-rapidas-th-num">$ Pagado</th>
                     <th className="ventas-rapidas-th-num">$ Pendiente</th>
@@ -1549,6 +1551,9 @@ function VentasRapidas() {
                   {ventasRapidas.map((venta) => (
                     <tr key={venta.id}>
                       <td>{formatearFechaHora(venta.fecha_hora)}</td>
+                      <td className="ventas-rapidas-td-cliente">
+                        {venta.clientes?.nombre?.trim() || 'Cliente genérico'}
+                      </td>
                       <td className="ventas-rapidas-td-num">{formatearMoneda(venta.total)}</td>
                       <td className="ventas-rapidas-td-num">{formatearMoneda(venta.monto_pagado)}</td>
                       <td className="ventas-rapidas-td-num">

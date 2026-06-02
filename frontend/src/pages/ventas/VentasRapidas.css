@@ -573,6 +573,13 @@
   background-clip: padding-box;
 }
 
+.ventas-rapidas-registros-scroll .ventas-rapidas-td-cliente {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
 /* Etiquetas colapsables (lenguaje glass alineado con ModuleGlassPageHeader) */
 .ventas-rapidas-page .vr-glass-disclosure {
   margin-bottom: 0.85rem;
