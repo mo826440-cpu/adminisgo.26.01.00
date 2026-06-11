@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { DateTimeProvider } from './context/DateTimeContext'
+import { TicketPrintProvider } from './context/TicketPrintContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import { AdminRoute, PermissionRoute } from './components/common'
 import ErrorBoundary from './components/common/ErrorBoundary'
@@ -55,6 +56,7 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <DateTimeProvider>
+          <TicketPrintProvider>
           <Router>
           <Routes>
             {/* Rutas públicas */}
@@ -467,6 +469,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           </Routes>
         </Router>
+          </TicketPrintProvider>
         </DateTimeProvider>
       </AuthProvider>
     </ErrorBoundary>

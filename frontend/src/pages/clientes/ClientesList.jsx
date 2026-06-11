@@ -20,8 +20,11 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
-import ClienteDeudasTicketThermal from '../../components/common/ClienteDeudasTicketThermal'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
+import { buildClienteDeudasThermalPlainText } from '../../utils/thermalPlainReceipt'
+import '../../styles/ticketThermalPrint.css'
 import './ClientesList.css'
 import '../../styles/registros-seccion.css'
 
@@ -34,6 +37,7 @@ function datoOGuion(val) {
 
 function ClientesList() {
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
   const location = useLocation()
   const navigate = useNavigate()
   const { timezone } = useDateTime()
@@ -231,7 +235,17 @@ function ClientesList() {
     await prepararImpresionDeudas(pagoCliente)
   }
 
-  const canPrint = useMemo(() => Boolean(printCliente), [printCliente])
+  const ticketDeudasPlain = useMemo(() => {
+    if (!printCliente) return ''
+    return buildClienteDeudasThermalPlainText({
+      comercio: printComercio,
+      cliente: printCliente,
+      ventasConDeuda: printVentasDeuda,
+      formatearMoneda,
+      formatearFechaHoraTicket,
+      printConfig,
+    })
+  }, [printCliente, printComercio, printVentasDeuda, printConfig, timezone])
 
   const deudaTotalPagoCliente = useMemo(() => {
     const cid = Number(pagoCliente?.id)
@@ -516,17 +530,7 @@ function ClientesList() {
 
       {/* Host ticket (se clona dentro del modal de impresión) */}
       <div className="ticket-print-host" aria-hidden="true">
-        <div ref={ticketRef}>
-          {canPrint ? (
-            <ClienteDeudasTicketThermal
-              comercio={printComercio}
-              cliente={printCliente}
-              ventasConDeuda={printVentasDeuda}
-              formatearMoneda={formatearMoneda}
-              formatearFechaHoraTicket={formatearFechaHoraTicket}
-            />
-          ) : null}
-        </div>
+        <TicketPrintBlock innerRef={ticketRef} plainText={ticketDeudasPlain} />
       </div>
 
       <ThermalPrintPreviewModal

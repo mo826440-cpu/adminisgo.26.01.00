@@ -50,4 +50,9 @@
   max-width: none !important;
   margin: 0 !important;
   box-sizing: border-box;
+  width: fit-content !important;
+}
+
+.thermal-preview-clone-shell .ticket-pre-body {
+  text-align: left !important;
 }

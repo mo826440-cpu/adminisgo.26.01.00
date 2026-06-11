@@ -881,7 +881,7 @@ export const getVentaById = async (id) => {
       .from('ventas')
       .select(`
         *,
-        clientes:cliente_id(nombre, email),
+        clientes:cliente_id(nombre, email, numero_documento),
         usuarios:usuario_id(nombre)
       `)
       .eq('id', id)

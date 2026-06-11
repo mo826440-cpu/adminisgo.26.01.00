@@ -1,0 +1,122 @@
+.config-impresoras-intro {
+  margin-bottom: 1.25rem;
+}
+
+.config-impresoras-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.config-impresoras-fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1rem 0.75rem;
+  margin: 1rem 0;
+}
+
+.config-impresoras-fieldset legend {
+  padding: 0 0.35rem;
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+}
+
+.config-impresoras-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.55rem 0;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-impresoras-toggle:last-of-type {
+  border-bottom: none;
+}
+
+.config-impresoras-toggle input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.config-impresoras-toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.config-impresoras-toggle__label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.config-impresoras-toggle__hint {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+}
+
+.config-impresoras-preview-wrap {
+  position: sticky;
+  top: 1rem;
+}
+
+.config-impresoras-preview-title {
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.config-impresoras-preview-meta {
+  margin: 0 0 0.75rem;
+  font-size: var(--font-size-small);
+}
+
+.config-impresoras-preview-roll {
+  margin: 0 auto;
+  background: #fff;
+  color: #111;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  padding: 0.65rem 0.5rem;
+}
+
+.config-impresoras-preview-pre {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 9px;
+  line-height: 1.35;
+  white-space: pre;
+  overflow-x: auto;
+  word-break: normal;
+}
+
+.config-impresoras-preview-roll[data-ticket-fuente='fontA'] .config-impresoras-preview-pre {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9px;
+}
+
+.config-impresoras-preview-roll[data-ticket-fuente='fontB'] .config-impresoras-preview-pre {
+  font-family: Consolas, 'Liberation Mono', monospace;
+  font-size: 8px;
+}
+
+.config-impresoras-preview-roll[data-ticket-fuente='courier'] .config-impresoras-preview-pre {
+  font-family: Courier, 'Courier New', monospace;
+}
+
+.config-impresoras-preview-pre strong {
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .config-impresoras-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .config-impresoras-preview-wrap {
+    position: static;
+  }
+}

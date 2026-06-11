@@ -9,6 +9,7 @@ import { updatePassword, signOut } from '../../services/auth'
 import { getEstadoSuscripcion } from '../../services/planes'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
+import ConfigImpresorasSection from './ConfigImpresorasSection'
 import './Configuracion.css'
 
 function Configuracion() {
@@ -43,11 +44,6 @@ function Configuracion() {
     confirmPassword: ''
   })
   const [showPasswordModal, setShowPasswordModal] = useState(false)
-
-  // Estado para formato de impresión
-  const [formatoImpresion, setFormatoImpresion] = useState(() => {
-    return localStorage.getItem('formatoImpresion') || 'pos80'
-  })
 
   // Estado de suscripción (Tu plan actual)
   const [suscripcion, setSuscripcion] = useState(null)
@@ -240,11 +236,6 @@ function Configuracion() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleFormatoImpresionChange = (newFormato) => {
-    setFormatoImpresion(newFormato)
-    localStorage.setItem('formatoImpresion', newFormato)
   }
 
   const handleEliminarCuenta = async () => {
@@ -476,27 +467,7 @@ function Configuracion() {
           </div>
         </Card>
 
-        {/* Formato de Impresión */}
-        <Card title="Formato de Impresión" className="config-section">
-          <div className="print-format-section">
-            <p className="text-secondary">Elegí el formato de impresión para los tickets de venta.</p>
-            <div className="form-row">
-              <div className="form-col">
-                <label className="form-label">
-                  Formato de Ticket
-                  <select
-                    className="form-control"
-                    value={formatoImpresion}
-                    onChange={(e) => handleFormatoImpresionChange(e.target.value)}
-                  >
-                    <option value="pos80">POS 80mm (Ticket estándar)</option>
-                    <option value="a4">A4 (Papel tamaño carta)</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <ConfigImpresorasSection />
 
         {/* Configuración de Fecha y Hora */}
         <Card title="Fecha y Hora" className="config-section">

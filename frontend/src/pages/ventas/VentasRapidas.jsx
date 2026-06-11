@@ -24,8 +24,10 @@ import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { getComercio } from '../../services/comercio'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
@@ -71,6 +73,7 @@ function VentasRapidas() {
   const ticketPrintRef = useRef(null)
 
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
 
   // Estados de caja
   const [estadoCaja, setEstadoCaja] = useState(null)
@@ -176,8 +179,9 @@ function VentasRapidas() {
       comercio: comercioParaImprimir,
       formatearMoneda,
       formatearFechaHoraTicket,
+      printConfig,
     })
-  }, [ventaParaImprimir, comercioParaImprimir, timezone])
+  }, [ventaParaImprimir, comercioParaImprimir, timezone, printConfig])
 
   const clearPrintIntent = () => {
     // Ojo: ThermalPrintPreviewModal llama onClose() ANTES de window.print().
@@ -2089,9 +2093,7 @@ function VentasRapidas() {
           y el nodo con `ref` no debe tener estilos que lo oculten. */}
       {/* Ticket: texto plano monoespaciado — los drivers POS suelen ignorar tablas HTML */}
       <div className="ticket-print-host" aria-hidden="true">
-        <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-          <pre className="ticket-pre-body">{ticketPlain}</pre>
-        </div>
+        <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
       </div>
 
       <ThermalPrintPreviewModal

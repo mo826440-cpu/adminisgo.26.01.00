@@ -1,19 +1,12 @@
 /**
  * Vista previa del ticket antes de window.print().
- * Chrome suele mostrar el diálogo de impresión en miniatura tipo A4; aquí ves el formato POS real (80 mm o A4 según configuración).
  */
 import { useEffect, useRef } from 'react'
 import Modal from './Modal'
 import Button from './Button'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
+import { getTicketAnchoMm } from '../../constants/ticketPrintConfig'
 import './ThermalPrintPreviewModal.css'
-
-const STORAGE_KEY = 'formatoImpresion'
-
-function getPrintFormat () {
-
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 'pos80'
-  return localStorage.getItem(STORAGE_KEY) || 'pos80'
-}
 
 function ThermalPrintPreviewModal ({
   isOpen,
@@ -22,6 +15,8 @@ function ThermalPrintPreviewModal ({
   ariaLabelTicket = 'Vista previa del ticket para impresora térmica'
 }) {
   const shellRef = useRef(null)
+  const { config } = useTicketPrintConfig()
+  const anchoMm = getTicketAnchoMm(config)
 
   useEffect(() => {
     if (!isOpen || !shellRef.current) return
@@ -40,18 +35,9 @@ function ThermalPrintPreviewModal ({
       cancelAnimationFrame(id)
       shell.innerHTML = ''
     }
-  }, [isOpen, sourceRef])
+  }, [isOpen, sourceRef, config.ancho])
 
-  const fmt = isOpen ? getPrintFormat() : 'pos80'
-  const frameClass =
-    fmt === 'a4'
-      ? 'thermal-preview-frame thermal-preview-frame--a4'
-      : 'thermal-preview-frame thermal-preview-frame--pos'
-
-  const title =
-    fmt === 'a4'
-      ? 'Vista previa — tamaño papel (A4)'
-      : 'Vista previa — impresora térmica (~80 mm)'
+  const title = `Vista previa — impresora térmica (${anchoMm} mm)`
 
   return (
     <Modal
@@ -82,20 +68,20 @@ function ThermalPrintPreviewModal ({
       }
     >
       <p className="thermal-preview-hint">
-        {fmt === 'a4'
-          ? 'Así quedará distribuido el contenido en una página ancha.'
-          : 'Así se ve el rollo térmico. En «Imprimir…» Chromium a veces sigue miniaturizando en un rectángulo tipo A4; el resultado en la impresora POS depende del driver y del ancho configurado (~80 mm).'}
+        Así se verá el rollo térmico según tu configuración ({anchoMm} mm, {config.ancho === 'pos58' ? 32 : 42}{' '}
+        columnas). En el diálogo de impresión del navegador el resultado final depende del driver POS.
       </p>
       <div
         className="thermal-preview-gutter"
         role="region"
         aria-label={ariaLabelTicket}
       >
-        <div className={frameClass}>
-          <div
-            ref={shellRef}
-            className="thermal-preview-clone-shell"
-          />
+        <div
+          className="thermal-preview-frame thermal-preview-frame--pos"
+          data-ticket-ancho={config.ancho}
+          style={{ maxWidth: `${anchoMm}mm` }}
+        >
+          <div ref={shellRef} className="thermal-preview-clone-shell" />
         </div>
       </div>
     </Modal>

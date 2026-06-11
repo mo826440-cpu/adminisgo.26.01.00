@@ -8,12 +8,15 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { buildCompraThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './CompraDetalle.css'
 
 function CompraDetalle() {
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -226,9 +229,10 @@ function CompraDetalle() {
       comercio,
       formatearMoneda,
       formatearFechaHoraTicket,
-      estadoTexto: obtenerTextoEstado(compra.estado)
+      estadoTexto: obtenerTextoEstado(compra.estado),
+      printConfig,
     })
-  }, [compra, comercio, timezone])
+  }, [compra, comercio, timezone, printConfig])
 
   if (loading) {
     return (
@@ -511,14 +515,13 @@ function CompraDetalle() {
             </div>
           )}
         </Modal>
-
-        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que Ventas */}
-        {compra && (
-          <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-            <pre className="ticket-pre-body">{ticketPlain}</pre>
-          </div>
-        )}
       </div>
+
+      {compra ? (
+        <div className="ticket-print-host" aria-hidden="true">
+          <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
+        </div>
+      ) : null}
 
       <ThermalPrintPreviewModal
         isOpen={thermalPreviewOpen}

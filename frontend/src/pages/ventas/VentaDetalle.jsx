@@ -8,12 +8,15 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { buildVentaThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './VentaDetalle.css'
 
 function VentaDetalle() {
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -97,9 +100,10 @@ function VentaDetalle() {
       venta,
       comercio,
       formatearMoneda,
-      formatearFechaHoraTicket
+      formatearFechaHoraTicket,
+      printConfig,
     })
-  }, [venta, comercio, timezone])
+  }, [venta, comercio, timezone, printConfig])
 
   if (loading) {
     return (
@@ -225,14 +229,15 @@ function VentaDetalle() {
                 </div>
               )}
             </Card>
-
-            {/* Ticket impresión: texto plano POS (solo ventas) — tolera drivers térmicos que ignoran tablas */}
-            <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-              <pre className="ticket-pre-body">{ticketPlain}</pre>
-            </div>
           </>
         )}
       </div>
+
+      {venta ? (
+        <div className="ticket-print-host" aria-hidden="true">
+          <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
+        </div>
+      ) : null}
 
       <ThermalPrintPreviewModal
         isOpen={thermalPreviewOpen}

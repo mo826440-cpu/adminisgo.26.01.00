@@ -9,11 +9,14 @@ import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime, formatDate } from '../../utils/dateFormat'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import './VentaRapidaDetalle.css'
 
 function VentaRapidaDetalle() {
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -99,8 +102,9 @@ function VentaRapidaDetalle() {
       comercio,
       formatearMoneda,
       formatearFechaHoraTicket,
+      printConfig,
     })
-  }, [ventaRapida, comercio, timezone])
+  }, [ventaRapida, comercio, timezone, printConfig])
 
   if (loading) {
     return (
@@ -234,9 +238,7 @@ function VentaRapidaDetalle() {
 
       {/* Fuera de .container: el CSS @media print oculta hijos del container salvo .ticket-print */}
       <div className="ticket-print-host" aria-hidden="true">
-        <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-          <pre className="ticket-pre-body">{ticketPlain}</pre>
-        </div>
+        <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
       </div>
 
       <ThermalPrintPreviewModal

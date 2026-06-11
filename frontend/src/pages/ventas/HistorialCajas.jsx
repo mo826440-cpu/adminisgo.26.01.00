@@ -8,12 +8,15 @@ import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import { getComercio } from '../../services/comercio'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
+import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
+import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { buildHistorialCajasThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './HistorialCajas.css'
 
 function HistorialCajas() {
   useTicketPrintFormat()
+  const { config: printConfig } = useTicketPrintConfig()
   const location = useLocation()
   const navigate = useNavigate()
   const ticketPrintRef = useRef(null)
@@ -215,9 +218,10 @@ function HistorialCajas() {
       totales: { totalAperturas, totalCierres, diferencia: totalCierres - totalAperturas },
       comercio,
       formatearMoneda,
-      formatearFechaHora
+      formatearFechaHora,
+      printConfig,
     })
-  }, [historial, fechaDesde, fechaHasta, comercio, timezone])
+  }, [historial, fechaDesde, fechaHasta, comercio, timezone, printConfig])
 
   // Calcular totales
   const calcularTotales = () => {
@@ -400,13 +404,6 @@ function HistorialCajas() {
           )}
         </Card>
 
-        {/* Vista previa / impresión térmica: texto plano (<pre>), mismo formato que Ventas */}
-        {historial.length > 0 && (
-          <div ref={ticketPrintRef} className="ticket-print ticket-print--thermal-pre" translate="no">
-            <pre className="ticket-pre-body">{ticketPlain}</pre>
-          </div>
-        )}
-
         {/* Modal Eliminar */}
         <Modal
           isOpen={showDeleteModal}
@@ -563,13 +560,19 @@ function HistorialCajas() {
             )
           })()}
         </Modal>
-
-        <ThermalPrintPreviewModal
-          isOpen={thermalPreviewOpen}
-          onClose={clearPrintIntent}
-          sourceRef={ticketPrintRef}
-        />
       </div>
+
+      {historial.length > 0 ? (
+        <div className="ticket-print-host" aria-hidden="true">
+          <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
+        </div>
+      ) : null}
+
+      <ThermalPrintPreviewModal
+        isOpen={thermalPreviewOpen}
+        onClose={clearPrintIntent}
+        sourceRef={ticketPrintRef}
+      />
     </Layout>
   )
 }

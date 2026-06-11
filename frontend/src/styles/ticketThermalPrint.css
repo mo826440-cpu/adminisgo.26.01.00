@@ -17,9 +17,32 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.ticket-print[data-ticket-ancho='pos58'] {
+  max-width: 58mm;
+}
+
+.ticket-print[data-ticket-fuente='fontA'],
+.ticket-print[data-ticket-ancho='pos58'][data-ticket-fuente='fontA'] {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ticket-print[data-ticket-fuente='fontB'] {
+  font-family: Consolas, 'Liberation Mono', monospace;
+  font-size: 8px;
+}
+
+.ticket-print[data-ticket-fuente='courier'] {
+  font-family: Courier, 'Courier New', monospace;
+}
+
 /* Ticket texto plano (<pre>): mismo ancho térmico, sin degradar layout en POS */
 .ticket-print--thermal-pre {
   max-width: 80mm;
+  width: fit-content;
+}
+
+.ticket-print--thermal-pre[data-ticket-ancho='pos58'] {
+  max-width: 58mm;
 }
 
 .ticket-print--thermal-pre .ticket-pre-body {
@@ -28,24 +51,43 @@
   line-height: 1.4;
   margin: 0;
   padding: 0;
-  /* pre: una línea lógica = una línea visual (evita partir el relleno entre etiqueta e importe) */
+  /* Ancho fijo en caracteres: evita que el diálogo de impresión estire espacios entre etiqueta e importe */
+  width: 42ch;
+  max-width: 42ch;
+  min-width: 42ch;
+  text-align: left !important;
+  text-align-last: left !important;
   white-space: pre;
   word-break: normal;
   overflow-wrap: normal;
-  overflow: visible;
+  overflow-x: visible;
   font-variant-ligatures: none;
   font-feature-settings: 'liga' 0;
   font-synthesis: none;
   letter-spacing: 0;
+  tab-size: 8;
+}
+
+.ticket-print--thermal-pre[data-ticket-ancho='pos58'] .ticket-pre-body {
+  width: 32ch;
+  max-width: 32ch;
+  min-width: 32ch;
 }
 
 .ticket-print--thermal-pre .ticket-pre-body strong {
-  font-weight: 700;
+  font-weight: inherit;
   font-family: inherit;
   font-synthesis: none;
+  /* Negrita sin ensanchar glifos (preserva columnas fijas) */
+  text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
 }
 
-html[data-print-format='a4'] .ticket-print {
+html[data-print-format='pos58'] .ticket-print {
+  max-width: 58mm;
+  width: 58mm;
+}
+
+html[data-print-format='a4'] .ticket-print:not(.ticket-print--thermal-pre) {
   max-width: none;
   width: 100%;
 }
@@ -212,7 +254,6 @@ html[data-print-format='a4'] .ticket-print {
     width: 80mm !important;
     max-width: 80mm !important;
     margin: 0 !important;
-    /* Más ancho útil (80mm) para que entren las ~42 columnas sin desbordar */
     padding: 2mm !important;
     background: white !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
@@ -223,11 +264,41 @@ html[data-print-format='a4'] .ticket-print {
     box-shadow: none !important;
     border: none !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .ticket-print.ticket-print--thermal-pre {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    max-width: 80mm !important;
+    min-width: 0 !important;
+  }
+
+  html[data-print-format='pos58'] .ticket-print.ticket-print--thermal-pre,
+  .ticket-print.ticket-print--thermal-pre[data-ticket-ancho='pos58'] {
+    max-width: 58mm !important;
+  }
+
+  html[data-print-format='pos58'] .ticket-print,
+  .ticket-print[data-ticket-ancho='pos58'] {
+    width: 58mm !important;
+    max-width: 58mm !important;
   }
 
   .ticket-print-host {
     display: block !important;
     visibility: visible !important;
+    width: fit-content !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html[data-print-format='pos58'] .ticket-print-host,
+  .ticket-print-host:has([data-ticket-ancho='pos58']) {
+    max-width: 58mm !important;
   }
 
   .ticket-print--thermal-pre .ticket-pre-body {
@@ -235,12 +306,37 @@ html[data-print-format='a4'] .ticket-print {
     white-space: pre !important;
     word-break: normal !important;
     overflow-wrap: normal !important;
-    overflow: visible !important;
+    overflow-x: visible !important;
+    text-align: left !important;
+    text-align-last: left !important;
+    width: 42ch !important;
+    max-width: 42ch !important;
+    min-width: 42ch !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
     font-variant-ligatures: none !important;
     font-feature-settings: 'liga' 0 !important;
     font-synthesis: none !important;
     letter-spacing: 0 !important;
+  }
+
+  html[data-print-format='pos58'] .ticket-print--thermal-pre .ticket-pre-body,
+  .ticket-print[data-ticket-ancho='pos58'] .ticket-print--thermal-pre .ticket-pre-body {
+    width: 32ch !important;
+    max-width: 32ch !important;
+    min-width: 32ch !important;
+    font-size: 6px !important;
+  }
+
+  .ticket-print[data-ticket-fuente='fontA'] .ticket-pre-body {
+    font-family: 'Courier New', Courier, monospace !important;
+  }
+
+  .ticket-print[data-ticket-fuente='fontB'] .ticket-pre-body {
+    font-family: Consolas, 'Liberation Mono', monospace !important;
+  }
+
+  .ticket-print[data-ticket-fuente='courier'] .ticket-pre-body {
+    font-family: Courier, 'Courier New', monospace !important;
   }
 
   /*
@@ -251,8 +347,8 @@ html[data-print-format='a4'] .ticket-print {
   .ticket-print--thermal-pre .ticket-pre-body strong {
     font-family: inherit !important;
     font-synthesis: none !important;
-    font-weight: 700 !important;
-    text-shadow: none !important;
+    font-weight: inherit !important;
+    text-shadow: 0.35px 0 0 #000, -0.35px 0 0 #000 !important;
   }
 
   /* Fuerza herencia monoespaciada para todos los nodos dentro del <pre> */
@@ -266,7 +362,7 @@ html[data-print-format='a4'] .ticket-print {
     padding: 1px 0 !important;
   }
 
-  html[data-print-format='a4'] .ticket-print {
+  html[data-print-format='a4'] .ticket-print:not(.ticket-print--thermal-pre) {
     width: 100% !important;
     max-width: none !important;
     position: relative !important;
@@ -297,6 +393,10 @@ html[data-print-format='a4'] .ticket-print {
     width: 80mm !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  html[data-print-format='pos58'] .container {
+    width: 58mm !important;
   }
 
   html[data-print-format='a4'] .container {

@@ -2,6 +2,8 @@
  * Tickets POS en texto plano (monoespacio) para drivers que degradan HTML/tablas.
  */
 
+import { getTicketColsFromConfig, mergeTicketPrintConfig } from '../constants/ticketPrintConfig'
+
 export const DEFAULT_THERMAL_COLS = 42
 
 /** Compatibilidad con importaciones antiguas. */
@@ -72,14 +74,14 @@ function wrapGreedyMergeOrphans(text, maxLen, minTail = 10) {
 }
 
 /** Celda alineada a la izquierda (relleno a la derecha), ancho fijo. */
-function thermalCellRpad(text, w) {
+export function thermalCellRpad(text, w) {
   const t = String(text ?? '')
   const c = t.length > w ? t.slice(0, w) : t
   return c + ' '.repeat(Math.max(0, w - c.length))
 }
 
 /** Celda alineada a la derecha (relleno a la izquierda), ancho fijo. */
-function thermalCellLpad(text, w) {
+export function thermalCellLpad(text, w) {
   const t = String(text ?? '')
   const c = t.length > w ? t.slice(0, w) : t
   return ' '.repeat(Math.max(0, w - c.length)) + c
@@ -184,18 +186,40 @@ function pushDatosComercio(lines, comercio, cols = DEFAULT_THERMAL_COLS) {
   if (any) lines.push('')
 }
 
+function resolvePrintConfig(printConfig, colsOverride) {
+  const cfg = mergeTicketPrintConfig(printConfig)
+  const cols = colsOverride ?? getTicketColsFromConfig(cfg)
+  return { cfg, cols }
+}
+
+function pushFirmaBlock(lines, cols, cfg) {
+  if (cfg.mostrarFirmas === false) return
+  const lineW = Math.min(cols, 30)
+  const underline = '_'.repeat(lineW)
+  lines.push('', '', '', '', '')
+  lines.push(underline)
+  lines.push('Firma Cliente')
+  lines.push('', '', '', '', '')
+  lines.push(underline)
+  lines.push('Firma Representante')
+  lines.push('', '', '', '', '')
+}
+
 export function buildVentaThermalPlainText({
   venta,
   comercio,
   formatearMoneda,
   formatearFechaHoraTicket,
-  cols = DEFAULT_THERMAL_COLS,
+  cols: colsOverride,
+  printConfig,
   /** 'full' = PROD/UN/$UN/$TOT; 'rapida' = PROD/UN/$TOT (ventas rápidas) */
   itemColumns = 'full',
   /** Si true, imprime TOTAL DEUDA aunque sea 0 (ventas rápidas) */
   alwaysShowDeuda = false,
 }) {
   if (!venta) return ''
+
+  const { cfg, cols } = resolvePrintConfig(printConfig, colsOverride)
 
   const rapida = itemColumns === 'rapida'
   const widths = rapida ? ventaRapidaItemsColumnWidths(cols) : ventaItemsColumnWidths(cols)
@@ -204,14 +228,25 @@ export function buildVentaThermalPlainText({
   const wT = widths.wT
   const lines = []
   lines.push('')
-  pushCenteredNombreComercio(lines, comercio, cols)
-  lines.push(thermalDash(cols))
-  pushDatosComercio(lines, comercio, cols)
+
+  if (cfg.mostrarDatosComercio !== false) {
+    pushCenteredNombreComercio(lines, comercio, cols)
+    lines.push(thermalDash(cols))
+    pushDatosComercio(lines, comercio, cols)
+  }
 
   lines.push(...plainLabelLines('Boleto N°', venta.numero_ticket || '-', cols))
   lines.push(...plainLabelLines('Fecha', formatearFechaHoraTicket(venta.fecha_hora), cols))
   if (venta.facturacion) lines.push(...plainLabelLines('Factura', venta.facturacion, cols))
-  if (venta.clientes?.nombre) lines.push(...plainLabelLines('Cliente', venta.clientes.nombre, cols))
+
+  if (cfg.mostrarDatosCliente !== false) {
+    if (venta.clientes?.nombre) {
+      lines.push(...plainLabelLines('Cliente', venta.clientes.nombre, cols))
+    }
+    const doc = venta.clientes?.numero_documento
+    if (doc) lines.push(...plainLabelLines('DNI', doc, cols))
+  }
+
   lines.push('')
   lines.push(thermalDash(cols))
 
@@ -257,27 +292,29 @@ export function buildVentaThermalPlainText({
   lines.push(thermalDash(cols))
   lines.push(thermalDetailLine('TOTAL VENTA', formatearMoneda(venta.total), cols))
 
-  if ((venta.pagos || []).length > 0) {
-    lines.push('')
-    lines.push('')
-    lines.push(thermalDetailLine('FORMA PAGO', '', cols))
-    lines.push(thermalDash(cols))
-    ;(venta.pagos || []).forEach((p) => {
-      lines.push(
-        thermalDetailLine(
-          String(p.metodo_pago || '').trimEnd(),
-          formatearMoneda(p.monto_pagado),
-          cols
+  if (cfg.mostrarFormasPago !== false) {
+    if ((venta.pagos || []).length > 0) {
+      lines.push('')
+      lines.push('')
+      lines.push(thermalDetailLine('FORMA PAGO', '', cols))
+      lines.push(thermalDash(cols))
+      ;(venta.pagos || []).forEach((p) => {
+        lines.push(
+          thermalDetailLine(
+            String(p.metodo_pago || '').trimEnd(),
+            formatearMoneda(p.monto_pagado),
+            cols
+          )
         )
-      )
-    })
-    lines.push(thermalDash(cols))
-  }
+      })
+      lines.push(thermalDash(cols))
+    }
 
-  lines.push(thermalDetailLine('TOTAL PAGADO', formatearMoneda(venta.monto_pagado ?? 0), cols))
-  const deudaNum = Number(venta.monto_deuda ?? 0)
-  if (alwaysShowDeuda || deudaNum > 0.01) {
-    lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(deudaNum), cols))
+    lines.push(thermalDetailLine('TOTAL PAGADO', formatearMoneda(venta.monto_pagado ?? 0), cols))
+    const deudaNum = Number(venta.monto_deuda ?? 0)
+    if (alwaysShowDeuda || deudaNum > 0.01) {
+      lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(deudaNum), cols))
+    }
   }
 
   lines.push(...thermalFooterStandard(cols, { email: comercio?.email }))
@@ -289,9 +326,12 @@ export function buildVentaRapidaThermalPlainText({
   comercio,
   formatearMoneda,
   formatearFechaHoraTicket,
-  cols = DEFAULT_THERMAL_COLS
+  cols: colsOverride,
+  printConfig,
 }) {
   if (!ventaRapida) return ''
+
+  const { cfg } = resolvePrintConfig(printConfig, colsOverride)
 
   const venta = {
     numero_ticket: ventaRapida.numero_ticket ?? ventaRapida.ventas?.numero_ticket,
@@ -314,37 +354,19 @@ export function buildVentaRapidaThermalPlainText({
     comercio,
     formatearMoneda,
     formatearFechaHoraTicket,
-    cols,
+    printConfig,
     itemColumns: 'rapida',
-    alwaysShowDeuda: true,
+    alwaysShowDeuda: cfg.mostrarFormasPago !== false,
   })
 
-  // Bloque de firmas al pie (solo en tickets de venta rápida).
-  // Se inserta después de la línea "Conserve este ticket.".
+  if (cfg.mostrarFirmas === false) return base
+
   const lines = String(base || '').split('\n')
   const idx = lines.findIndex((ln) => String(ln || '').includes('Conserve este ticket.'))
   const insertAt = idx >= 0 ? idx + 1 : lines.length
-  const firmaBlock = [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '______________________________',
-    'Firma Cliente',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '______________________________',
-    'Firma Representante',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ]
+  const cols = getTicketColsFromConfig(cfg)
+  const firmaBlock = []
+  pushFirmaBlock(firmaBlock, cols, cfg)
   lines.splice(insertAt, 0, ...firmaBlock)
   return lines.join('\n')
 }
@@ -356,6 +378,11 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+/** Líneas con importe alineado a la derecha: no van en negrita (rompe el ancho fijo en ch). */
+function thermalLineHasAmount(text) {
+  return /\$\s*[\d]/.test(String(text ?? ''))
 }
 
 /**
@@ -378,7 +405,8 @@ export function thermalPlainTextToHtml(
       const boldByFirst =
         Boolean(boldFirstNonEmptyLine) && !firstBoldDone && trimmed.length > 0
       const safe = escapeHtml(raw)
-      const isBold = boldByPrefix || boldByFirst
+      const isBold =
+        (boldByPrefix || boldByFirst) && !thermalLineHasAmount(raw)
       if (boldByFirst) firstBoldDone = true
       return isBold ? `<strong>${safe}</strong>` : safe
     })
@@ -391,15 +419,20 @@ export function buildCompraThermalPlainText({
   formatearMoneda,
   formatearFechaHoraTicket,
   estadoTexto,
-  cols = DEFAULT_THERMAL_COLS
+  cols: colsOverride,
+  printConfig,
 }) {
   if (!compra) return ''
 
+  const { cfg, cols } = resolvePrintConfig(printConfig, colsOverride)
   const lines = []
   lines.push('')
-  pushCenteredNombreComercio(lines, comercio, cols)
-  lines.push(thermalDash(cols))
-  pushDatosComercio(lines, comercio, cols)
+
+  if (cfg.mostrarDatosComercio !== false) {
+    pushCenteredNombreComercio(lines, comercio, cols)
+    lines.push(thermalDash(cols))
+    pushDatosComercio(lines, comercio, cols)
+  }
 
   lines.push(...plainLabelLines('Orden N°', compra.numero_orden || '-', cols))
   lines.push(...plainLabelLines('Fecha', formatearFechaHoraTicket(compra.fecha_orden), cols))
@@ -435,7 +468,7 @@ export function buildCompraThermalPlainText({
 
   lines.push(thermalDetailLine('TOTAL:', formatearMoneda(compra.total), cols))
 
-  if ((compra.pagos || []).length > 0) {
+  if (cfg.mostrarFormasPago !== false && (compra.pagos || []).length > 0) {
     lines.push('')
     lines.push('Formas de Pago:')
     ;(compra.pagos || []).forEach((p) => {
@@ -457,16 +490,21 @@ export function buildHistorialCajasThermalPlainText({
   comercio,
   formatearMoneda,
   formatearFechaHora,
-  cols = DEFAULT_THERMAL_COLS
+  cols: colsOverride,
+  printConfig,
 }) {
   const list = historial || []
   if (!list.length) return ''
 
+  const { cfg, cols } = resolvePrintConfig(printConfig, colsOverride)
   const lines = []
   lines.push('')
-  pushCenteredNombreComercio(lines, comercio, cols)
-  lines.push(thermalDash(cols))
-  pushDatosComercio(lines, comercio, cols)
+
+  if (cfg.mostrarDatosComercio !== false) {
+    pushCenteredNombreComercio(lines, comercio, cols)
+    lines.push(thermalDash(cols))
+    pushDatosComercio(lines, comercio, cols)
+  }
 
   lines.push(...thermalCenterParagraph('Historial de Cajas', cols))
   lines.push('')
@@ -489,5 +527,64 @@ export function buildHistorialCajasThermalPlainText({
   )
 
   lines.push(...thermalFooterStandard(cols, { email: comercio?.email }))
+  return lines.join('\n')
+}
+
+export function buildClienteDeudasThermalPlainText({
+  comercio,
+  cliente,
+  ventasConDeuda,
+  formatearMoneda,
+  formatearFechaHoraTicket,
+  cols: colsOverride,
+  printConfig,
+}) {
+  const ventas = Array.isArray(ventasConDeuda) ? ventasConDeuda : []
+  const { cfg, cols } = resolvePrintConfig(printConfig, colsOverride)
+  const totalDeuda = ventas.reduce((sum, v) => sum + (parseFloat(v.monto_deuda) || 0), 0)
+
+  const lines = []
+  lines.push('')
+
+  if (cfg.mostrarDatosComercio !== false) {
+    pushCenteredNombreComercio(lines, comercio, cols)
+    lines.push(thermalDash(cols))
+    pushDatosComercio(lines, comercio, cols)
+  }
+
+  lines.push(...thermalCenterParagraph('Historial de deudas', cols))
+  lines.push('')
+  lines.push(thermalDetailLine('Fecha emisión', formatearFechaHoraTicket(new Date().toISOString()), cols))
+
+  if (cfg.mostrarDatosCliente !== false) {
+    lines.push(...plainLabelLines('Cliente', cliente?.nombre || '—', cols))
+    if (cliente?.numero_documento) {
+      lines.push(...plainLabelLines('DNI', cliente.numero_documento, cols))
+    }
+  }
+
+  lines.push(thermalDash(cols))
+  const wF = Math.floor(cols * 0.34)
+  const wT = Math.floor(cols * 0.34)
+  const wD = cols - wF - wT
+  lines.push(thermalCellRpad('Fecha', wF) + thermalCellRpad('Ticket', wT) + thermalCellLpad('Deuda', wD))
+  lines.push(thermalDash(cols))
+
+  if (ventas.length) {
+    ventas.forEach((v) => {
+      const f = v.fecha_hora ? formatearFechaHoraTicket(v.fecha_hora) : '—'
+      const t = String(v.numero_ticket || `#${v.id}`).slice(0, 12)
+      lines.push(
+        thermalCellRpad(f, wF) + thermalCellRpad(t, wT) + thermalCellLpad(formatearMoneda(v.monto_deuda ?? 0), wD)
+      )
+    })
+  } else {
+    lines.push(thermalCenterLine('Sin deudas.', cols))
+  }
+
+  lines.push(thermalDash(cols))
+  lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(totalDeuda), cols))
+  lines.push('')
+  lines.push(...thermalCenterParagraph('Conserve este comprobante.', cols))
   return lines.join('\n')
 }
