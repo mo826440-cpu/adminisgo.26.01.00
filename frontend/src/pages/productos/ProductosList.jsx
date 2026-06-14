@@ -3,13 +3,28 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
-import { getProductos, getCategorias, deleteProducto } from '../../services/productos'
+import { getProductos, getCategorias, deleteProducto, updateProducto } from '../../services/productos'
 import { downloadProductosCategoriaPdf } from '../../utils/productosCategoriaPdf'
 import ProductosActionsMenu from './ProductosActionsMenu'
 import './ProductosList.css'
 import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
+
+function parsePrecioInput(str) {
+  const normalized = String(str ?? '')
+    .trim()
+    .replace(/\s/g, '')
+    .replace(',', '.')
+  if (!normalized) return NaN
+  const num = parseFloat(normalized)
+  return Number.isFinite(num) ? num : NaN
+}
+
+function precioToInputValue(val) {
+  const num = Number(val ?? 0)
+  return Number.isFinite(num) ? String(num) : '0'
+}
 
 function ProductosList() {
   const location = useLocation()
@@ -25,6 +40,9 @@ function ProductosList() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [productoToDelete, setProductoToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [savingPrecioId, setSavingPrecioId] = useState(null)
+  /** Borrador local mientras el usuario edita un precio en la tabla */
+  const [precioDrafts, setPrecioDrafts] = useState({})
 
   useEffect(() => {
     loadProductos()
@@ -113,13 +131,83 @@ function ProductosList() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page)
-    // Scroll al inicio de la tabla
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteClick = (producto) => {
     setProductoToDelete(producto)
     setShowDeleteModal(true)
+  }
+
+  const handlePrecioDraftChange = (productoId, value) => {
+    setPrecioDrafts((prev) => ({ ...prev, [productoId]: value }))
+  }
+
+  const clearPrecioDraft = (productoId) => {
+    setPrecioDrafts((prev) => {
+      if (prev[productoId] === undefined) return prev
+      const next = { ...prev }
+      delete next[productoId]
+      return next
+    })
+  }
+
+  const guardarPrecioInline = async (producto, rawValue) => {
+    const parsed = parsePrecioInput(rawValue)
+    const actual = Number(producto.precio_venta ?? 0)
+
+    if (Number.isNaN(parsed)) {
+      setError('Precio inválido. Usá un número mayor o igual a 0.')
+      clearPrecioDraft(producto.id)
+      return
+    }
+    if (parsed < 0) {
+      setError('El precio no puede ser negativo.')
+      clearPrecioDraft(producto.id)
+      return
+    }
+    if (Math.abs(parsed - actual) < 0.005) {
+      clearPrecioDraft(producto.id)
+      return
+    }
+
+    setSavingPrecioId(producto.id)
+    setError(null)
+
+    const { data, error: err } = await updateProducto(producto.id, { precio_venta: parsed })
+
+    setSavingPrecioId(null)
+
+    if (err) {
+      setError(err.message || 'No se pudo actualizar el precio')
+      clearPrecioDraft(producto.id)
+      return
+    }
+
+    setProductos((prev) =>
+      prev.map((p) =>
+        p.id === producto.id ? { ...p, precio_venta: data?.precio_venta ?? parsed } : p
+      )
+    )
+    clearPrecioDraft(producto.id)
+    setSuccessMessage(`Precio de "${producto.nombre}" actualizado`)
+    window.setTimeout(() => setSuccessMessage(null), 3000)
+  }
+
+  const handlePrecioBlur = (producto, rawValue) => {
+    if (savingPrecioId === producto.id) return
+    guardarPrecioInline(producto, rawValue)
+  }
+
+  const handlePrecioKeyDown = (e, producto) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.currentTarget.blur()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      clearPrecioDraft(producto.id)
+      e.currentTarget.blur()
+    }
   }
 
   const handleDelete = async () => {
@@ -267,7 +355,34 @@ function ProductosList() {
                           )}
                         </td>
                         <td>{producto.codigo_barras || '-'}</td>
-                        <td>${producto.precio_venta?.toFixed(2) || '0.00'}</td>
+                        <td className="productos-precio-cell">
+                          <div className="productos-precio-edit">
+                            <span className="productos-precio-prefix" aria-hidden>
+                              $
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="productos-precio-input form-control"
+                              value={
+                                precioDrafts[producto.id] !== undefined
+                                  ? precioDrafts[producto.id]
+                                  : precioToInputValue(producto.precio_venta)
+                              }
+                              onChange={(e) => handlePrecioDraftChange(producto.id, e.target.value)}
+                              onBlur={(e) => handlePrecioBlur(producto, e.target.value)}
+                              onKeyDown={(e) => handlePrecioKeyDown(e, producto)}
+                              disabled={savingPrecioId === producto.id}
+                              aria-label={`Precio de ${producto.nombre}`}
+                              title="Editar precio (Enter para guardar, Esc para cancelar)"
+                            />
+                            {savingPrecioId === producto.id ? (
+                              <Spinner size="sm" className="productos-precio-spinner" />
+                            ) : (
+                              <i className="bi bi-pencil-square productos-precio-hint" aria-hidden />
+                            )}
+                          </div>
+                        </td>
                         <td>
                           <Badge 
                             variant={producto.stock_actual <= (producto.stock_minimo || 0) ? 'warning' : 'success'}

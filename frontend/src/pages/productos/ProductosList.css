@@ -73,6 +73,56 @@
   color: var(--text-secondary);
 }
 
+.productos-precio-cell {
+  min-width: 7.5rem;
+}
+
+.productos-precio-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.productos-precio-prefix {
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+  flex-shrink: 0;
+}
+
+.productos-precio-input {
+  width: 5.5rem;
+  min-width: 4.5rem;
+  padding: 0.25rem 0.4rem;
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.productos-precio-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 52, 168, 83), 0.2);
+}
+
+.productos-precio-input:disabled {
+  opacity: 0.65;
+}
+
+.productos-precio-hint {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.productos-precio-edit:focus-within .productos-precio-hint {
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+.productos-precio-spinner {
+  flex-shrink: 0;
+}
+
 .table-info {
   width: 100%;
   color: var(--text-secondary);
@@ -208,6 +258,16 @@
   .table-actions button {
     width: 100%;
     min-height: 40px;
+  }
+
+  .productos-precio-edit {
+    width: 100%;
+  }
+
+  .productos-precio-input {
+    flex: 1;
+    min-height: 40px;
+    font-size: 16px;
   }
 }
 
