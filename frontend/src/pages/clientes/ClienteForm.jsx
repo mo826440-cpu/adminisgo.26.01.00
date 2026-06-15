@@ -29,7 +29,8 @@ function ClienteForm() {
     direccion: '',
     tipo_documento: 'DNI',
     numero_documento: '',
-    activo: true
+    activo: true,
+    preferible: false
   })
 
   useEffect(() => {
@@ -57,7 +58,8 @@ function ClienteForm() {
         direccion: data.direccion || '',
         tipo_documento: data.tipo_documento || 'DNI',
         numero_documento: data.numero_documento || '',
-        activo: data.activo ?? true
+        activo: data.activo ?? true,
+        preferible: data.preferible ?? false
       })
     }
     setLoading(false)
@@ -328,6 +330,17 @@ function ClienteForm() {
                     onChange={handleChange}
                   />
                   <span>Cliente Activo</span>
+                </label>
+              </div>
+              <div className="form-col">
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    name="preferible"
+                    checked={formData.preferible}
+                    onChange={handleChange}
+                  />
+                  <span>Cliente preferible (default en ventas)</span>
                 </label>
               </div>
             </div>

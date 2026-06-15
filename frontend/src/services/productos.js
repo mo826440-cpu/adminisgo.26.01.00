@@ -293,3 +293,23 @@ export const getMarcas = async () => {
     return { data: null, error }
   }
 }
+
+/**
+ * Producto marcado como preferible (default al cargar ventas).
+ */
+export const getProductoPreferible = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*, categorias(nombre), marcas(nombre)')
+      .eq('activo', true)
+      .eq('preferible', true)
+      .maybeSingle()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error al obtener producto preferible:', error)
+    return { data: null, error }
+  }
+}

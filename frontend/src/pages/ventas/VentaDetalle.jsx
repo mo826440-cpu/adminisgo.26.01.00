@@ -1,12 +1,19 @@
 // Página de detalle de venta
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Spinner, Alert, Badge } from '../../components/common'
+import { Card, Spinner, Alert, Badge, Button } from '../../components/common'
 import { getVentaById } from '../../services/ventas'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
-import { formatDateTime, formatDate } from '../../utils/dateFormat'
+import { formatDateTime } from '../../utils/dateFormat'
+import {
+  getVentaEstadoDisplay,
+  getVentaEstadoLabel,
+  getVentaEstadoBadgeVariant,
+  getVentaFechaDisplay,
+  ventaEstaCancelada,
+} from '../../utils/ventaEstado'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
@@ -33,10 +40,7 @@ function VentaDetalle() {
     const load = async () => {
       setLoading(true)
       setError(null)
-      const [ventaData, comercioData] = await Promise.all([
-        getVentaById(id),
-        getComercio()
-      ])
+      const [ventaData, comercioData] = await Promise.all([getVentaById(id), getComercio()])
       if (ventaData.error) {
         setError(ventaData.error.message || 'Error al cargar el detalle de la venta')
         setLoading(false)
@@ -70,29 +74,19 @@ function VentaDetalle() {
     return () => clearTimeout(timer)
   }, [shouldPrint, loading, error, venta])
 
-  // Formatear fecha usando la configuración del usuario
-  const formatearFecha = (fecha) => {
-    return formatDateTime(fecha, dateFormat, timezone)
-  }
+  const formatearFecha = (fecha) => formatDateTime(fecha, dateFormat, timezone)
 
   const formatearMoneda = (valor) => {
     const num = Number(valor || 0)
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  const formatearFechaCorta = (fecha) => {
-    return formatDate(fecha, 'DD/MM/YYYY', timezone)
-  }
+  const formatearFechaHoraTicket = (fecha) => formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
 
-  const formatearFechaHoraTicket = (fecha) => {
-    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
-  }
-
-  const estadoPago = (() => {
-    const total = parseFloat(venta?.total || 0)
-    const pagado = parseFloat(venta?.monto_pagado || 0)
-    return total - pagado > 0.01 ? 'Debe' : 'Pagado'
-  })()
+  const estadoKey = venta ? getVentaEstadoDisplay(venta) : 'pagado'
+  const total = parseFloat(venta?.total || 0)
+  const pagado = parseFloat(venta?.monto_pagado || 0)
+  const deuda = ventaEstaCancelada(venta) ? 0 : Math.max(0, total - pagado)
 
   const ticketPlain = useMemo(() => {
     if (!venta) return ''
@@ -119,9 +113,27 @@ function VentaDetalle() {
   return (
     <Layout>
       <div className="container">
-        <p className="text-secondary" style={{ marginBottom: '1rem' }}>
-          Ticket: {venta?.numero_ticket || '-'}
-        </p>
+        <div className="venta-detalle-header">
+          <div>
+            <div className="section-label">VENTAS</div>
+            <h1 className="venta-detalle-title">Detalle de venta</h1>
+            {venta?.numero_ticket ? (
+              <p className="text-secondary text-small">Ticket: {venta.numero_ticket}</p>
+            ) : null}
+          </div>
+          <div className="venta-detalle-header-actions">
+            <Link to="/ventas">
+              <Button variant="outline" title="Volver al listado">
+                <i className="bi bi-arrow-left" /> Volver
+              </Button>
+            </Link>
+            {venta ? (
+              <Button variant="primary" onClick={() => setThermalPreviewOpen(true)} title="Imprimir ticket">
+                <i className="bi bi-printer" /> Imprimir
+              </Button>
+            ) : null}
+          </div>
+        </div>
 
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
@@ -134,102 +146,83 @@ function VentaDetalle() {
             <p>No se encontró la venta.</p>
           </Card>
         ) : (
-          <>
-            <Card className="venta-detalle-panel">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <div className="text-secondary text-small">Fecha</div>
-                  <div><strong>{formatearFecha(venta.fecha_hora)}</strong></div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Facturación</div>
-                  <div><strong>{venta.facturacion || '-'}</strong></div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Cliente</div>
-                  <div><strong>{venta.clientes?.nombre || 'Cliente genérico'}</strong></div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Estado</div>
-                  <div>
-                    <Badge variant={estadoPago === 'Pagado' ? 'success' : 'warning'}>
-                      {estadoPago}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Total</div>
-                  <div><strong>{formatearMoneda(venta.total)}</strong></div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Pagado</div>
-                  <div><strong>{formatearMoneda(venta.monto_pagado)}</strong></div>
-                </div>
-                <div>
-                  <div className="text-secondary text-small">Deuda</div>
-                  <div><strong>{formatearMoneda(venta.monto_deuda)}</strong></div>
-                </div>
+          <Card className="venta-detalle-panel venta-detalle-spec">
+            <dl className="venta-detalle-dl">
+              <div className="venta-detalle-dl__row">
+                <dt>Fecha</dt>
+                <dd>{formatearFecha(getVentaFechaDisplay(venta))}</dd>
               </div>
-            </Card>
+              <div className="venta-detalle-dl__row">
+                <dt>Usuario</dt>
+                <dd>{venta.usuarios?.nombre || '—'}</dd>
+              </div>
+              <div className="venta-detalle-dl__row">
+                <dt>Cliente</dt>
+                <dd>{venta.clientes?.nombre || 'Cliente genérico'}</dd>
+              </div>
+              <div className="venta-detalle-dl__row">
+                <dt>Estado</dt>
+                <dd>
+                  <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
+                    {getVentaEstadoLabel(estadoKey)}
+                  </Badge>
+                </dd>
+              </div>
+            </dl>
 
-            <Card title="Items" className="venta-detalle-panel" style={{ marginTop: '1.5rem' }}>
+            <div className="venta-detalle-block">
+              <h3 className="venta-detalle-block__title">Productos</h3>
               {(venta.items || []).length === 0 ? (
-                <p className="text-secondary">Sin items.</p>
+                <p className="text-secondary">Sin productos registrados.</p>
               ) : (
-                <div className="table-container">
-                  <table className="table table-sticky-header">
-                    <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio Unitario</th>
-                        <th>Descuento</th>
-                        <th>Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {venta.items.map((it) => (
-                        <tr key={it.id}>
-                          <td>{it.productos?.nombre || '-'}</td>
-                          <td>{it.cantidad}</td>
-                          <td>{formatearMoneda(it.precio_unitario)}</td>
-                          <td>{it.descuento || 0}%</td>
-                          <td>{formatearMoneda(it.subtotal)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ul className="venta-detalle-productos">
+                  {venta.items.map((it) => (
+                    <li key={it.id} className="venta-detalle-producto">
+                      <strong>{it.productos?.nombre || 'Producto'}</strong>
+                      <span>
+                        {it.cantidad} u. × {formatearMoneda(it.precio_unitario)} ={' '}
+                        <strong>{formatearMoneda(it.subtotal)}</strong>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </Card>
+            </div>
 
-            <Card title="Pagos" className="venta-detalle-panel" style={{ marginTop: '1.5rem' }}>
+            <div className="venta-detalle-block">
+              <div className="venta-detalle-dl__row venta-detalle-dl__row--total">
+                <dt>Precio total</dt>
+                <dd>{formatearMoneda(venta.total)}</dd>
+              </div>
+            </div>
+
+            <div className="venta-detalle-block">
+              <h3 className="venta-detalle-block__title">Formas de pago</h3>
               {(venta.pagos || []).length === 0 ? (
                 <p className="text-secondary">Sin pagos registrados.</p>
               ) : (
-                <div className="table-container">
-                  <table className="table table-sticky-header">
-                    <thead>
-                      <tr>
-                        <th>Método</th>
-                        <th>Fecha</th>
-                        <th>Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {venta.pagos.map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.metodo_pago}</td>
-                          <td>{formatearFechaCorta(p.fecha_pago)}</td>
-                          <td>{formatearMoneda(p.monto_pagado)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ul className="venta-detalle-pagos">
+                  {venta.pagos.map((p) => (
+                    <li key={p.id}>
+                      <span>{p.metodo_pago}</span>
+                      <strong>{formatearMoneda(p.monto_pagado)}</strong>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </Card>
-          </>
+            </div>
+
+            <dl className="venta-detalle-dl venta-detalle-dl--totales">
+              <div className="venta-detalle-dl__row">
+                <dt>Total pagado</dt>
+                <dd>{formatearMoneda(pagado)}</dd>
+              </div>
+              <div className="venta-detalle-dl__row">
+                <dt>Total deuda</dt>
+                <dd>{deuda > 0.01 ? formatearMoneda(deuda) : '-'}</dd>
+              </div>
+            </dl>
+          </Card>
         )}
       </div>
 
@@ -249,5 +242,3 @@ function VentaDetalle() {
 }
 
 export default VentaDetalle
-
-

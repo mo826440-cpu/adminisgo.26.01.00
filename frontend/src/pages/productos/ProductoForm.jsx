@@ -35,7 +35,8 @@ function ProductoForm() {
     stock_actual: '',
     stock_minimo: '',
     unidad_medida: 'unidad',
-    activo: true
+    activo: true,
+    preferible: false
   })
 
   useEffect(() => {
@@ -80,7 +81,8 @@ function ProductoForm() {
         stock_actual: data.stock_actual || '',
         stock_minimo: data.stock_minimo || '',
         unidad_medida: data.unidad_medida || 'unidad',
-        activo: data.activo ?? true
+        activo: data.activo ?? true,
+        preferible: data.preferible ?? false
       })
     }
     setLoading(false)
@@ -439,6 +441,17 @@ function ProductoForm() {
                     onChange={handleChange}
                   />
                   <span>Producto activo</span>
+                </label>
+              </div>
+              <div className="form-col">
+                <label className="form-checkbox">
+                  <input
+                    type="checkbox"
+                    name="preferible"
+                    checked={formData.preferible}
+                    onChange={handleChange}
+                  />
+                  <span>Producto preferible (default en ventas)</span>
                 </label>
               </div>
             </div>

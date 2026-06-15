@@ -1,6 +1,16 @@
 // Servicio para gestión de ventas
 import { supabase } from './supabase'
 import { validarLimiteVentas } from './planes'
+import { VENTA_ESTADO_CANCELADA, ventaAfectaCalculos } from '../utils/ventaEstado'
+
+export { VENTA_ESTADO_CANCELADA, ventaAfectaCalculos }
+export {
+  ventaEstaCancelada,
+  getVentaEstadoDisplay,
+  getVentaEstadoLabel,
+  getVentaEstadoBadgeVariant,
+  getVentaFechaDisplay,
+} from '../utils/ventaEstado'
 
 /** PostgREST/Supabase suele limitar a 1000 filas por respuesta si no se pagina */
 const SUPABASE_PAGE_SIZE = 1000
@@ -233,7 +243,7 @@ export const createVenta = async (ventaData) => {
       numero_ticket: numeroTicket,
       cliente_id: ventaData.cliente_id || null,
       usuario_id: user.id,
-      fecha_hora: ventaData.fecha_hora || undefined,
+      fecha_hora: ventaData.fecha_hora || new Date().toISOString(),
       facturacion,
       subtotal: ventaData.subtotal || 0,
       descuento: ventaData.descuento || 0,
@@ -410,7 +420,9 @@ export const getVentas = async (opts = {}) => {
         numero_ticket,
         cliente_id,
         usuario_id,
-        comercio_id
+        comercio_id,
+        created_at,
+        updated_at
       `)
             .is('deleted_at', null)
             .gte('fecha_hora', queryStart.toISOString())
@@ -511,6 +523,7 @@ export const getResumenVentasDelDia = async () => {
       .from('ventas')
       .select('id, total')
       .is('deleted_at', null)
+      .neq('estado', VENTA_ESTADO_CANCELADA)
       .gte('fecha_hora', startOfDay.toISOString())
       .lte('fecha_hora', endOfDay.toISOString())
 
@@ -546,6 +559,7 @@ export const getVentasUltimosDias = async (dias = 7) => {
         venta_items(cantidad)
       `)
             .is('deleted_at', null)
+            .neq('estado', VENTA_ESTADO_CANCELADA)
             .gte('fecha_hora', desde.toISOString())
             .order('fecha_hora', { ascending: true })
         ),
@@ -635,6 +649,7 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
         estado
       `)
             .is('deleted_at', null)
+            .neq('estado', VENTA_ESTADO_CANCELADA)
             .gte('fecha_hora', queryStart.toISOString())
             .lte('fecha_hora', queryEnd.toISOString())
             .order('fecha_hora', { ascending: true })
@@ -644,6 +659,7 @@ export const getVentasPorRangoFechas = async (desde, hasta) => {
     )
 
     const enRango = (ventasBase || []).filter((venta) => {
+      if (!ventaAfectaCalculos(venta)) return false
       if (!venta.fecha_hora) return false
       const fv = new Date(venta.fecha_hora)
       return fv >= inicio && fv <= fin
@@ -733,13 +749,19 @@ const updateStockByDelta = async (productoId, delta) => {
  */
 export const updateVenta = async (id, ventaData) => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuario no autenticado')
+
     const { data: ventaActual, error: errorVentaActual } = await supabase
       .from('ventas')
-      .select('id')
+      .select('id, estado')
       .eq('id', id)
       .single()
 
     if (errorVentaActual || !ventaActual) throw errorVentaActual || new Error('Venta no encontrada')
+    if (ventaActual.estado === VENTA_ESTADO_CANCELADA) {
+      throw new Error('No se puede editar una venta cancelada')
+    }
 
     const { data: itemsActuales, error: errorItemsActuales } = await supabase
       .from('venta_items')
@@ -754,6 +776,7 @@ export const updateVenta = async (id, ventaData) => {
 
     const ventaUpdate = {
       cliente_id: ventaData.cliente_id || null,
+      usuario_id: user.id,
       fecha_hora: ventaData.fecha_hora || undefined,
       facturacion,
       subtotal: ventaData.subtotal || 0,
@@ -841,7 +864,60 @@ export const updateVenta = async (id, ventaData) => {
 }
 
 /**
+ * Cancelar una venta (permanece visible; no impacta stock ni reportes).
+ */
+export const cancelVenta = async (id) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuario no autenticado')
+
+    const { data: venta, error: errorVenta } = await supabase
+      .from('ventas')
+      .select('id, estado')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
+
+    if (errorVenta) throw errorVenta
+    if (!venta) throw new Error('Venta no encontrada')
+    if (venta.estado === VENTA_ESTADO_CANCELADA) {
+      throw new Error('La venta ya está cancelada')
+    }
+
+    const { data: items, error: errorItems } = await supabase
+      .from('venta_items')
+      .select('producto_id, cantidad')
+      .eq('venta_id', id)
+
+    if (errorItems) throw errorItems
+
+    const { error: errorUpdate } = await supabase
+      .from('ventas')
+      .update({
+        estado: VENTA_ESTADO_CANCELADA,
+        usuario_id: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (errorUpdate) throw errorUpdate
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        await updateStockByDelta(item.producto_id, parseFloat(item.cantidad || 0))
+      }
+    }
+
+    return { data: { id }, error: null }
+  } catch (error) {
+    console.error('Error al cancelar venta:', error)
+    return { data: null, error: error instanceof Error ? error : new Error(error.message || 'Error al cancelar venta') }
+  }
+}
+
+/**
  * Eliminar una venta (soft delete) y restaurar stock
+ * @deprecated Usar cancelVenta — las ventas no deben eliminarse.
  */
 export const deleteVenta = async (id) => {
   try {
@@ -941,6 +1017,7 @@ export const getMapaDeudaPorClienteIds = async (clienteIds) => {
             .select('cliente_id, monto_deuda')
             .in('cliente_id', part)
             .is('deleted_at', null)
+            .neq('estado', VENTA_ESTADO_CANCELADA)
             .not('cliente_id', 'is', null),
         SUPABASE_PAGE_SIZE,
         { interPageDelayMs: 0 }

@@ -1,101 +1,484 @@
-/* Estilos para el Punto de Venta (POS) - Formulario de Registro de Venta */
-.pos-header {
+/* Punto de venta — reparto de pantalla (dentro del área útil):
+   Título 10% · Nueva venta 30% + Carrito 70% (50% alto) · Pagos 40% alto */
+
+/* Contenedor principal del módulo POS */
+.layout--module-glass-nav .layout-main.layout-main--cosmic:has(.pos-page) {
+  overflow: hidden;
+}
+
+.layout--module-glass-nav .layout-main__content:has(.pos-page) {
+  --pos-viewport-h: calc(100dvh - 64px - 4rem);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: var(--pos-viewport-h);
+  max-height: var(--pos-viewport-h);
+  min-height: 0;
+  overflow: hidden;
 }
 
-.pos-header h1 {
+/* Encabezado glass y contenido POS comparten el mismo ancho útil */
+.layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page),
+.layout--module-glass-nav .layout-module-glass-header-wrap + .pos-page.container {
+  max-width: none;
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Titulación: compacta para dejar más alto a venta+carrito (ajustá max-height) */
+.layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page) {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 15%;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page) .module-glass-page-header {
+  height: 100%;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: auto;
+}
+
+.pos-page {
+  --pos-control-height: 44px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding-bottom: 0.25rem;
+  overflow: hidden;
+}
+
+.pos-page-alert {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+/* Cuerpo POS: venta+carrito un poco más altos; pagos y botones siguen visibles */
+.pos-page-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.62fr);
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+/* Fila superior: Nueva venta 30% · Carrito 70% */
+.pos-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+  gap: 0.65rem;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pos-top-grid > .card,
+.pos-pagos-card {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 600;
+  padding: 0.85rem 1rem;
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
-.pos-form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  align-items: start;
+.pos-top-grid > .card:hover,
+.pos-pagos-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
-.pos-formulario {
-  min-height: 600px;
+.pos-top-grid > .card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.pos-formulario h3 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  font-weight: 600;
+.pos-top-grid > .card > .card-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+.pos-pagos-card {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
-.form-col {
+.pos-pagos-card .card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.pos-pagos-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.pos-pagos-card .pos-panel--pagos {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.autocomplete-wrapper {
-  position: relative;
+/* —— Panel izquierdo: carga —— */
+.pos-sidebar,
+.pos-carrito {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
-.form-col-full {
+.pos-sidebar .card-body,
+.pos-carrito .card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pos-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pos-sidebar-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.pos-sidebar-field .form-row {
+  margin-bottom: 0;
+}
+
+.pos-sidebar-hint {
+  display: block;
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+}
+
+.pos-sidebar-fields {
+  flex: 0 0 auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0;
+}
+
+.pos-sidebar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  justify-content: flex-start;
+}
+
+.pos-sidebar-field {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pos-sidebar-carga {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-rows: auto var(--pos-control-height);
+  gap: 0.35rem 0.65rem;
+  flex-shrink: 0;
+  align-items: stretch;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.pos-sidebar-carga-label {
   grid-column: 1 / -1;
+  margin: 0;
+}
+
+.pos-sidebar-unidades-input {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: var(--pos-control-height);
+  height: var(--pos-control-height);
+  padding: 0.5rem 0.65rem;
+}
+
+.pos-sidebar-cargar {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: stretch;
+  min-height: var(--pos-control-height);
+  height: var(--pos-control-height);
+  padding: 0 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pos-field-with-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pos-field-with-link .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.pos-mgmt-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pos-control-height);
+  height: var(--pos-control-height);
+  min-width: var(--pos-control-height);
+  padding: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 52, 168, 83), 0.1);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.pos-mgmt-link:hover {
+  background: rgba(var(--color-primary-rgb, 52, 168, 83), 0.18);
 }
 
 .form-label {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   font-weight: 600;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+  letter-spacing: 0.02em;
+}
+
+/* —— Carrito (columna derecha, compacta) —— */
+.pos-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.pos-panel--carrito {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-panel--pagos {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-panel-title {
+  margin: 0 0 0.5rem;
   font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.pos-panel-scroll,
+.carrito-table-container.pos-panel-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  margin-bottom: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pos-pagos-card .metodos-pago-section__header {
+  flex-shrink: 0;
+}
+
+.pos-pagos-card .pos-pagos-table-wrap {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pos-producto-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-empty-row {
+  text-align: center;
+  padding: 1rem 0.5rem !important;
+  font-size: 0.85rem;
+}
+
+.metodos-pago-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.metodos-pago-section__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pos-pago-add-line {
+  white-space: nowrap;
+}
+
+.metodos-pago-section__header .pos-panel-title {
   margin-bottom: 0;
 }
 
-.pos-carrito {
-  position: relative;
-  top: 0;
-  max-height: none;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+.metodos-pago-section__header .pos-mgmt-link {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
 }
 
-.pos-carrito h3 {
+.pos-pagos-table-wrap {
+  overflow: auto;
   margin-top: 0;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  font-weight: 600;
 }
 
-.pos-carrito h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+.carrito-table--pagos th,
+.carrito-table--pagos td {
+  padding: 0.45rem 0.5rem;
+  font-size: 0.82rem;
 }
 
+.carrito-table--pagos .col-pago-metodo {
+  width: 22%;
+}
+
+.carrito-table--pagos .col-pago-monto {
+  width: 14%;
+}
+
+.carrito-table--pagos .col-pago-deuda {
+  width: 14%;
+}
+
+.carrito-table--pagos .col-acciones {
+  width: 3rem;
+}
+
+.pos-pago-select,
+.pos-pago-monto-input {
+  width: 100%;
+  max-width: none;
+  min-height: 2rem;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.82rem;
+}
+
+.pos-pago-monto-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tablas */
 .carrito-table-container {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 320px;
-  margin-bottom: 1.5rem;
+  overflow: auto;
+  margin-bottom: 0;
 }
 
 .carrito-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  table-layout: fixed;
+}
+
+.carrito-table--carrito .col-producto {
+  width: 60%;
+  min-width: 0;
+  max-width: 60%;
+}
+
+.carrito-table--carrito .col-unid {
+  width: 10%;
+}
+
+.carrito-table--carrito .col-precio {
+  width: 10%;
+}
+
+.carrito-table--carrito .col-desc {
+  width: 5%;
+}
+
+.carrito-table--carrito .col-total {
+  width: 10%;
+}
+
+.carrito-table--carrito .col-acciones {
+  width: 5%;
+  min-width: 2.25rem;
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
+  text-align: center;
+}
+
+.carrito-table--carrito th,
+.carrito-table--carrito td {
+  padding: 0.4rem 0.35rem;
+}
+
+.carrito-table--carrito .col-acciones .btn {
+  min-width: 0;
+  padding: 0.15rem 0.25rem;
+  min-height: 0;
+  height: auto;
 }
 
 .carrito-table thead {
@@ -110,16 +493,18 @@
 }
 
 .carrito-table th {
-  padding: 0.75rem;
+  padding: 0.5rem 0.55rem;
   text-align: left;
   font-weight: 600;
   border-bottom: 2px solid var(--border-color);
-  font-size: 0.875rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .carrito-table td {
-  padding: 0.75rem;
+  padding: 0.45rem 0.55rem;
   border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
 }
 
 .carrito-table tbody tr:hover {
@@ -134,68 +519,86 @@
 .carrito-table tfoot .total-row td {
   border-top: 2px solid var(--border-color);
   border-bottom: none;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
-.carrito-actions {
+.carrito-inline-input {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.15rem 0.25rem;
+  font-size: 0.78rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.carrito-inline-input--precio {
+  text-align: right;
+}
+
+.carrito-inline-input--desc {
+  text-align: center;
+}
+
+.carrito-inline-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 52, 168, 83), 0.2);
+}
+
+.carrito-total-cell {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Acciones finales — siempre visibles, debajo de formas de pago */
+.pos-actions-bar {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: row;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
 }
 
-.metodos-pago-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid var(--border-color);
+.pos-actions-bar button {
+  flex: 1;
+  min-height: 40px;
 }
 
-.metodos-pago-table-container {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 260px;
-  margin-top: 1rem;
-}
-
+/* Autocomplete */
 .autocomplete-list {
   list-style: none;
   margin: 0.25rem 0 0 0;
   padding: 0;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #fff;
-  max-height: 220px;
+  background: var(--bg-primary);
+  max-height: 180px;
   overflow-y: auto;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   position: absolute;
-  z-index: 20;
-  width: calc(100% - 2px);
+  z-index: 30;
+  width: 100%;
+  left: 0;
 }
 
 .autocomplete-list li {
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .autocomplete-list li.active,
 .autocomplete-list li:hover {
-  background: #2563eb;
+  background: var(--color-primary);
   color: #fff;
   font-weight: 600;
-  border-left: 4px solid #1e40af;
-}
-
-.carrito-actions-final {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.text-danger {
-  color: var(--danger, #dc3545);
 }
 
 .text-success {
@@ -210,107 +613,91 @@
   color: var(--text-secondary);
 }
 
+/* —— Responsive —— */
 @media (max-width: 1024px) {
-  .pos-form-grid {
-    grid-template-columns: 1fr;
+  .layout--module-glass-nav .layout-main__content:has(.pos-page) {
+    --pos-viewport-h: auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
-  
-  .pos-carrito {
-    position: relative;
-    top: 0;
+
+  .layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page) {
+    flex: none;
     max-height: none;
   }
-  
-  .form-row {
+
+  .pos-page {
+    flex: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pos-page-body {
+    grid-template-rows: auto auto;
+    overflow: visible;
+  }
+
+  .pos-top-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    height: auto;
+  }
+
+  .pos-sidebar,
+  .pos-carrito {
+    height: auto;
+    max-height: none;
+  }
+
+  .pos-panel--carrito {
+    max-height: 280px;
+  }
+
+  .pos-pagos-card {
+    height: auto;
   }
 }
 
 @media (max-width: 768px) {
-  .pos-header {
-    flex-direction: column;
-    margin-bottom: 1.5rem;
-  }
-  
-  .pos-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .pos-form-grid {
-    gap: 1.5rem;
-  }
-  
-  .pos-formulario {
-    min-height: auto;
-  }
-  
-  .pos-formulario h3,
-  .pos-carrito h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
-  
-  .form-row {
+  .pos-sidebar-carga {
     grid-template-columns: 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    grid-template-rows: auto var(--pos-control-height) var(--pos-control-height);
   }
-  
-  .form-label {
-    font-size: 0.9rem;
+
+  .pos-sidebar-carga-label {
+    grid-column: 1;
   }
-  
-  .form-control {
-    min-height: 48px; /* Más grande para touch */
-    font-size: 16px; /* Evita zoom en iOS */
+
+  .pos-sidebar-unidades-input {
+    grid-column: 1;
+    grid-row: 2;
   }
-  
-  .pos-carrito h4 {
-    font-size: 1.1rem;
-    margin-top: 1rem;
+
+  .pos-sidebar-cargar {
+    grid-column: 1;
+    grid-row: 3;
+    width: 100%;
   }
-  
-  .carrito-table-container {
-    max-height: 250px;
-    margin-bottom: 1rem;
-  }
-  
-  .carrito-table {
-    font-size: 0.85rem;
-    min-width: 500px;
-  }
-  
-  .carrito-table th,
-  .carrito-table td {
-    padding: 0.5rem 0.75rem;
-  }
-  
-  .carrito-actions {
+
+  .pos-actions-bar {
     flex-direction: column;
-    gap: 0.75rem;
   }
-  
-  .carrito-actions button {
-    width: 100%;
+
+  .pos-actions-bar button {
     min-height: 48px;
-    font-size: 1rem;
   }
-  
-  .carrito-totales {
-    font-size: 1rem;
-    padding: 1rem;
+
+  .carrito-inline-input {
+    max-width: none;
+    min-height: 40px;
+    font-size: 16px;
   }
-  
-  .carrito-totales-row {
-    font-size: 0.95rem;
-    padding: 0.5rem 0;
+
+  .carrito-table {
+    min-width: 520px;
   }
-  
-  .pos-finalizar {
-    width: 100%;
-    min-height: 52px;
-    font-size: 1.1rem;
-    font-weight: 600;
+
+  .pos-producto-nombre {
+    max-width: 8rem;
   }
 }

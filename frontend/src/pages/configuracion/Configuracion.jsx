@@ -10,6 +10,7 @@ import { getEstadoSuscripcion } from '../../services/planes'
 import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import ConfigImpresorasSection from './ConfigImpresorasSection'
+import ConfigFormasPagoSection from './ConfigFormasPagoSection'
 import './Configuracion.css'
 
 function Configuracion() {
@@ -467,6 +468,7 @@ function Configuracion() {
           </div>
         </Card>
 
+        <ConfigFormasPagoSection />
         <ConfigImpresorasSection />
 
         {/* Configuración de Fecha y Hora */}

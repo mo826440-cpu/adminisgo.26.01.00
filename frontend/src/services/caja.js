@@ -35,6 +35,7 @@ async function getPagosVentasDesde(supabase, fechaDesdeISO) {
       .from('ventas')
       .select('venta_pagos(monto_pagado, metodo_pago)')
       .is('deleted_at', null)
+      .neq('estado', 'cancelada')
       .gte('fecha_hora', fechaDesdeISO)
       .order('fecha_hora', { ascending: true })
       .range(from, from + PAGE_VENTAS_CAJA - 1)

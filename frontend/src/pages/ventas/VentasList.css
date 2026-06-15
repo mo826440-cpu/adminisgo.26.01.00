@@ -1,4 +1,39 @@
-/* Estilos para la lista de ventas */
+.venta-row--cancelada {
+  opacity: 0.85;
+}
+
+.venta-row--cancelada td {
+  color: var(--text-secondary);
+}
+
+.ventas-acciones-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ventas-accion-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 52, 168, 83), 0.12);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+.ventas-accion-btn:hover {
+  background: rgba(var(--color-primary-rgb, 52, 168, 83), 0.2);
+}
+
+.ventas-accion-btn--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
 
 /* Indicadores */
 .ventas-indicadores {

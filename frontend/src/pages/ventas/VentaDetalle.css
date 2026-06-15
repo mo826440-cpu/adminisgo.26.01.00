@@ -2,6 +2,92 @@
 
 @import '../../styles/ticketThermalPrint.css';
 
+.venta-detalle-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.venta-detalle-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+}
+
+.venta-detalle-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.venta-detalle-spec {
+  padding: 1.25rem 1.5rem;
+}
+
+.venta-detalle-dl {
+  margin: 0 0 1.25rem;
+}
+
+.venta-detalle-dl__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.venta-detalle-dl__row dt {
+  margin: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.venta-detalle-dl__row dd {
+  margin: 0;
+  text-align: right;
+}
+
+.venta-detalle-dl__row--total dd {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.venta-detalle-block {
+  margin-bottom: 1.25rem;
+}
+
+.venta-detalle-block__title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.venta-detalle-productos,
+.venta-detalle-pagos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.venta-detalle-producto,
+.venta-detalle-pagos li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.venta-detalle-dl--totales {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--border-color);
+}
+
 /* Overrides móvil (estilos base en ticketThermalPrint.css) */
 
 /* En móvil: ocultar panel de detalles y mostrar solo el ticket */

@@ -1,12 +1,13 @@
 // Página de Punto de Venta (POS) - Formulario de Registro de Venta
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Button, Input, Alert, Spinner, Modal } from '../../components/common'
-import { getProductos, getProducto } from '../../services/productos'
-import { getClientes } from '../../services/clientes'
+import { Card, Button, Alert, Spinner, Modal } from '../../components/common'
+import { getProductos, getProductoPreferible } from '../../services/productos'
+import { getClientes, getClientePreferible } from '../../services/clientes'
+import { getFormasPago } from '../../services/formasPago'
 import { createVenta, getVentaById, updateVenta } from '../../services/ventas'
-import { useAuthContext } from '../../context/AuthContext'
+import { ventaEstaCancelada } from '../../utils/ventaEstado'
 import { useDateTime } from '../../context/DateTimeContext'
 import { utcToLocalDateTime, getCurrentLocalDateTime } from '../../utils/dateFormat'
 import './POS.css'
@@ -15,7 +16,6 @@ function POS() {
   const navigate = useNavigate()
   const { id } = useParams()
   const isEditing = !!id
-  const { user } = useAuthContext()
   const { timezone } = useDateTime()
   const productoInputRef = useRef(null)
   const clienteListRef = useRef(null)
@@ -26,19 +26,14 @@ function POS() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
-  // Estados del formulario
+  // Estados del formulario (fecha/facturación solo para persistencia al guardar)
   const [fecha, setFecha] = useState(getCurrentLocalDateTime(timezone))
   const [facturacion, setFacturacion] = useState('')
-  const [facturacionesUsadas, setFacturacionesUsadas] = useState([])
   const [clienteSearch, setClienteSearch] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [productoSearch, setProductoSearch] = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
-  const [categoria, setCategoria] = useState('')
-  const [marca, setMarca] = useState('')
   const [unidades, setUnidades] = useState('1')
-  const [precioUnitario, setPrecioUnitario] = useState('0')
-  const [descuento, setDescuento] = useState('0')
   const [stockActual, setStockActual] = useState(null)
 
   // Autocompletado cliente
@@ -54,13 +49,13 @@ function POS() {
   // Estado del carrito
   const [carrito, setCarrito] = useState([])
   const [metodosPago, setMetodosPago] = useState([])
-  const [metodoPagoActual, setMetodoPagoActual] = useState('efectivo')
-  const [montoPagoActual, setMontoPagoActual] = useState('0')
-  const [montoPagoManual, setMontoPagoManual] = useState(false)
+  const [formasPagoList, setFormasPagoList] = useState([])
   
   // Estados para modales
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showPrintOfferModal, setShowPrintOfferModal] = useState(false)
+  const [savedVentaId, setSavedVentaId] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const formatCurrency = (value) => {
@@ -68,13 +63,38 @@ function POS() {
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  const formatDateShort = (value) => {
-    if (!value) return '-'
-    const d = new Date(value)
-    const day = String(d.getDate()).padStart(2, '0')
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const year = d.getFullYear()
-    return `${day}/${month}/${year}`
+  const recalcCarritoItem = (item) => {
+    const precio = parseFloat(item.precio_unitario) || 0
+    const desc = Math.min(100, Math.max(0, parseInt(item.descuento || 0, 10)))
+    const cant = Math.max(0, parseInt(item.cantidad || 0, 10))
+    const precioUnitarioFinal = precio * (1 - desc / 100)
+    return {
+      ...item,
+      cantidad: cant,
+      descuento: desc,
+      precio_unitario: precio,
+      precio_unitario_final: precioUnitarioFinal,
+      subtotal: precioUnitarioFinal * cant,
+    }
+  }
+
+  const getStockDisponible = (productoId, excludeIndex = null) => {
+    const producto = productos.find((p) => p.id === productoId)
+    const stock = producto?.stock_actual ?? 0
+    const enCarrito = carrito.reduce((sum, item, i) => {
+      if (item.producto_id === productoId && i !== excludeIndex) {
+        return sum + (parseInt(item.cantidad, 10) || 0)
+      }
+      return sum
+    }, 0)
+    return Math.max(0, stock - enCarrito)
+  }
+
+  const actualizarItemCarrito = (index, patch) => {
+    setCarrito((prev) =>
+      prev.map((item, i) => (i === index ? recalcCarritoItem({ ...item, ...patch }) : item))
+    )
+    setError(null)
   }
 
   useEffect(() => {
@@ -97,9 +117,10 @@ function POS() {
     setError(null)
     
     try {
-      const [productosData, clientesData] = await Promise.all([
+      const [productosData, clientesData, formasData] = await Promise.all([
         getProductos(),
-        getClientes()
+        getClientes(),
+        getFormasPago({ soloActivas: true }),
       ])
       
       if (productosData.error) throw productosData.error
@@ -107,10 +128,17 @@ function POS() {
       
       setProductos(productosData.data || [])
       setClientes(clientesData.data || [])
+      const formas = formasData.data || []
+      setFormasPagoList(formas)
 
       if (isEditing) {
         const { data: ventaData, error: errVenta } = await getVentaById(id)
         if (errVenta) throw errVenta
+        if (ventaEstaCancelada(ventaData)) {
+          setError('Esta venta está cancelada y no puede editarse.')
+          setLoading(false)
+          return
+        }
 
         setFecha(ventaData.fecha_hora ? utcToLocalDateTime(ventaData.fecha_hora, timezone) : getCurrentLocalDateTime(timezone))
         setFacturacion(ventaData.facturacion || '')
@@ -134,9 +162,22 @@ function POS() {
           metodo: p.metodo_pago,
           fecha_pago: p.fecha_pago,
           monto_pagado: parseFloat(p.monto_pagado || 0),
-          monto_deuda: 0
+          monto_deuda: 0,
+          _autoMonto: false,
         }))
         setMetodosPago(pagos)
+      } else {
+        const [{ data: prefCliente }, { data: prefProducto }] = await Promise.all([
+          getClientePreferible(),
+          getProductoPreferible(),
+        ])
+        if (prefCliente) {
+          setClienteSeleccionado({ id: prefCliente.id, nombre: prefCliente.nombre })
+          setClienteSearch(prefCliente.nombre || '')
+        }
+        if (prefProducto) {
+          aplicarProductoSeleccionado(prefProducto)
+        }
       }
       setLoading(false)
     } catch (err) {
@@ -148,12 +189,8 @@ function POS() {
   const aplicarProductoSeleccionado = (producto) => {
     setProductoSeleccionado(producto)
     setProductoSearch(producto.nombre || '')
-    setCategoria(producto.categorias?.nombre || '')
-    setMarca(producto.marcas?.nombre || '')
-    setPrecioUnitario((producto.precio_venta || 0).toString())
-    setStockActual(producto.stock_actual || 0)
+    setStockActual(producto.stock_actual ?? 0)
     setUnidades('1')
-    setDescuento('0')
   }
 
   const filtrarProductos = (termino) => {
@@ -176,9 +213,6 @@ function POS() {
 
     if (!termino.trim()) {
       setProductoSeleccionado(null)
-      setCategoria('')
-      setMarca('')
-      setPrecioUnitario('0')
       setStockActual(null)
       return
     }
@@ -268,6 +302,8 @@ function POS() {
       if (productoActiveIndex >= 0) {
         aplicarProductoSeleccionado(productoSuggestions[productoActiveIndex])
         setShowProductoSuggestions(false)
+      } else if (productoSeleccionado) {
+        cargarAlCarrito(e)
       }
     } else if (e.key === 'Escape') {
       setShowProductoSuggestions(false)
@@ -288,23 +324,20 @@ function POS() {
 
   const handleUnidadesChange = (value) => {
     const clean = value.replace(/[^\d]/g, '')
-    setUnidades(clean)
+    setUnidades(clean || '1')
   }
 
-  const handleDescuentoChange = (value) => {
-    const clean = value.replace(/[^\d]/g, '')
-    const num = Math.min(100, parseInt(clean || '0', 10))
-    setDescuento(Number.isNaN(num) ? '0' : num.toString())
+  const handleUnidadesKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      cargarAlCarrito(e)
+    }
   }
-
-  // Calcular precios
-  const precioUnitarioFinal = parseFloat(precioUnitario) * (1 - parseFloat(descuento || 0) / 100)
-  const precioFinal = precioUnitarioFinal * parseInt(unidades || 0, 10)
 
   // Cargar al carrito
   const cargarAlCarrito = (e) => {
     e?.preventDefault()
-    
+
     if (!productoSeleccionado) {
       setError('Debes seleccionar un producto')
       return
@@ -316,123 +349,133 @@ function POS() {
       return
     }
 
-    if (cantidad > (stockActual || 0)) {
-      setError('No hay suficiente stock disponible')
+    const disponible = getStockDisponible(productoSeleccionado.id)
+    if (cantidad > disponible) {
+      setError(`Stock insuficiente (disponible: ${disponible})`)
       return
     }
 
-    const nuevoItem = {
+    const precioBase = parseFloat(productoSeleccionado.precio_venta || 0)
+    const nuevoItem = recalcCarritoItem({
       producto_id: productoSeleccionado.id,
       nombre: productoSeleccionado.nombre,
-      cantidad: cantidad,
-      precio_unitario: parseFloat(precioUnitario),
-      descuento: parseInt(descuento || 0, 10),
-      precio_unitario_final: precioUnitarioFinal,
-      subtotal: precioFinal
-    }
+      cantidad,
+      precio_unitario: precioBase,
+      descuento: 0,
+    })
 
     setCarrito([...carrito, nuevoItem])
-    
-    // Limpiar campos
+
     setProductoSearch('')
     setProductoSeleccionado(null)
-    setCategoria('')
-    setMarca('')
     setUnidades('1')
-    setPrecioUnitario('0')
-    setDescuento('0')
     setStockActual(null)
     setError(null)
-    
-    // Reposicionar cursor en campo producto
+
     if (productoInputRef.current) {
       productoInputRef.current.focus()
     }
   }
 
-  // Eliminar del carrito
   const eliminarDelCarrito = (index) => {
     setCarrito(carrito.filter((_, i) => i !== index))
   }
 
-  // Editar item del carrito
-  const editarItemCarrito = (index) => {
+  const handleCarritoCantidadChange = (index, raw) => {
+    const cantidad = parseInt(String(raw).replace(/[^\d]/g, '') || '0', 10)
+    if (cantidad <= 0) return
     const item = carrito[index]
-    const producto = productos.find(p => p.id === item.producto_id)
-    if (producto) {
-      setProductoSeleccionado(producto)
-      setProductoSearch(producto.nombre)
-      setCategoria(producto.categorias?.nombre || '')
-      setMarca(producto.marcas?.nombre || '')
-      setUnidades(Math.round(item.cantidad).toString())
-      setPrecioUnitario(item.precio_unitario.toString())
-      setDescuento(item.descuento.toString())
-      setStockActual(producto.stock_actual || 0)
-      eliminarDelCarrito(index)
-      if (productoInputRef.current) {
-        productoInputRef.current.focus()
-      }
-    }
-  }
-
-  // Cargar método de pago
-  const cargarMetodoPago = (e) => {
-    e?.preventDefault()
-    
-    const monto = parseFloat(montoPagoActual || 0)
-    if (monto <= 0) {
-      setError('El monto debe ser mayor a 0')
+    const disponible = getStockDisponible(item.producto_id, index)
+    if (cantidad > disponible) {
+      setError(`Stock insuficiente para "${item.nombre}" (máx. ${disponible})`)
       return
     }
-
-    const nuevoMetodo = {
-      metodo: metodoPagoActual,
-      fecha_pago: new Date().toISOString().slice(0, 10),
-      monto_pagado: monto,
-      monto_deuda: 0 // Se calculará después
-    }
-
-    setMetodosPago([...metodosPago, nuevoMetodo])
-    
-    // Calcular monto restante
-    const totalPagadoHastaAhora = [...metodosPago, nuevoMetodo].reduce((sum, mp) => sum + mp.monto_pagado, 0)
-    const montoRestante = totalFinal - totalPagadoHastaAhora
-    
-    // Limpiar campos
-    setMetodoPagoActual('efectivo')
-    setMontoPagoActual(montoRestante > 0 ? montoRestante.toString() : '0')
-    setError(null)
-    
-    // Reposicionar cursor en campo método de pago
-    setTimeout(() => {
-      const metodoPagoInput = document.querySelector('input[name="metodoPago"]')
-      if (metodoPagoInput) {
-        metodoPagoInput.focus()
-        metodoPagoInput.select()
-      }
-    }, 100)
+    actualizarItemCarrito(index, { cantidad })
   }
 
-  // Eliminar método de pago
+  const handleCarritoPrecioChange = (index, raw) => {
+    const normalized = String(raw).trim().replace(',', '.')
+    const precio = parseFloat(normalized)
+    if (Number.isNaN(precio) || precio < 0) return
+    actualizarItemCarrito(index, { precio_unitario: precio })
+  }
+
+  const handleCarritoDescuentoChange = (index, raw) => {
+    const desc = Math.min(100, Math.max(0, parseInt(String(raw).replace(/[^\d]/g, '') || '0', 10)))
+    actualizarItemCarrito(index, { descuento: desc })
+  }
+
+  const getMetodoPagoPreferido = () => {
+    const pref = formasPagoList.find((f) => f.preferible) || formasPagoList[0]
+    return pref?.codigo || 'efectivo'
+  }
+
+  const crearLineaPago = (monto, autoMonto = true) => ({
+    metodo: getMetodoPagoPreferido(),
+    fecha_pago: new Date().toISOString().slice(0, 10),
+    monto_pagado: Math.max(0, Number(monto) || 0),
+    monto_deuda: 0,
+    _autoMonto: autoMonto,
+  })
+
+  const handlePagoMetodoChange = (index, metodo) => {
+    setMetodosPago((prev) => prev.map((mp, i) => (i === index ? { ...mp, metodo } : mp)))
+    setError(null)
+  }
+
+  const handlePagoMontoChange = (index, raw) => {
+    const monto = parseFloat(String(raw).replace(',', '.')) || 0
+    setMetodosPago((prev) =>
+      prev.map((mp, i) => (i === index ? { ...mp, monto_pagado: Math.max(0, monto), _autoMonto: false } : mp))
+    )
+    setError(null)
+  }
+
+  const agregarLineaPago = () => {
+    const pagado = metodosPago.reduce((sum, mp) => sum + mp.monto_pagado, 0)
+    const deuda = Math.max(0, totalFinal - pagado)
+    if (deuda <= 0.01 && metodosPago.length > 0) {
+      setError('No hay deuda pendiente para agregar otra forma de pago.')
+      return
+    }
+    setMetodosPago((prev) => [...prev, crearLineaPago(deuda, false)])
+    setError(null)
+  }
+
   const eliminarMetodoPago = (index) => {
+    if (metodosPago.length <= 1) {
+      if (carrito.length > 0) {
+        setMetodosPago([crearLineaPago(totalFinal)])
+      }
+      return
+    }
     setMetodosPago(metodosPago.filter((_, i) => i !== index))
+    setError(null)
   }
 
   // Calcular totales del carrito
   const totalUnidades = carrito.reduce((sum, item) => sum + item.cantidad, 0)
   const totalDescuento = carrito.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad * item.descuento / 100), 0)
   const totalFinal = carrito.reduce((sum, item) => sum + item.subtotal, 0)
-  const baseTotal = totalFinal + totalDescuento
-  const totalDescuentoPorcentaje = baseTotal > 0 ? (totalDescuento / baseTotal) * 100 : 0
 
   // Calcular totales de métodos de pago
   const totalPagado = metodosPago.reduce((sum, mp) => sum + mp.monto_pagado, 0)
 
   useEffect(() => {
-    if (montoPagoManual) return
-    const deuda = Math.max(0, totalFinal - totalPagado)
-    setMontoPagoActual(deuda > 0 ? deuda.toFixed(2) : '0')
-  }, [totalFinal, totalPagado, montoPagoManual])
+    if (carrito.length === 0) {
+      setMetodosPago([])
+      return
+    }
+    setMetodosPago((prev) => {
+      if (prev.length === 0) {
+        return [crearLineaPago(totalFinal)]
+      }
+      if (prev.length === 1 && prev[0]._autoMonto !== false) {
+        return [{ ...prev[0], monto_pagado: totalFinal }]
+      }
+      return prev
+    })
+  }, [carrito.length, totalFinal])
 
   // Confirmar venta
   const handleConfirmarVenta = () => {
@@ -441,13 +484,13 @@ function POS() {
       return
     }
 
-    if (facturacion && facturacionesUsadas.includes(facturacion.trim())) {
-      setError('Esta facturación ya fue utilizada anteriormente')
+    if (metodosPago.length === 0) {
+      setError('Debes agregar al menos un método de pago')
       return
     }
 
-    if (metodosPago.length === 0) {
-      setError('Debes agregar al menos un método de pago')
+    if (totalPagado > totalFinal + 0.005) {
+      setError('El total pagado supera el total de la venta')
       return
     }
 
@@ -463,7 +506,10 @@ function POS() {
     try {
       const ventaData = {
         cliente_id: clienteSeleccionado?.id || null,
-        fecha_hora: fecha ? new Date(fecha).toISOString() : undefined,
+        fecha_hora:
+          isEditing && fecha
+            ? new Date(fecha).toISOString()
+            : new Date().toISOString(),
         facturacion: facturacion?.trim() || null,
         subtotal: totalFinal,
         descuento: totalDescuento,
@@ -471,10 +517,10 @@ function POS() {
         total: totalFinal,
         metodo_pago: metodosPago.map(mp => mp.metodo).join(', '),
         // Los pagos reales se guardan en venta_pagos (migración 011)
-        pagos: metodosPago.map(mp => ({
-          metodo_pago: mp.metodo,
-          monto_pagado: mp.monto_pagado,
-          fecha_pago: mp.fecha_pago ? new Date(mp.fecha_pago).toISOString() : new Date().toISOString()
+        pagos: metodosPago.map(({ _autoMonto, monto_deuda, metodo, monto_pagado, fecha_pago }) => ({
+          metodo_pago: metodo,
+          monto_pagado,
+          fecha_pago: fecha_pago ? new Date(fecha_pago).toISOString() : new Date().toISOString()
         })),
         observaciones: null,
         items: carrito.map(item => ({
@@ -494,40 +540,11 @@ function POS() {
         throw errorVenta
       }
 
-      // Agregar facturación a la lista de usadas
-      if (facturacion) {
-        setFacturacionesUsadas([...facturacionesUsadas, facturacion.trim()])
-      }
-
       setSaving(false)
-      
-      // Limpiar todo
-      setCarrito([])
-      setMetodosPago([])
-      setFacturacion('')
-      setClienteSearch('')
-      setClienteSeleccionado(null)
-      setProductoSearch('')
-      setProductoSeleccionado(null)
-      setCategoria('')
-      setMarca('')
-      setUnidades('1')
-      setPrecioUnitario('0')
-      setDescuento('0')
-      setStockActual(null)
-      setMetodoPagoActual('efectivo')
-      setMontoPagoActual('0')
-      setMontoPagoManual(false)
-      
-      // Redirigir
-      navigate('/ventas', {
-        state: {
-          success: true,
-          message: isEditing
-            ? 'Venta actualizada correctamente'
-            : `Venta realizada correctamente. Ticket: ${data.numero_ticket}`
-        }
-      })
+
+      const ventaId = isEditing ? id : data?.id
+      setSavedVentaId(ventaId)
+      setShowPrintOfferModal(true)
     } catch (err) {
       setError(err.message || 'Error al guardar la venta')
       setSaving(false)
@@ -548,6 +565,42 @@ function POS() {
     navigate('/ventas')
   }
 
+  const limpiarFormularioPos = () => {
+    setCarrito([])
+    setMetodosPago([])
+    setFacturacion('')
+    setClienteSearch('')
+    setClienteSeleccionado(null)
+    setProductoSearch('')
+    setProductoSeleccionado(null)
+    setUnidades('1')
+    setStockActual(null)
+  }
+
+  const finalizarSinImprimir = () => {
+    setShowPrintOfferModal(false)
+    limpiarFormularioPos()
+    navigate('/ventas', {
+      state: {
+        success: true,
+        message: isEditing ? 'Venta actualizada correctamente' : 'Venta registrada correctamente',
+      },
+    })
+  }
+
+  const finalizarConImpresion = () => {
+    const ventaId = savedVentaId
+    setShowPrintOfferModal(false)
+    limpiarFormularioPos()
+    if (ventaId) {
+      navigate(`/ventas/${ventaId}`, { state: { print: true } })
+    } else {
+      navigate('/ventas', { state: { success: true, message: 'Venta registrada correctamente' } })
+    }
+  }
+
+  const deudaRestantePago = Math.max(0, totalFinal - totalPagado)
+
   // Manejar teclas
   const handleKeyPress = (e) => {
     if (e.ctrlKey && e.altKey && e.key === 'Enter') {
@@ -556,10 +609,6 @@ function POS() {
     }
     if (e.ctrlKey && e.key === 'Enter') {
       cargarAlCarrito(e)
-      return
-    }
-    if (e.key === 'Enter' && e.target.name === 'metodoPago') {
-      cargarMetodoPago(e)
     }
   }
 
@@ -576,71 +625,32 @@ function POS() {
 
   return (
     <Layout>
-      <div className="container">
-        <div className="page-header page-header--actions-only">
-          <Button variant="outline" onClick={handleCancelarVenta}>
-            Cancelar Venta
-          </Button>
-        </div>
-
+      <div className="container pos-page">
         {error && (
-          <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
+          <Alert variant="danger" dismissible onDismiss={() => setError(null)} className="pos-page-alert">
             {error}
           </Alert>
         )}
 
-        <div className="pos-form-grid">
-          {/* Formulario a la izquierda */}
-          <Card className="pos-formulario">
-            <h3>Datos de la Venta</h3>
-            
-            <form onSubmit={(e) => e.preventDefault()} onKeyDown={handleKeyPress}>
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    FECHA
-                    <Input
-                      type="datetime-local"
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <div className="form-col">
-                  <label className="form-label">
-                    RESPONSABLE CARGA
-                    <Input
-                      type="text"
-                      value={user?.email || ''}
-                      disabled
-                      readOnly
-                    />
-                  </label>
-                </div>
-              </div>
+        <div className="pos-page-body">
+        <div className="pos-top-grid">
+          <Card className="pos-formulario pos-sidebar">
+            <div className="pos-sidebar-head">
+              <h3>{isEditing ? 'Editar venta' : 'Nueva venta'}</h3>
+              <Button variant="outline" size="sm" onClick={handleCancelarVenta}>
+                Cancelar
+              </Button>
+            </div>
 
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    FACTURACIÓN
-                    <Input
+            <form className="pos-sidebar-form" onSubmit={(e) => e.preventDefault()} onKeyDown={handleKeyPress}>
+              <div className="pos-sidebar-fields">
+              <div className="pos-sidebar-field autocomplete-wrapper">
+                <label className="form-label">
+                  CLIENTE
+                  <div className="pos-field-with-link">
+                    <input
                       type="text"
-                      value={facturacion}
-                      onChange={(e) => setFacturacion(e.target.value)}
-                      placeholder="Número de factura (opcional)"
-                    />
-                  </label>
-                  {facturacion && facturacionesUsadas.includes(facturacion.trim()) && (
-                    <span className="text-danger" style={{ fontSize: '0.875rem' }}>
-                      Esta facturación ya fue utilizada
-                    </span>
-                  )}
-                </div>
-                <div className="form-col autocomplete-wrapper">
-                  <label className="form-label">
-                    CLIENTE
-                    <Input
-                      type="text"
+                      className="form-control"
                       value={clienteSearch}
                       onChange={(e) => buscarCliente(e.target.value)}
                       onKeyDown={handleClienteKeyDown}
@@ -653,42 +663,44 @@ function POS() {
                       autoComplete="off"
                       placeholder="Buscar por nombre o documento"
                     />
-                  </label>
-                  {showClienteSuggestions && clienteSuggestions.length > 0 && (
-                    <ul className="autocomplete-list" ref={clienteListRef}>
-                      {clienteSuggestions.map((c, idx) => (
-                        <li
-                          key={c.id}
-                          data-index={idx}
-                          className={idx === clienteActiveIndex ? 'active' : ''}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            seleccionarCliente(c)
-                          }}
-                          onMouseEnter={() => setClienteActiveIndex(idx)}
-                        >
-                          <strong>{c.nombre}</strong>
-                          {c.numero_documento ? ` — ${c.numero_documento}` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {clienteSeleccionado && (
-                    <span className="text-success" style={{ fontSize: '0.875rem' }}>
-                      Cliente: {clienteSeleccionado.nombre}
-                    </span>
-                  )}
-                </div>
+                    <Link to="/clientes" className="pos-mgmt-link" title="Gestión de clientes">
+                      <i className="bi bi-people" />
+                    </Link>
+                  </div>
+                </label>
+                {showClienteSuggestions && clienteSuggestions.length > 0 && (
+                  <ul className="autocomplete-list" ref={clienteListRef}>
+                    {clienteSuggestions.map((c, idx) => (
+                      <li
+                        key={c.id}
+                        data-index={idx}
+                        className={idx === clienteActiveIndex ? 'active' : ''}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          seleccionarCliente(c)
+                        }}
+                        onMouseEnter={() => setClienteActiveIndex(idx)}
+                      >
+                        <strong>{c.nombre}</strong>
+                        {c.numero_documento ? ` — ${c.numero_documento}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {clienteSeleccionado && (
+                  <span className="text-success pos-sidebar-hint">Cliente: {clienteSeleccionado.nombre}</span>
+                )}
               </div>
 
-              <div className="form-row">
-                <div className="form-col form-col-full autocomplete-wrapper">
-                  <label className="form-label">
-                    PRODUCTO
-                    <Input
+              <div className="pos-sidebar-field autocomplete-wrapper">
+                <label className="form-label">
+                  PRODUCTO O CÓDIGO DE BARRAS
+                  <div className="pos-field-with-link">
+                    <input
                       ref={productoInputRef}
                       type="text"
                       name="producto"
+                      className="form-control"
                       value={productoSearch}
                       onChange={(e) => buscarProducto(e.target.value)}
                       onKeyDown={handleProductoKeyDown}
@@ -699,345 +711,272 @@ function POS() {
                         setTimeout(() => setShowProductoSuggestions(false), 150)
                       }}
                       autoComplete="off"
-                      placeholder="Buscar por código de barras, código interno o nombre"
+                      placeholder="Código de barras, interno o nombre"
                       autoFocus
                     />
-                  </label>
-                  {showProductoSuggestions && productoSuggestions.length > 0 && (
-                    <ul className="autocomplete-list" ref={productoListRef}>
-                      {productoSuggestions.map((p, idx) => (
-                        <li
-                          key={p.id}
-                          data-index={idx}
-                          className={idx === productoActiveIndex ? 'active' : ''}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            aplicarProductoSeleccionado(p)
-                            setShowProductoSuggestions(false)
-                          }}
-                          onMouseEnter={() => setProductoActiveIndex(idx)}
-                        >
-                          <strong>{p.nombre}</strong>
-                          {p.codigo_barras ? ` — ${p.codigo_barras}` : p.codigo_interno ? ` — ${p.codigo_interno}` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {productoSeleccionado && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-                      <span className="text-success">Producto seleccionado: {productoSeleccionado.nombre}</span>
-                      {stockActual !== null && (
-                        <span className="text-info" style={{ marginLeft: '1rem' }}>
-                          Stock actual: {stockActual}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    <Link to="/productos" className="pos-mgmt-link" title="Gestión de productos">
+                      <i className="bi bi-box-seam" />
+                    </Link>
+                  </div>
+                </label>
+                {showProductoSuggestions && productoSuggestions.length > 0 && (
+                  <ul className="autocomplete-list" ref={productoListRef}>
+                    {productoSuggestions.map((p, idx) => (
+                      <li
+                        key={p.id}
+                        data-index={idx}
+                        className={idx === productoActiveIndex ? 'active' : ''}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          aplicarProductoSeleccionado(p)
+                          setShowProductoSuggestions(false)
+                        }}
+                        onMouseEnter={() => setProductoActiveIndex(idx)}
+                      >
+                        <strong>{p.nombre}</strong>
+                        {p.codigo_barras ? ` — ${p.codigo_barras}` : p.codigo_interno ? ` — ${p.codigo_interno}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {productoSeleccionado && stockActual !== null && (
+                  <span className="text-info pos-sidebar-hint">Stock disponible: {stockActual}</span>
+                )}
+              </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    CATEGORÍA
-                    <Input
-                      type="text"
-                      value={categoria}
-                      disabled
-                      readOnly
-                    />
-                  </label>
-                </div>
-                <div className="form-col">
-                  <label className="form-label">
-                    MARCA
-                    <Input
-                      type="text"
-                      value={marca}
-                      disabled
-                      readOnly
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    UNIDADES
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={unidades}
-                      onChange={(e) => handleUnidadesChange(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <div className="form-col">
-                  <label className="form-label">
-                    PRECIO UNITARIO
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={precioUnitario}
-                      onChange={(e) => setPrecioUnitario(e.target.value)}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    DESCUENTO (%)
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={descuento}
-                      onChange={(e) => handleDescuentoChange(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <div className="form-col">
-                  <label className="form-label">
-                    PRECIO UNITARIO FINAL
-                    <Input
-                      type="number"
-                      value={precioUnitarioFinal.toFixed(2)}
-                      disabled
-                      readOnly
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-col">
-                  <label className="form-label">
-                    PRECIO FINAL
-                    <Input
-                      type="number"
-                      value={precioFinal.toFixed(2)}
-                      disabled
-                      readOnly
-                    />
-                  </label>
-                </div>
-                <div className="form-col">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    fullWidth
-                    style={{ marginTop: '1.75rem' }}
-                    onClick={cargarAlCarrito}
-                  >
-                    Cargar al Carrito (Ctrl + Enter)
-                  </Button>
-                </div>
+              <div className="pos-sidebar-carga">
+                <label className="form-label pos-sidebar-carga-label" htmlFor="pos-unidades">
+                  UNIDADES
+                </label>
+                <input
+                  id="pos-unidades"
+                  type="number"
+                  className="form-control pos-sidebar-unidades-input"
+                  min="1"
+                  step="1"
+                  value={unidades}
+                  onChange={(e) => handleUnidadesChange(e.target.value)}
+                  onKeyDown={handleUnidadesKeyDown}
+                />
+                <Button type="button" variant="primary" className="pos-sidebar-cargar" onClick={cargarAlCarrito}>
+                  CARGAR
+                </Button>
               </div>
             </form>
           </Card>
 
-          {/* Carrito a la derecha */}
           <Card className="pos-carrito">
-            <h3>CARRITO</h3>
-            
-            {carrito.length === 0 ? (
-              <p className="text-secondary">El carrito está vacío</p>
-            ) : (
-              <>
-                <div className="carrito-table-container">
-                  <table className="carrito-table">
+            <section className="pos-panel pos-panel--carrito">
+              <h3 className="pos-panel-title">Carrito</h3>
+              <div className="carrito-table-container pos-panel-scroll">
+                <table className="carrito-table carrito-table--carrito">
+                  <thead>
+                    <tr>
+                      <th className="col-producto">Producto</th>
+                      <th className="col-unid">Unid.</th>
+                      <th className="col-precio">P. unit.</th>
+                      <th className="col-desc">% Desc.</th>
+                      <th className="col-total">Total</th>
+                      <th className="col-acciones" aria-label="Acciones" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {carrito.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="pos-empty-row text-secondary">
+                          Agregá productos con el panel de la izquierda
+                        </td>
+                      </tr>
+                    ) : (
+                      carrito.map((item, index) => (
+                        <tr key={`${item.producto_id}-${index}`}>
+                          <td className="pos-producto-nombre col-producto">{item.nombre}</td>
+                          <td className="col-unid">
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              className="carrito-inline-input"
+                              value={item.cantidad}
+                              onChange={(e) => handleCarritoCantidadChange(index, e.target.value)}
+                              aria-label={`Unidades de ${item.nombre}`}
+                            />
+                          </td>
+                          <td className="col-precio">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="carrito-inline-input carrito-inline-input--precio"
+                              defaultValue={item.precio_unitario}
+                              key={`precio-${index}-${item.precio_unitario}`}
+                              onBlur={(e) => handleCarritoPrecioChange(index, e.target.value)}
+                              aria-label={`Precio unitario de ${item.nombre}`}
+                            />
+                          </td>
+                          <td className="col-desc">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="1"
+                              className="carrito-inline-input carrito-inline-input--desc"
+                              value={item.descuento}
+                              onChange={(e) => handleCarritoDescuentoChange(index, e.target.value)}
+                              aria-label={`Descuento de ${item.nombre}`}
+                            />
+                          </td>
+                          <td className="carrito-total-cell col-total">{formatCurrency(item.subtotal)}</td>
+                          <td className="col-acciones">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => eliminarDelCarrito(index)}
+                              title="Quitar del carrito"
+                              aria-label={`Quitar ${item.nombre}`}
+                            >
+                              <i className="bi bi-trash" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr className="total-row">
+                      <td className="col-producto">Total general</td>
+                      <td className="col-unid">{totalUnidades}</td>
+                      <td className="col-precio" colSpan={2}></td>
+                      <td className="col-total">{formatCurrency(totalFinal)}</td>
+                      <td className="col-acciones"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+          </Card>
+        </div>
+
+        <Card className="pos-pagos-card">
+          <section className="pos-panel pos-panel--pagos">
+                <div className="metodos-pago-section__header">
+                  <h4 className="pos-panel-title">Formas de pago</h4>
+                  <div className="metodos-pago-section__actions">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="pos-pago-add-line"
+                      onClick={agregarLineaPago}
+                      disabled={carrito.length === 0 || (deudaRestantePago <= 0.01 && metodosPago.length > 0)}
+                    >
+                      + Agregar línea
+                    </Button>
+                    <Link to="/configuraciones#formas-pago" className="pos-mgmt-link" title="Gestión de formas de pago">
+                      <i className="bi bi-credit-card" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="metodos-pago-table-container pos-pagos-table-wrap">
+                  <table className="carrito-table carrito-table--pagos">
                     <thead>
                       <tr>
-                        <th>Producto</th>
-                        <th>Unidades</th>
-                        <th>$ Unitario</th>
-                        <th>% Descuento</th>
-                        <th>$ Final</th>
-                        <th>Acciones</th>
+                        <th className="col-pago-metodo">Forma de pago</th>
+                        <th className="col-pago-monto">Pagado</th>
+                        <th className="col-pago-deuda">Deuda</th>
+                        <th className="col-acciones" aria-label="Acciones" />
                       </tr>
                     </thead>
                     <tbody>
-                      {carrito.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.nombre}</td>
-                          <td>{item.cantidad}</td>
-                        <td>{formatCurrency(item.precio_unitario)}</td>
-                          <td>{item.descuento}%</td>
-                        <td>{formatCurrency(item.subtotal)}</td>
-                          <td>
-                            <div className="carrito-actions">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editarItemCarrito(index)}
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => eliminarDelCarrito(index)}
-                              >
-                                Eliminar
-                              </Button>
-                            </div>
+                      {carrito.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="pos-empty-row text-secondary">
+                            Cargá productos primero
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        metodosPago.map((mp, index) => {
+                          const pagadoHastaAhora = metodosPago
+                            .slice(0, index + 1)
+                            .reduce((sum, m) => sum + m.monto_pagado, 0)
+                          const deuda = totalFinal - pagadoHastaAhora
+                          const formasOpciones =
+                            formasPagoList.length > 0
+                              ? formasPagoList
+                              : [{ codigo: 'efectivo', nombre: 'Efectivo' }]
+                          return (
+                            <tr key={index}>
+                              <td className="col-pago-metodo">
+                                <select
+                                  className="carrito-inline-input pos-pago-select"
+                                  value={mp.metodo}
+                                  onChange={(e) => handlePagoMetodoChange(index, e.target.value)}
+                                  aria-label={`Forma de pago línea ${index + 1}`}
+                                >
+                                  {formasOpciones.map((f) => (
+                                    <option key={f.codigo} value={f.codigo}>
+                                      {f.nombre}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="col-pago-monto">
+                                <input
+                                  type="number"
+                                  className="carrito-inline-input pos-pago-monto-input"
+                                  min="0"
+                                  step="0.01"
+                                  value={mp.monto_pagado}
+                                  onChange={(e) => handlePagoMontoChange(index, e.target.value)}
+                                  aria-label={`Monto pagado línea ${index + 1}`}
+                                />
+                              </td>
+                              <td className="carrito-total-cell col-pago-deuda">
+                                {deuda > 0.01 ? formatCurrency(deuda) : '-'}
+                              </td>
+                              <td className="col-acciones">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => eliminarMetodoPago(index)}
+                                  title={metodosPago.length <= 1 ? 'Restablecer línea' : 'Quitar línea'}
+                                  aria-label={`Quitar forma de pago línea ${index + 1}`}
+                                >
+                                  <i className="bi bi-trash" />
+                                </Button>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
                     </tbody>
-                    <tfoot>
-                      <tr className="total-row">
-                        <td>TOTAL</td>
-                        <td>{totalUnidades}</td>
-                        <td>-</td>
-                        <td>{totalDescuentoPorcentaje.toFixed(2)}%</td>
-                        <td>{formatCurrency(totalFinal)}</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
                   </table>
                 </div>
-
-                <div className="metodos-pago-section">
-                  <h4>Métodos de Pago</h4>
-                  
-                  <form onSubmit={cargarMetodoPago} onKeyPress={handleKeyPress}>
-                    <div className="form-row">
-                      <div className="form-col">
-                        <label className="form-label">
-                          Método de Pago
-                          <select
-                            className="form-control"
-                            value={metodoPagoActual}
-                            onChange={(e) => setMetodoPagoActual(e.target.value)}
-                          >
-                            <option value="efectivo">Efectivo</option>
-                            <option value="transferencia">Transferencia</option>
-                            <option value="qr">QR</option>
-                            <option value="debito">Débito</option>
-                            <option value="credito">Crédito</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="otro">Otro método</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div className="form-col">
-                        <label className="form-label">
-                          Monto a Pagar
-                          <Input
-                            type="number"
-                            name="metodoPago"
-                            min="0"
-                            step="0.01"
-                            value={montoPagoActual}
-                            onChange={(e) => {
-                              setMontoPagoManual(true)
-                              setMontoPagoActual(e.target.value)
-                            }}
-                            onBlur={() => setMontoPagoManual(false)}
-                            placeholder={formatCurrency(totalFinal)}
-                          />
-                        </label>
-                      </div>
-                      <div className="form-col">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          style={{ marginTop: '1.75rem' }}
-                        >
-                          Cargar Método Pago (Enter)
-                        </Button>
-                      </div>
-                    </div>
-                  </form>
-
-                  {metodosPago.length > 0 && (
-                    <div className="metodos-pago-table-container" style={{ marginTop: '1rem' }}>
-                      <table className="carrito-table">
-                        <thead>
-                          <tr>
-                            <th>Método Pago</th>
-                            <th>Fecha Pago</th>
-                            <th>Monto Pagado $</th>
-                            <th>Monto Deuda $</th>
-                            <th>Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {metodosPago.map((mp, index) => {
-                            const pagadoHastaAhora = metodosPago.slice(0, index + 1).reduce((sum, m) => sum + m.monto_pagado, 0)
-                            const deuda = totalFinal - pagadoHastaAhora
-                            return (
-                              <tr key={index}>
-                                <td>{mp.metodo}</td>
-                                <td>{formatDateShort(mp.fecha_pago)}</td>
-                                <td>{formatCurrency(mp.monto_pagado)}</td>
-                                <td>{deuda > 0 ? formatCurrency(deuda) : '-'}</td>
-                                <td>
-                                  <div className="carrito-actions">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => eliminarMetodoPago(index)}
-                                    >
-                                      Eliminar
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr className="total-row">
-                            <td>TOTAL</td>
-                            <td></td>
-                            <td>{formatCurrency(totalPagado)}</td>
-                            <td>-</td>
-                            <td></td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div className="carrito-actions-final">
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={handleConfirmarVenta}
-                    loading={saving}
-                    disabled={saving}
-                  >
-                    Confirmar Venta (Ctrl + Alt + Enter)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    onClick={handleCancelarVenta}
-                    disabled={saving}
-                  >
-                    Cancelar Venta
-                  </Button>
-                </div>
-              </>
-            )}
-          </Card>
+              </section>
+        </Card>
         </div>
+
+        <div className="carrito-actions-final pos-actions-bar">
+          <Button
+            variant="primary"
+            onClick={handleConfirmarVenta}
+            loading={saving}
+            disabled={saving || carrito.length === 0}
+          >
+            FINALIZAR
+          </Button>
+          <Button variant="outline" onClick={handleCancelarVenta} disabled={saving}>
+            CANCELAR
+          </Button>
+        </div>
+      </div>
 
         {/* Modal de Confirmación */}
         <Modal
           isOpen={showConfirmModal}
           onClose={() => setShowConfirmModal(false)}
-          title="Confirmar Venta"
+          title="Finalizar venta"
           closeOnOverlayClick={false}
           footer={
             <>
@@ -1057,18 +996,13 @@ function POS() {
             </>
           }
         >
-          <p>¿Estás seguro de que deseas confirmar esta venta?</p>
+          <p>¿Confirmás el registro de esta venta?</p>
           <div style={{ marginTop: '1rem' }}>
             <strong>Total: ${totalFinal.toFixed(2)}</strong>
           </div>
           <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
             Cliente: {clienteSeleccionado ? clienteSeleccionado.nombre : 'Cliente Genérico'}
           </div>
-          {facturacion && (
-            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              Facturación: {facturacion}
-            </div>
-          )}
         </Modal>
 
         {/* Modal de Cancelación */}
@@ -1099,7 +1033,25 @@ function POS() {
             Se perderán todos los datos cargados sin guardar.
           </p>
         </Modal>
-      </div>
+
+        <Modal
+          isOpen={showPrintOfferModal}
+          onClose={finalizarSinImprimir}
+          title="Venta registrada"
+          closeOnOverlayClick={false}
+          footer={
+            <>
+              <Button variant="outline" onClick={finalizarSinImprimir}>
+                No imprimir
+              </Button>
+              <Button variant="primary" onClick={finalizarConImpresion}>
+                Imprimir ticket
+              </Button>
+            </>
+          }
+        >
+          <p>¿Querés imprimir el ticket con el detalle de la venta?</p>
+        </Modal>
     </Layout>
   )
 }

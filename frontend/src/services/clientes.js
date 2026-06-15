@@ -232,3 +232,23 @@ export const deleteCliente = async (id) => {
   }
 }
 
+/**
+ * Cliente marcado como preferible (default al cargar ventas).
+ */
+export const getClientePreferible = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('*')
+      .eq('activo', true)
+      .eq('preferible', true)
+      .maybeSingle()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error) {
+    console.error('Error al obtener cliente preferible:', error)
+    return { data: null, error }
+  }
+}
+

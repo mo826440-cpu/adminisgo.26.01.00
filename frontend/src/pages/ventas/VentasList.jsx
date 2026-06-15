@@ -3,7 +3,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
-import { getVentas, deleteVenta } from '../../services/ventas'
+import { getVentas, cancelVenta } from '../../services/ventas'
+import {
+  ventaAfectaCalculos,
+  ventaEstaCancelada,
+  getVentaEstadoDisplay,
+  getVentaEstadoLabel,
+  getVentaEstadoBadgeVariant,
+  getVentaFechaDisplay,
+} from '../../utils/ventaEstado'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import ActionsMenu from './ActionsMenu'
@@ -20,9 +28,9 @@ function VentasList() {
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [ventaToDelete, setVentaToDelete] = useState(null)
-  const [deleting, setDeleting] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [ventaToCancel, setVentaToCancel] = useState(null)
+  const [canceling, setCanceling] = useState(false)
   const [showActions, setShowActions] = useState(false)
   
   // Estado para el texto del botón de filtros
@@ -160,6 +168,7 @@ function VentasList() {
     if (filtroEstadoPago === 'todas') return ventas
     
     return ventas.filter(venta => {
+      if (ventaEstaCancelada(venta)) return false
       const montoPagado = parseFloat(venta.monto_pagado || 0)
       const total = parseFloat(venta.total || 0)
       const tieneDeuda = total - montoPagado > 0.01 // Tolerancia para errores de redondeo
@@ -183,17 +192,19 @@ function VentasList() {
 
   // Calcular indicadores
   const indicadores = {
-    totales: filteredVentas.length,
-    cobradas: filteredVentas.filter(v => {
+    totales: filteredVentas.filter(ventaAfectaCalculos).length,
+    cobradas: filteredVentas.filter((v) => {
+      if (!ventaAfectaCalculos(v)) return false
       const montoPagado = parseFloat(v.monto_pagado || 0)
       const total = parseFloat(v.total || 0)
       return total - montoPagado <= 0.01
     }).length,
-    conDeuda: filteredVentas.filter(v => {
+    conDeuda: filteredVentas.filter((v) => {
+      if (!ventaAfectaCalculos(v)) return false
       const montoPagado = parseFloat(v.monto_pagado || 0)
       const total = parseFloat(v.total || 0)
       return total - montoPagado > 0.01
-    }).length
+    }).length,
   }
 
   // Calcular paginación
@@ -208,18 +219,19 @@ function VentasList() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDelete = async () => {
-    if (!ventaToDelete) return
-    setDeleting(true)
-    const { error: err } = await deleteVenta(ventaToDelete)
+  const handleCancel = async () => {
+    if (!ventaToCancel) return
+    setCanceling(true)
+    const { error: err } = await cancelVenta(ventaToCancel)
     if (err) {
-      setError(err.message || 'Error al eliminar la venta')
-      setDeleting(false)
+      setError(err.message || 'Error al cancelar la venta')
+      setCanceling(false)
       return
     }
-    setDeleting(false)
-    setShowDeleteModal(false)
-    setVentaToDelete(null)
+    setCanceling(false)
+    setShowCancelModal(false)
+    setVentaToCancel(null)
+    setSuccessMessage('Venta cancelada correctamente')
     await loadVentas()
   }
 
@@ -237,12 +249,12 @@ function VentasList() {
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  // Obtener estado de pago
-  const obtenerEstadoPago = (venta) => {
-    const montoPagado = parseFloat(venta.monto_pagado || 0)
+  const formatearDeuda = (venta) => {
+    if (ventaEstaCancelada(venta)) return '-'
     const total = parseFloat(venta.total || 0)
-    const tieneDeuda = total - montoPagado > 0.01
-    return tieneDeuda ? 'debe' : 'pagado'
+    const pagado = parseFloat(venta.monto_pagado || 0)
+    const deuda = Math.max(0, total - pagado)
+    return deuda > 0.01 ? formatearMoneda(deuda) : '-'
   }
 
   if (loading) {
@@ -434,44 +446,39 @@ function VentasList() {
                   <thead>
                     <tr>
                       <th>FECHA</th>
-                      <th className="hide-mobile">FACTURACIÓN</th>
                       <th>CLIENTE</th>
-                      <th className="hide-mobile">UNIDADES</th>
-                      <th className="hide-mobile">$TOTAL</th>
-                      <th className="hide-mobile">$ PAGADO</th>
-                      <th className="hide-mobile">$ DEUDA</th>
+                      <th className="hide-mobile">PRECIO TOTAL</th>
+                      <th className="hide-mobile">COBRADO</th>
+                      <th className="hide-mobile">DEUDA</th>
                       <th>ESTADO</th>
                       <th>ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedVentas.map((venta) => {
-                      const estadoPago = obtenerEstadoPago(venta)
-                      const montoPagado = parseFloat(venta.monto_pagado || 0)
-                      const total = parseFloat(venta.total || 0)
-                      const deuda = Math.max(0, total - montoPagado)
-                      
+                      const estadoKey = getVentaEstadoDisplay(venta)
+                      const fechaDisplay = getVentaFechaDisplay(venta)
+
                       return (
-                        <tr key={venta.id}>
-                          <td>{formatearFecha(venta.fecha_hora)}</td>
-                          <td className="hide-mobile">{venta.facturacion || '-'}</td>
+                        <tr key={venta.id} className={ventaEstaCancelada(venta) ? 'venta-row--cancelada' : ''}>
+                          <td>{formatearFecha(fechaDisplay)}</td>
                           <td>{venta.clientes?.nombre || 'Cliente genérico'}</td>
-                          <td className="hide-mobile">{venta.unidades_totales || 0}</td>
                           <td className="hide-mobile">{formatearMoneda(venta.total)}</td>
                           <td className="hide-mobile">{formatearMoneda(venta.monto_pagado)}</td>
-                          <td className="hide-mobile">{formatearMoneda(deuda)}</td>
+                          <td className="hide-mobile">{formatearDeuda(venta)}</td>
                           <td>
-                            <Badge variant={estadoPago === 'pagado' ? 'success' : 'warning'}>
-                              {estadoPago === 'pagado' ? 'Pagado' : 'Debe'}
+                            <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
+                              {getVentaEstadoLabel(estadoKey)}
                             </Badge>
                           </td>
                           <td>
                             <div className="table-actions">
                               <ActionsMenu
                                 ventaId={venta.id}
-                                onDelete={(id) => {
-                                  setVentaToDelete(id)
-                                  setShowDeleteModal(true)
+                                cancelada={ventaEstaCancelada(venta)}
+                                onCancel={(ventaId) => {
+                                  setVentaToCancel(ventaId)
+                                  setShowCancelModal(true)
                                 }}
                               />
                             </div>
@@ -502,12 +509,12 @@ function VentasList() {
       </div>
 
       <Modal
-        isOpen={showDeleteModal}
+        isOpen={showCancelModal}
         onClose={() => {
-          setShowDeleteModal(false)
-          setVentaToDelete(null)
+          setShowCancelModal(false)
+          setVentaToCancel(null)
         }}
-        title="Eliminar venta"
+        title="Cancelar venta"
         variant="danger"
         closeOnOverlayClick={false}
         footer={
@@ -515,25 +522,28 @@ function VentasList() {
             <Button
               variant="outline"
               onClick={() => {
-                setShowDeleteModal(false)
-                setVentaToDelete(null)
+                setShowCancelModal(false)
+                setVentaToCancel(null)
               }}
-              disabled={deleting}
+              disabled={canceling}
             >
-              Cancelar
+              Volver
             </Button>
             <Button
               variant="primary"
-              onClick={handleDelete}
-              loading={deleting}
-              disabled={deleting}
+              onClick={handleCancel}
+              loading={canceling}
+              disabled={canceling}
             >
-              Eliminar
+              Confirmar cancelación
             </Button>
           </>
         }
       >
-        <p>¿Seguro que querés eliminar esta venta? Esta acción restaura el stock.</p>
+        <p>
+          ¿Seguro que querés cancelar esta venta? Quedará visible como <strong>Cancelada</strong>, se
+          restaurará el stock y no afectará balances ni reportes financieros.
+        </p>
       </Modal>
     </Layout>
   )
