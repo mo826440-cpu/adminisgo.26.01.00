@@ -1,19 +1,39 @@
-/* Punto de venta — reparto de pantalla (dentro del área útil):
-   Título 10% · Nueva venta 30% + Carrito 70% (50% alto) · Pagos 40% alto */
-
-/* Contenedor principal del módulo POS */
-.layout--module-glass-nav .layout-main.layout-main--cosmic:has(.pos-page) {
-  overflow: hidden;
-}
-
+/* =============================================================================
+   PUNTO DE VENTA (/ventas/nueva) — PROPORCIONES DEL LAYOUT (captura 2)
+   Izquierda: Nueva venta (altura completa) | Derecha: Carrito arriba + Pagos abajo
+   ============================================================================= */
 .layout--module-glass-nav .layout-main__content:has(.pos-page) {
+  /* --- proporciones (editar) --- */
+  --pos-alto-header: 12%;
+  --pos-ancho-header: 100%;
+
+  --pos-ancho-nueva-venta: 30fr;
+  --pos-ancho-columna-derecha: 70fr;
+
+  --pos-alto-carrito: 1.45fr;
+  --pos-alto-forma-pago: 0.85fr;
+  --pos-ancho-forma-pago: 100%;
+
+  --pos-alto-botones: 40px;
+  --pos-ancho-botones: 100%;
+  --pos-espacio-header-contenido: 0.75rem;
+  --pos-espacio-entre-secciones: 0.5rem;
+  --pos-espacio-columnas: 0.65rem;
+  --pos-padding-tarjeta: 0.85rem 1rem;
+
+  /* --- layout (no editar salvo viewport) --- */
   --pos-viewport-h: calc(100dvh - 64px - 4rem);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--pos-espacio-header-contenido);
   height: var(--pos-viewport-h);
   max-height: var(--pos-viewport-h);
   min-height: 0;
+  overflow: hidden;
+}
+
+/* Contenedor principal del módulo POS */
+.layout--module-glass-nav .layout-main.layout-main--cosmic:has(.pos-page) {
   overflow: hidden;
 }
 
@@ -21,16 +41,17 @@
 .layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page),
 .layout--module-glass-nav .layout-module-glass-header-wrap + .pos-page.container {
   max-width: none;
-  width: 100%;
+  width: var(--pos-ancho-header);
   padding-left: 0;
   padding-right: 0;
 }
 
-/* Titulación: compacta para dejar más alto a venta+carrito (ajustá max-height) */
+/* Titulación */
 .layout--module-glass-nav .layout-module-glass-header-wrap:has(+ .pos-page) {
   flex: 0 0 auto;
   min-height: 0;
-  max-height: 15%;
+  max-height: var(--pos-alto-header);
+  width: var(--pos-ancho-header);
   margin-bottom: 0;
   overflow: hidden;
 }
@@ -48,7 +69,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--pos-espacio-entre-secciones);
   max-width: 100%;
   padding-bottom: 0.25rem;
   overflow: hidden;
@@ -59,48 +80,74 @@
   margin-bottom: 0;
 }
 
-/* Cuerpo POS: venta+carrito un poco más altos; pagos y botones siguen visibles */
+/* Cuerpo POS: columna izq. nueva venta | columna der. carrito + pagos */
 .pos-page-body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.62fr);
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, var(--pos-ancho-nueva-venta)) minmax(0, var(--pos-ancho-columna-derecha));
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--pos-espacio-columnas);
   overflow: hidden;
 }
 
-/* Fila superior: Nueva venta 30% · Carrito 70% */
-.pos-top-grid {
+.pos-sidebar {
+  grid-column: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Columna derecha: carrito arriba, formas de pago abajo */
+.pos-right-stack {
+  grid-column: 2;
   display: grid;
-  grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
-  gap: 0.65rem;
+  grid-template-rows: minmax(0, var(--pos-alto-carrito)) minmax(0, var(--pos-alto-forma-pago));
+  gap: var(--pos-espacio-entre-secciones);
   min-height: 0;
   height: 100%;
   overflow: hidden;
 }
 
-.pos-top-grid > .card,
-.pos-pagos-card {
+.pos-page-body > .card,
+.pos-right-stack > .card {
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: var(--pos-padding-tarjeta);
+  transform: none;
+  box-shadow: var(--shadow-sm);
+  min-height: 0;
+}
+
+.pos-page-body > .card:hover,
+.pos-right-stack > .card:hover {
   transform: none;
   box-shadow: var(--shadow-sm);
 }
 
-.pos-top-grid > .card:hover,
-.pos-pagos-card:hover {
-  transform: none;
-  box-shadow: var(--shadow-sm);
-}
-
-.pos-top-grid > .card {
+.pos-page-body > .card {
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
 }
 
-.pos-top-grid > .card > .card-body {
+.pos-page-body > .card > .card-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pos-right-stack > .card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pos-right-stack > .card > .card-body {
   padding: 0;
   flex: 1;
   display: flex;
@@ -112,11 +159,14 @@
 .pos-pagos-card {
   min-height: 0;
   height: 100%;
+  width: var(--pos-ancho-forma-pago);
+  max-width: 100%;
+  justify-self: stretch;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: var(--pos-padding-tarjeta);
   transform: none;
   box-shadow: var(--shadow-sm);
 }
@@ -554,8 +604,19 @@
   white-space: nowrap;
 }
 
-/* Acciones finales — siempre visibles, debajo de formas de pago */
+/* Botones FINALIZAR / CANCELAR — alineados bajo columna derecha */
+.pos-page-footer {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: minmax(0, var(--pos-ancho-nueva-venta)) minmax(0, var(--pos-ancho-columna-derecha));
+  gap: var(--pos-espacio-columnas);
+}
+
 .pos-actions-bar {
+  grid-column: 2;
+  width: var(--pos-ancho-botones);
+  max-width: 100%;
+  justify-self: stretch;
   display: flex;
   flex-direction: row;
   gap: 0.65rem;
@@ -568,7 +629,7 @@
 
 .pos-actions-bar button {
   flex: 1;
-  min-height: 40px;
+  min-height: var(--pos-alto-botones);
 }
 
 /* Autocomplete */
@@ -634,13 +695,28 @@
   }
 
   .pos-page-body {
+    grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     overflow: visible;
   }
 
-  .pos-top-grid {
-    grid-template-columns: 1fr;
+  .pos-sidebar {
+    grid-column: 1;
     height: auto;
+  }
+
+  .pos-right-stack {
+    grid-column: 1;
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+
+  .pos-page-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-actions-bar {
+    grid-column: 1;
   }
 
   .pos-sidebar,

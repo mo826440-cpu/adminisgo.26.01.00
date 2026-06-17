@@ -12,12 +12,13 @@
   margin-top: 64px; /* Altura del navbar */
 }
 
+/* Espacio para el contenido del módulo */
 .layout-main {
-  flex: 1;
-  padding: 2rem;
-  margin-left: 0;
-  min-height: calc(100vh - 64px);
-  transition: margin-left 0.3s ease;
+  flex: 1; /*ocupa todo el espacio disponible*/
+  padding: 1em; /*espacio interno de la columna principal*/
+  margin-left: 0; /*sin margen lateral de la columna principal*/
+  min-height: calc(100vh - 64px); /*altura total menos la altura del navbar (el navbar es la parte superior de la pagina */
+  transition: margin-left 0.3s ease; /*transicion suave para el margen lateral*/
 }
 
 /* Fondo atmosférico (mismo lenguaje que el panel /inicio) en todo el área autenticada */

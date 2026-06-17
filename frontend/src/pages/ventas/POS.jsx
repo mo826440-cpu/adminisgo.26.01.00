@@ -633,7 +633,6 @@ function POS() {
         )}
 
         <div className="pos-page-body">
-        <div className="pos-top-grid">
           <Card className="pos-formulario pos-sidebar">
             <div className="pos-sidebar-head">
               <h3>{isEditing ? 'Editar venta' : 'Nueva venta'}</h3>
@@ -766,6 +765,7 @@ function POS() {
             </form>
           </Card>
 
+          <div className="pos-right-stack">
           <Card className="pos-carrito">
             <section className="pos-panel pos-panel--carrito">
               <h3 className="pos-panel-title">Carrito</h3>
@@ -855,7 +855,6 @@ function POS() {
               </div>
             </section>
           </Card>
-        </div>
 
         <Card className="pos-pagos-card">
           <section className="pos-panel pos-panel--pagos">
@@ -955,8 +954,10 @@ function POS() {
                 </div>
               </section>
         </Card>
+          </div>
         </div>
 
+        <div className="pos-page-footer">
         <div className="carrito-actions-final pos-actions-bar">
           <Button
             variant="primary"
@@ -969,6 +970,7 @@ function POS() {
           <Button variant="outline" onClick={handleCancelarVenta} disabled={saving}>
             CANCELAR
           </Button>
+        </div>
         </div>
       </div>
 
