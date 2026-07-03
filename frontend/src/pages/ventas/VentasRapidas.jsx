@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Button, Input, Alert, Spinner, Modal, Badge } from '../../components/common'
+import { Card, Button, Input, Alert, Spinner, Modal, Badge, Pagination } from '../../components/common'
 import { abrirCaja, cerrarCaja, obtenerEstadoCaja } from '../../services/caja'
 import {
   createVentaRapida,
@@ -29,6 +29,8 @@ import { getComercio } from '../../services/comercio'
 import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
 import { useTicketPrintConfig } from '../../context/TicketPrintContext'
 import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
+import { VENTAS_REGISTROS_LIMIT, extraerOpcionesFiltroRegistros, encodeFiltroFechaRango } from '../../services/ventasListado'
+import RegistrosVentasFiltro from '../../components/ventas/RegistrosVentasFiltro'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
 import '../../styles/ticketThermalPrint.css'
@@ -50,17 +52,6 @@ function nuevaFilaPago() {
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
     metodo_pago: 'efectivo',
     monto: '0',
-  }
-}
-
-/** Misma ventana por defecto que el listado de Ventas (últimos 3 meses hasta hoy). */
-function ymdRangoUltimos3Meses() {
-  const ahora = new Date()
-  const d = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
-  const pad = (n) => String(n).padStart(2, '0')
-  return {
-    desde: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    hasta: `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`,
   }
 }
 
@@ -139,21 +130,26 @@ function VentasRapidas() {
 
   // Estados de tabla de ventas rápidas
   const [ventasRapidas, setVentasRapidas] = useState([])
+  const [totalVentasRapidas, setTotalVentasRapidas] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [loadingVentas, setLoadingVentas] = useState(false)
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
-  const [usarFiltroAutomatico, setUsarFiltroAutomatico] = useState(true)
+  const [filtroTipoDraft, setFiltroTipoDraft] = useState('')
+  const [filtroValorDraft, setFiltroValorDraft] = useState('')
+  const [filtroFechaDesdeDraft, setFiltroFechaDesdeDraft] = useState('')
+  const [filtroFechaHastaDraft, setFiltroFechaHastaDraft] = useState('')
+  const [filtroActivo, setFiltroActivo] = useState({ tipo: '', valor: '' })
+  const [opcionesFiltro, setOpcionesFiltro] = useState({
+    clientes: [],
+    metodosPago: [],
+    estados: [],
+  })
   const [ventaRapidaToDelete, setVentaRapidaToDelete] = useState(null)
   const [showDeleteVentaRapidaModal, setShowDeleteVentaRapidaModal] = useState(false)
   const [deletingVentaRapida, setDeletingVentaRapida] = useState(false)
-  const [mostrarFiltrosRegistro, setMostrarFiltrosRegistro] = useState(false)
-  const [filtroRegistroClienteId, setFiltroRegistroClienteId] = useState('')
-  const [filtroRegistroEstado, setFiltroRegistroEstado] = useState('')
 
   /** Paneles principales colapsables (prioridad: tabla de registros a la vista). */
   const [panelCajaAbierto, setPanelCajaAbierto] = useState(false)
   const [panelFormAbierto, setPanelFormAbierto] = useState(false)
-  const [panelFiltrosAbierto, setPanelFiltrosAbierto] = useState(false)
 
   // Formatear moneda
   const formatearMoneda = (valor) => {
@@ -242,57 +238,75 @@ function VentasRapidas() {
   // Cargar ventas rápidas
   const loadVentasRapidas = useCallback(async () => {
     setLoadingVentas(true)
-    
-    let fechaDesde = null
-    let fechaHasta = null
-    
-    if (usarFiltroAutomatico && estadoCaja?.inicioCaja?.fecha_hora) {
-      // Usar filtro automático: desde la última apertura de caja
-      fechaDesde = estadoCaja.inicioCaja.fecha_hora
-      fechaHasta = null // Hasta el momento actual (no se limita)
-    } else if (filtroFechaDesde || filtroFechaHasta) {
-      // Usar filtros manuales
-      fechaDesde = filtroFechaDesde ? `${filtroFechaDesde}T00:00:00` : null
-      fechaHasta = filtroFechaHasta ? `${filtroFechaHasta}T23:59:59` : null
-    }
-    
-    const { data, error: err } = await getVentasRapidas(fechaDesde, fechaHasta, {
-      clienteId: filtroRegistroClienteId || null,
-      estadoPago: filtroRegistroEstado || null,
+
+    const { data, total, error: err } = await getVentasRapidas({
+      page: currentPage,
+      pageSize: VENTAS_REGISTROS_LIMIT,
+      filtroTipo: filtroActivo.tipo,
+      filtroValor: filtroActivo.valor,
     })
     if (err) {
       console.error('Error al cargar ventas rápidas:', err)
     } else {
-      setVentasRapidas(data || [])
+      const rows = data || []
+      setVentasRapidas(rows)
+      setTotalVentasRapidas(total ?? 0)
+      if (!filtroActivo.tipo && currentPage === 1) {
+        setOpcionesFiltro(extraerOpcionesFiltroRegistros(rows, { modo: 'rapidas' }))
+      }
     }
     setLoadingVentas(false)
-  }, [
-    estadoCaja,
-    filtroFechaDesde,
-    filtroFechaHasta,
-    usarFiltroAutomatico,
-    filtroRegistroClienteId,
-    filtroRegistroEstado,
-  ])
+  }, [filtroActivo, currentPage])
 
-  const aplicarRangoUltimos3MesesComoVentas = useCallback(() => {
-    const { desde, hasta } = ymdRangoUltimos3Meses()
-    setUsarFiltroAutomatico(false)
-    setFiltroFechaDesde(desde)
-    setFiltroFechaHasta(hasta)
-    setMostrarFiltrosRegistro(true)
-  }, [])
+  const handleTipoFiltroChange = (tipo) => {
+    setFiltroTipoDraft(tipo)
+    setFiltroValorDraft('')
+    setFiltroFechaDesdeDraft('')
+    setFiltroFechaHastaDraft('')
+  }
+
+  const aplicarFiltroRegistros = () => {
+    if (!filtroTipoDraft) return
+    setCurrentPage(1)
+    if (filtroTipoDraft === 'fecha') {
+      if (!filtroFechaDesdeDraft || !filtroFechaHastaDraft) return
+      setFiltroActivo({
+        tipo: 'fecha',
+        valor: encodeFiltroFechaRango(filtroFechaDesdeDraft, filtroFechaHastaDraft),
+      })
+      return
+    }
+    if (!String(filtroValorDraft).trim()) return
+    setFiltroActivo({ tipo: filtroTipoDraft, valor: filtroValorDraft })
+  }
+
+  const limpiarFiltroRegistros = () => {
+    setFiltroTipoDraft('')
+    setFiltroValorDraft('')
+    setFiltroFechaDesdeDraft('')
+    setFiltroFechaHastaDraft('')
+    setCurrentPage(1)
+    setFiltroActivo({ tipo: '', valor: '' })
+  }
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const hayFiltroActivo = Boolean(filtroActivo.tipo && filtroActivo.valor)
+  const totalPages = Math.max(1, Math.ceil(totalVentasRapidas / VENTAS_REGISTROS_LIMIT))
+  const startIndex =
+    totalVentasRapidas === 0 ? 0 : (currentPage - 1) * VENTAS_REGISTROS_LIMIT + 1
+  const endIndex = Math.min(currentPage * VENTAS_REGISTROS_LIMIT, totalVentasRapidas)
 
   useEffect(() => {
     loadEstadoCaja()
     loadClientes()
   }, [])
 
-  // Cargar ventas rápidas cuando cambia el estado de caja o los filtros
   useEffect(() => {
-    if (estadoCaja !== null) {
-      loadVentasRapidas()
-    }
+    loadVentasRapidas()
   }, [loadVentasRapidas])
 
   useEffect(() => {
@@ -1325,194 +1339,30 @@ function VentasRapidas() {
           ) : null}
         </section>
 
-        {/* Filtros del listado (colapsable, aparte de la tabla) */}
-        <section className="vr-glass-disclosure" aria-label="Filtros de registros">
-          <button
-            type="button"
-            className="vr-glass-disclosure__trigger"
-            aria-expanded={panelFiltrosAbierto}
-            onClick={() => setPanelFiltrosAbierto((v) => !v)}
-          >
-            <span className="vr-glass-disclosure__chevron" aria-hidden>
-              <i className={`bi bi-chevron-${panelFiltrosAbierto ? 'up' : 'down'}`} />
-            </span>
-            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
-              <i className="bi bi-funnel" />
-            </span>
-            <span className="vr-glass-disclosure__label">
-              <span className="vr-glass-disclosure__title">Filtros de registros</span>
-              <span className="vr-glass-disclosure__subtitle">Caja actual, cliente, fechas y estado</span>
-            </span>
-          </button>
-          {panelFiltrosAbierto ? (
-            <div className="vr-glass-disclosure__body">
-              <div className="ventas-rapidas-registros-filtros">
-            <div className="ventas-rapidas-registros-filtros__row">
-              <div className="ventas-rapidas-registros-filtros__caja-check">
-                <input
-                  type="checkbox"
-                  id="filtro-automatico"
-                  name="ventas_rapidas_filtro_desde_apertura_caja"
-                  checked={usarFiltroAutomatico}
-                  onChange={(e) => {
-                    const on = e.target.checked
-                    setUsarFiltroAutomatico(on)
-                    if (on) {
-                      setFiltroFechaDesde('')
-                      setFiltroFechaHasta('')
-                    } else {
-                      setMostrarFiltrosRegistro(true)
-                    }
-                  }}
-                />
-                <label htmlFor="filtro-automatico" className="ventas-rapidas-registros-filtros__caja-label">
-                  Filtrar desde última apertura de caja
-                </label>
-              </div>
-              <button
-                type="button"
-                className={`ventas-rapidas-filtro-panel-toggle${
-                  mostrarFiltrosRegistro ||
-                  filtroRegistroClienteId ||
-                  filtroRegistroEstado ||
-                  (!usarFiltroAutomatico && (filtroFechaDesde || filtroFechaHasta))
-                    ? ' ventas-rapidas-filtro-panel-toggle--active'
-                    : ''
-                }`}
-                onClick={() => setMostrarFiltrosRegistro((v) => !v)}
-                aria-expanded={mostrarFiltrosRegistro}
-                aria-controls="ventas-rapidas-filtros-panel"
-                id="ventas-rapidas-filtros-panel-trigger"
-              >
-                <i className="bi bi-funnel-fill" aria-hidden />
-                <span>Filtros</span>
-              </button>
-            </div>
-
-            {usarFiltroAutomatico && estadoCaja?.inicioCaja && (
-              <div className="ventas-rapidas-registros-filtros__hint-block">
-                <p className="ventas-rapidas-registros-filtros__hint">
-                  <strong>Solo ventas de la caja actual:</strong> se listan únicamente las operaciones con fecha y hora
-                  posteriores a {formatearFechaHora(estadoCaja.inicioCaja.fecha_hora)}.
-                  {filtroRegistroClienteId
-                    ? ' Por eso, si filtrás por un cliente, pueden aparecer menos filas que en el menú Ventas.'
-                    : ' En el menú Ventas, por defecto se muestran los últimos 3 meses hasta hoy.'}
-                </p>
-                <button
-                  type="button"
-                  className="ventas-rapidas-rango-como-ventas-btn"
-                  onClick={aplicarRangoUltimos3MesesComoVentas}
-                >
-                  Usar últimos 3 meses (mismo criterio que Ventas)
-                </button>
-              </div>
-            )}
-
-            {mostrarFiltrosRegistro && (
-              <div
-                id="ventas-rapidas-filtros-panel"
-                className="ventas-rapidas-filtros-panel"
-                role="region"
-                aria-labelledby="ventas-rapidas-filtros-panel-trigger"
-              >
-                <div className="ventas-rapidas-filtros-panel__grid">
-                  <div>
-                    <label className="form-label" htmlFor="ventas-rapidas-filtro-cliente">
-                      Cliente
-                    </label>
-                    <select
-                      id="ventas-rapidas-filtro-cliente"
-                      name="ventas_rapidas_filtro_cliente"
-                      className="form-control"
-                      value={filtroRegistroClienteId}
-                      onChange={(e) => setFiltroRegistroClienteId(e.target.value)}
-                    >
-                      <option value="">Todos los clientes</option>
-                      {clientes.map((c) => (
-                        <option key={c.id} value={String(c.id)}>
-                          {c.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" htmlFor="ventas-rapidas-filtro-estado">
-                      Estado
-                    </label>
-                    <select
-                      id="ventas-rapidas-filtro-estado"
-                      name="ventas_rapidas_filtro_estado"
-                      className="form-control"
-                      value={filtroRegistroEstado}
-                      onChange={(e) => setFiltroRegistroEstado(e.target.value)}
-                    >
-                      <option value="">Todos</option>
-                      <option value="PAGADO">PAGADO</option>
-                      <option value="DEBE">DEBE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" htmlFor="ventas-rapidas-fecha-desde">
-                      Fecha desde
-                    </label>
-                    <input
-                      id="ventas-rapidas-fecha-desde"
-                      name="ventas_rapidas_fecha_desde"
-                      type="date"
-                      className="form-control"
-                      autoComplete="off"
-                      disabled={usarFiltroAutomatico}
-                      value={filtroFechaDesde}
-                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label" htmlFor="ventas-rapidas-fecha-hasta">
-                      Fecha hasta
-                    </label>
-                    <input
-                      id="ventas-rapidas-fecha-hasta"
-                      name="ventas_rapidas_fecha_hasta"
-                      type="date"
-                      className="form-control"
-                      autoComplete="off"
-                      disabled={usarFiltroAutomatico}
-                      value={filtroFechaHasta}
-                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                    />
-                  </div>
-                </div>
-                {usarFiltroAutomatico && (
-                  <p className="ventas-rapidas-filtros-panel__nota">
-                    Para filtrar por rango de fechas, desactivá «Filtrar desde última apertura de caja» arriba.
-                  </p>
-                )}
-                <div className="ventas-rapidas-filtros-panel__acciones">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFiltroRegistroClienteId('')
-                      setFiltroRegistroEstado('')
-                      setFiltroFechaDesde('')
-                      setFiltroFechaHasta('')
-                      setUsarFiltroAutomatico(true)
-                    }}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-              </div>
-            )}
-              </div>
-            </div>
-          ) : null}
-        </section>
-
         <Card style={{ marginTop: '1.5rem' }}>
           <div className="section-label">SECCIÓN</div>
           <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS RAPIDAS</h3>
+          <p className="registros-aviso-filtro">
+            Se muestran {VENTAS_REGISTROS_LIMIT} registros por página
+            {hayFiltroActivo ? ' (con filtro aplicado)' : ''}. Usá la paginación para ver más
+            registros o el filtro para buscar por fecha, cliente, método de pago o estado.
+          </p>
+
+          <RegistrosVentasFiltro
+            idPrefix="ventas-rapidas"
+            tipoFiltro={filtroTipoDraft}
+            valorFiltro={filtroValorDraft}
+            fechaDesde={filtroFechaDesdeDraft}
+            fechaHasta={filtroFechaHastaDraft}
+            onTipoChange={handleTipoFiltroChange}
+            onValorChange={setFiltroValorDraft}
+            onFechaDesdeChange={setFiltroFechaDesdeDraft}
+            onFechaHastaChange={setFiltroFechaHastaDraft}
+            onAplicar={aplicarFiltroRegistros}
+            onLimpiar={limpiarFiltroRegistros}
+            opcionesFiltro={opcionesFiltro}
+            aplicando={loadingVentas}
+          />
 
           {loadingVentas ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -1520,13 +1370,12 @@ function VentasRapidas() {
             </div>
           ) : ventasRapidas.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-              {filtroRegistroClienteId ||
-              filtroRegistroEstado ||
-              (!usarFiltroAutomatico && (filtroFechaDesde || filtroFechaHasta))
-                ? 'No hay ventas que coincidan con los filtros aplicados.'
+              {hayFiltroActivo
+                ? 'No hay ventas que coincidan con el filtro aplicado.'
                 : 'No hay ventas rápidas registradas'}
             </p>
           ) : (
+            <>
             <div className="ventas-rapidas-registros-scroll table-container">
               <table className="table ventas-rapidas-registros-table table-sticky-header">
                 <colgroup>
@@ -1595,6 +1444,21 @@ function VentasRapidas() {
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            )}
+
+            <div className="table-info" style={{ marginTop: '1rem' }}>
+              {totalVentasRapidas > 0
+                ? `Mostrando ${startIndex}-${endIndex} de ${totalVentasRapidas} ventas`
+                : 'Sin registros para mostrar'}
+            </div>
+            </>
           )}
         </Card>
 

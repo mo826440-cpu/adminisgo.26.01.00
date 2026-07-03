@@ -1,0 +1,74 @@
+.registros-ventas-filtro {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(12rem, 1fr) auto;
+  gap: 0.75rem 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.registros-ventas-filtro__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.registros-ventas-filtro__campo label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.registros-ventas-filtro__valor {
+  width: 100%;
+}
+
+.registros-ventas-filtro__campo--fecha {
+  grid-column: span 1;
+}
+
+.registros-ventas-filtro__fecha-rango {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+}
+
+.registros-ventas-filtro__fecha-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.registros-ventas-filtro__fecha-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.registros-ventas-filtro__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .registros-ventas-filtro {
+    grid-template-columns: 1fr;
+  }
+
+  .registros-ventas-filtro__acciones {
+    width: 100%;
+  }
+
+  .registros-ventas-filtro__acciones .btn {
+    flex: 1 1 auto;
+  }
+}

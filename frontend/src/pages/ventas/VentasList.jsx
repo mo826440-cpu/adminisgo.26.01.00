@@ -2,10 +2,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
-import { getVentas, cancelVenta } from '../../services/ventas'
+import { Card, Button, Spinner, Alert, Badge, Modal, Pagination } from '../../components/common'
+import { cancelVenta } from '../../services/ventas'
+import { fetchVentasRegistros, VENTAS_REGISTROS_LIMIT, extraerOpcionesFiltroRegistros, encodeFiltroFechaRango } from '../../services/ventasListado'
+import RegistrosVentasFiltro from '../../components/ventas/RegistrosVentasFiltro'
 import {
-  ventaAfectaCalculos,
   ventaEstaCancelada,
   getVentaEstadoDisplay,
   getVentaEstadoLabel,
@@ -18,58 +19,38 @@ import ActionsMenu from './ActionsMenu'
 import './VentasList.css'
 import '../../styles/registros-seccion.css'
 
-const ITEMS_PER_PAGE = 100
-
 function VentasList() {
   const location = useLocation()
   const navigate = useNavigate()
   const [ventas, setVentas] = useState([])
+  const [totalVentas, setTotalVentas] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
-  const [currentPage, setCurrentPage] = useState(1)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [ventaToCancel, setVentaToCancel] = useState(null)
   const [canceling, setCanceling] = useState(false)
-  const [showActions, setShowActions] = useState(false)
-  
-  // Estado para el texto del botón de filtros
-  const [textoBotonFiltros, setTextoBotonFiltros] = useState('Mostrar filtros')
-  
-  // Sincronizar texto con showActions
-  useEffect(() => {
-    setTextoBotonFiltros(showActions ? 'Ocultar filtros' : 'Mostrar filtros')
-  }, [showActions])
-  
-  // Estados de filtros
-  // Por defecto: desde hace 3 meses hasta el día actual (incluido)
-  const getDefaultFechaDesde = () => {
-    const ahora = new Date()
-    const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
-    const y = desde.getFullYear()
-    const m = String(desde.getMonth() + 1).padStart(2, '0')
-    const d = String(desde.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
-  }
-  const getDefaultFechaHasta = () => {
-    const ahora = new Date()
-    const y = ahora.getFullYear()
-    const m = String(ahora.getMonth() + 1).padStart(2, '0')
-    const d = String(ahora.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
-  }
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde())
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta())
-  const [filtroBusqueda, setFiltroBusqueda] = useState('')
-  const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('cliente') // cliente, facturacion, codigo_barras, codigo_interno
-  const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
+
+  const [filtroTipoDraft, setFiltroTipoDraft] = useState('')
+  const [filtroValorDraft, setFiltroValorDraft] = useState('')
+  const [filtroFechaDesdeDraft, setFiltroFechaDesdeDraft] = useState('')
+  const [filtroFechaHastaDraft, setFiltroFechaHastaDraft] = useState('')
+  const [filtroActivo, setFiltroActivo] = useState({ tipo: '', valor: '' })
+  const [opcionesFiltro, setOpcionesFiltro] = useState({
+    clientes: [],
+    metodosPago: [],
+    estados: [],
+  })
 
   const loadVentas = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await getVentas({
-      fechaDesde: filtroFechaDesde,
-      fechaHasta: filtroFechaHasta,
+    const { data, total, error: err } = await fetchVentasRegistros({
+      page: currentPage,
+      pageSize: VENTAS_REGISTROS_LIMIT,
+      filtroTipo: filtroActivo.tipo,
+      filtroValor: filtroActivo.valor,
     })
 
     if (err) {
@@ -78,13 +59,16 @@ function VentasList() {
       return
     }
 
-    setVentas(data || [])
+    const rows = data || []
+    const totalRows = total ?? 0
+    setVentas(rows)
+    setTotalVentas(totalRows)
+    if (!filtroActivo.tipo && currentPage === 1) {
+      setOpcionesFiltro(extraerOpcionesFiltroRegistros(rows, { modo: 'ventas' }))
+    }
     setLoading(false)
-  }, [filtroFechaDesde, filtroFechaHasta])
+  }, [filtroActivo, currentPage])
 
-  // Cargar listado solo cuando cambian las fechas del filtro (no en cada cambio de `location.state`,
-  // porque al volver del POS con `state.success` el replace limpia el state y este efecto volvería
-  // a disparar `loadVentas` dos veces seguidas).
   useEffect(() => {
     loadVentas()
   }, [loadVentas])
@@ -99,7 +83,6 @@ function VentasList() {
     return () => clearTimeout(timer)
   }, [location.state, navigate, location.pathname])
 
-  // Atajo teclado: F2 -> nueva venta
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'F2') {
@@ -111,108 +94,36 @@ function VentasList() {
     return () => window.removeEventListener('keydown', handler)
   }, [navigate])
 
-  useEffect(() => {
+  const handleTipoFiltroChange = (tipo) => {
+    setFiltroTipoDraft(tipo)
+    setFiltroValorDraft('')
+    setFiltroFechaDesdeDraft('')
+    setFiltroFechaHastaDraft('')
+  }
+
+  const aplicarFiltro = () => {
+    if (!filtroTipoDraft) return
     setCurrentPage(1)
-  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago])
-
-  // Función para limpiar todos los filtros y volver a valores por defecto
-  const limpiarFiltros = () => {
-    setFiltroFechaDesde(getDefaultFechaDesde())
-    setFiltroFechaHasta(getDefaultFechaHasta())
-    setFiltroBusqueda('')
-    setTipoFiltroBusqueda('cliente')
-    setFiltroEstadoPago('todas')
+    if (filtroTipoDraft === 'fecha') {
+      if (!filtroFechaDesdeDraft || !filtroFechaHastaDraft) return
+      setFiltroActivo({
+        tipo: 'fecha',
+        valor: encodeFiltroFechaRango(filtroFechaDesdeDraft, filtroFechaHastaDraft),
+      })
+      return
+    }
+    if (!String(filtroValorDraft).trim()) return
+    setFiltroActivo({ tipo: filtroTipoDraft, valor: filtroValorDraft })
   }
 
-  // Filtrar ventas por rango de fechas (inicio y fin de día en hora local para incluir todo el día actual)
-  const filtrarPorFecha = useCallback((ventas) => {
-    if (!filtroFechaDesde || !filtroFechaHasta) return ventas
-    
-    const [yDesde, mDesde, dDesde] = filtroFechaDesde.split('-').map(Number)
-    const [yHasta, mHasta, dHasta] = filtroFechaHasta.split('-').map(Number)
-    const fechaDesde = new Date(yDesde, mDesde - 1, dDesde, 0, 0, 0, 0)
-    const fechaHasta = new Date(yHasta, mHasta - 1, dHasta, 23, 59, 59, 999)
-    
-    return ventas.filter(venta => {
-      const fechaVenta = new Date(venta.fecha_hora)
-      return fechaVenta >= fechaDesde && fechaVenta <= fechaHasta
-    })
-  }, [filtroFechaDesde, filtroFechaHasta])
-
-  // Filtrar ventas por búsqueda
-  const filtrarPorBusqueda = useCallback((ventas) => {
-    if (!filtroBusqueda.trim()) return ventas
-    
-    const termino = filtroBusqueda.toLowerCase()
-    
-    return ventas.filter(venta => {
-      switch (tipoFiltroBusqueda) {
-        case 'cliente':
-          return venta.clientes?.nombre?.toLowerCase().includes(termino)
-        case 'facturacion':
-          return venta.facturacion?.toLowerCase().includes(termino)
-        case 'codigo_barras':
-        case 'codigo_interno':
-          // Estos filtros requieren buscar en los productos de los items
-          // Por ahora, retornamos todas las ventas
-          // TODO: Implementar búsqueda en productos
-          return true
-        default:
-          return true
-      }
-    })
-  }, [filtroBusqueda, tipoFiltroBusqueda])
-
-  // Filtrar ventas por estado de pago
-  const filtrarPorEstadoPago = useCallback((ventas) => {
-    if (filtroEstadoPago === 'todas') return ventas
-    
-    return ventas.filter(venta => {
-      if (ventaEstaCancelada(venta)) return false
-      const montoPagado = parseFloat(venta.monto_pagado || 0)
-      const total = parseFloat(venta.total || 0)
-      const tieneDeuda = total - montoPagado > 0.01 // Tolerancia para errores de redondeo
-      
-      if (filtroEstadoPago === 'pagadas') {
-        return !tieneDeuda
-      }
-      if (filtroEstadoPago === 'con_deuda') {
-        return tieneDeuda
-      }
-      return true
-    })
-  }, [filtroEstadoPago])
-
-  // Aplicar todos los filtros
-  const filteredVentas = filtrarPorEstadoPago(
-    filtrarPorBusqueda(
-      filtrarPorFecha(ventas)
-    )
-  )
-
-  // Calcular indicadores
-  const indicadores = {
-    totales: filteredVentas.filter(ventaAfectaCalculos).length,
-    cobradas: filteredVentas.filter((v) => {
-      if (!ventaAfectaCalculos(v)) return false
-      const montoPagado = parseFloat(v.monto_pagado || 0)
-      const total = parseFloat(v.total || 0)
-      return total - montoPagado <= 0.01
-    }).length,
-    conDeuda: filteredVentas.filter((v) => {
-      if (!ventaAfectaCalculos(v)) return false
-      const montoPagado = parseFloat(v.monto_pagado || 0)
-      const total = parseFloat(v.total || 0)
-      return total - montoPagado > 0.01
-    }).length,
+  const limpiarFiltro = () => {
+    setFiltroTipoDraft('')
+    setFiltroValorDraft('')
+    setFiltroFechaDesdeDraft('')
+    setFiltroFechaHastaDraft('')
+    setCurrentPage(1)
+    setFiltroActivo({ tipo: '', valor: '' })
   }
-
-  // Calcular paginación
-  const totalItems = filteredVentas.length
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedVentas = filteredVentas.slice(startIndex, endIndex)
 
   const handlePageChange = (page) => {
     setCurrentPage(page)
@@ -235,15 +146,12 @@ function VentasList() {
     await loadVentas()
   }
 
-  // Obtener configuración de fecha/hora
   const { timezone, dateFormat } = useDateTime()
-  
-  // Formatear fecha usando la configuración del usuario
+
   const formatearFecha = (fecha) => {
     return formatDateTime(fecha, dateFormat, timezone)
   }
 
-  // Formatear moneda
   const formatearMoneda = (valor) => {
     const num = Number(valor || 0)
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -257,7 +165,12 @@ function VentasList() {
     return deuda > 0.01 ? formatearMoneda(deuda) : '-'
   }
 
-  if (loading) {
+  const hayFiltroActivo = Boolean(filtroActivo.tipo && filtroActivo.valor)
+  const totalPages = Math.max(1, Math.ceil(totalVentas / VENTAS_REGISTROS_LIMIT))
+  const startIndex = totalVentas === 0 ? 0 : (currentPage - 1) * VENTAS_REGISTROS_LIMIT + 1
+  const endIndex = Math.min(currentPage * VENTAS_REGISTROS_LIMIT, totalVentas)
+
+  if (loading && ventas.length === 0) {
     return (
       <Layout>
         <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -271,142 +184,6 @@ function VentasList() {
   return (
     <Layout>
       <div className="container">
-        {/* Indicadores */}
-        <div className="ventas-indicadores">
-          <div className="indicadores-header">
-            <div>
-              <div className="section-label">SECCIÓN</div>
-              <h3>INDICADORES</h3>
-            </div>
-          </div>
-          <div className="indicadores-grid">
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº VENTAS TOTALES</div>
-              <div className="indicador-valor">{indicadores.totales}</div>
-            </Card>
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº VENTAS COBRADAS</div>
-              <div className="indicador-valor">{indicadores.cobradas}</div>
-            </Card>
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº VENTAS CON DEUDA</div>
-              <div className="indicador-valor">{indicadores.conDeuda}</div>
-            </Card>
-          </div>
-        </div>
-
-        {/* Acciones y Filtros */}
-        <div className="ventas-acciones">
-          <div className="acciones-header">
-            <div>
-              <div className="section-label">SECCIÓN</div>
-              <h3>ACCIONES</h3>
-            </div>
-          </div>
-          <div className="acciones-buttons">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowActions(prev => !prev)}
-            >
-              {textoBotonFiltros}
-            </Button>
-            <Link to="/ventas/nueva">
-              <Button variant="primary" size="sm">
-                Cargar nueva venta (F2)
-              </Button>
-            </Link>
-          </div>
-          {showActions && (
-            <div className="acciones-content">
-              <div className="filtros-header-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={limpiarFiltros}
-                >
-                  🗑️ Limpiar Filtros
-                </Button>
-              </div>
-              <div className="filtro-fecha-registros">
-                <span className="filtro-seccion-titulo">FILTRO DE REGISTROS POR FECHA:</span>
-                <div className="filtro-fecha-rango">
-                  <div className="filtro-fecha-item">
-                    <label htmlFor="fecha-desde">Desde:</label>
-                    <input
-                      type="date"
-                      id="fecha-desde"
-                      name="ventas_filtro_fecha_desde"
-                      value={filtroFechaDesde}
-                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="filtro-fecha-item">
-                    <label htmlFor="fecha-hasta">Hasta:</label>
-                    <input
-                      type="date"
-                      id="fecha-hasta"
-                      name="ventas_filtro_fecha_hasta"
-                      value={filtroFechaHasta}
-                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                      className="form-control"
-                      min={filtroFechaDesde}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="filtros-adicionales">
-                <div className="filtro-busqueda">
-                  <label htmlFor="ventas-filtro-tipo-busqueda">FILTRO DE REGISTROS POR:</label>
-                  <div className="filtro-tipo">
-                    <select
-                      id="ventas-filtro-tipo-busqueda"
-                      name="ventas_filtro_tipo_busqueda"
-                      value={tipoFiltroBusqueda}
-                      onChange={(e) => setTipoFiltroBusqueda(e.target.value)}
-                      className="form-control"
-                    >
-                      <option value="cliente">NOMBRE CLIENTE</option>
-                      <option value="facturacion">FACTURACIÓN</option>
-                      <option value="codigo_barras">CÓD. BARRAS</option>
-                      <option value="codigo_interno">CÓD. INTERNO</option>
-                    </select>
-                  </div>
-                  <label htmlFor="ventas-filtro-busqueda-texto" className="filtro-busqueda-texto-label">
-                    Buscar
-                  </label>
-                  <input
-                    id="ventas-filtro-busqueda-texto"
-                    name="ventas_filtro_busqueda_texto"
-                    type="text"
-                    className="form-control"
-                    placeholder="Buscar..."
-                    value={filtroBusqueda}
-                    onChange={(e) => setFiltroBusqueda(e.target.value)}
-                  />
-                </div>
-                
-                <div className="filtro-estado-pago">
-                  <label htmlFor="ventas-filtro-estado-pago">FILTRO DE REGISTROS POR:</label>
-                  <select
-                    id="ventas-filtro-estado-pago"
-                    name="ventas_filtro_estado_pago"
-                    value={filtroEstadoPago}
-                    onChange={(e) => setFiltroEstadoPago(e.target.value)}
-                    className="form-control"
-                  >
-                    <option value="todas">TODAS LAS VENTAS</option>
-                    <option value="pagadas">VENTAS PAGAS</option>
-                    <option value="con_deuda">VENTAS QUE FALTAN PAGAR</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}
@@ -419,24 +196,46 @@ function VentasList() {
           </Alert>
         )}
 
-        {/* Tabla de Registros */}
         <Card className="registros-panel">
           <div className="section-label">SECCIÓN</div>
           <h3 className="registros-seccion-titulo">REGISTROS DE VENTAS</h3>
           <p className="registros-aviso-filtro">
-            Por defecto se muestran los registros desde hace 3 meses hasta el día de hoy. Para ver registros anteriores, cambiá los filtros manualmente.
+            Se muestran {VENTAS_REGISTROS_LIMIT} registros por página
+            {hayFiltroActivo ? ' (con filtro aplicado)' : ''}. Usá la paginación para ver más
+            registros o el filtro para buscar por fecha, cliente, método de pago o estado.
           </p>
-          {paginatedVentas.length === 0 ? (
+
+          <RegistrosVentasFiltro
+            idPrefix="ventas"
+            tipoFiltro={filtroTipoDraft}
+            valorFiltro={filtroValorDraft}
+            fechaDesde={filtroFechaDesdeDraft}
+            fechaHasta={filtroFechaHastaDraft}
+            onTipoChange={handleTipoFiltroChange}
+            onValorChange={setFiltroValorDraft}
+            onFechaDesdeChange={setFiltroFechaDesdeDraft}
+            onFechaHastaChange={setFiltroFechaHastaDraft}
+            onAplicar={aplicarFiltro}
+            onLimpiar={limpiarFiltro}
+            opcionesFiltro={opcionesFiltro}
+            aplicando={loading}
+          />
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <Spinner />
+            </div>
+          ) : ventas.length === 0 ? (
             <div className="empty-state">
-              {ventas.length === 0 ? (
+              {hayFiltroActivo ? (
+                <p>No se encontraron ventas que coincidan con el filtro aplicado.</p>
+              ) : (
                 <>
                   <p>No hay ventas registradas aún.</p>
                   <Link to="/ventas/nueva">
                     <Button variant="primary">Crear primera venta</Button>
                   </Link>
                 </>
-              ) : (
-                <p>No se encontraron ventas que coincidan con los filtros aplicados</p>
               )}
             </div>
           ) : (
@@ -455,7 +254,7 @@ function VentasList() {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedVentas.map((venta) => {
+                    {ventas.map((venta) => {
                       const estadoKey = getVentaEstadoDisplay(venta)
                       const fechaDisplay = getVentaFechaDisplay(venta)
 
@@ -489,7 +288,7 @@ function VentasList() {
                   </tbody>
                 </table>
               </div>
-              
+
               {totalPages > 1 && (
                 <Pagination
                   currentPage={currentPage}
@@ -497,12 +296,12 @@ function VentasList() {
                   onPageChange={handlePageChange}
                 />
               )}
-              
-              {totalItems > 0 && (
-                <div className="table-info" style={{ marginTop: '1rem' }}>
-                  Mostrando {startIndex + 1}-{Math.min(endIndex, totalItems)} de {totalItems} ventas
-                </div>
-              )}
+
+              <div className="table-info" style={{ marginTop: '1rem' }}>
+                {totalVentas > 0
+                  ? `Mostrando ${startIndex}-${endIndex} de ${totalVentas} ventas`
+                  : 'Sin registros para mostrar'}
+              </div>
             </>
           )}
         </Card>
@@ -550,4 +349,3 @@ function VentasList() {
 }
 
 export default VentasList
-

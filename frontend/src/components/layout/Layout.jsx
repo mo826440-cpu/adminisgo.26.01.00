@@ -1,6 +1,6 @@
 // Componente Layout principal
 import { useState, useMemo, useCallback } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import ModuleGlassPageHeader from './ModuleGlassPageHeader'
@@ -103,16 +103,28 @@ function Layout({ children }) {
             </div>
           </main>
         </div>
-        {isHubFullscreen ? (
-          <button
-            type="button"
-            className="hub-sidebar-fab"
-            onClick={toggleSidebar}
-            aria-expanded={sidebarOpen}
-            aria-label="Abrir o cerrar menú lateral"
-          >
-            <i className="bi bi-list" aria-hidden />
-          </button>
+        {(isHubFullscreen || isModuleGlassNav) ? (
+          <div className="layout-nav-chrome" role="toolbar" aria-label="Navegación principal">
+            <button
+              type="button"
+              className="layout-nav-chrome__btn"
+              onClick={toggleSidebar}
+              aria-expanded={sidebarOpen}
+              aria-label="Abrir o cerrar menú lateral"
+              title="Mostrar u ocultar menú lateral"
+            >
+              <i className="bi bi-list" aria-hidden />
+            </button>
+            <Link
+              to="/inicio"
+              className={`layout-nav-chrome__btn layout-nav-chrome__home${isHubFullscreen && location.pathname === '/inicio' ? ' layout-nav-chrome__btn--active' : ''}`}
+              title="Panel de inicio"
+              aria-label="Panel de inicio"
+              aria-current={location.pathname === '/inicio' ? 'page' : undefined}
+            >
+              <i className="bi bi-grid-1x2-fill" aria-hidden />
+            </Link>
+          </div>
         ) : null}
       </div>
     </LayoutChromeProvider>

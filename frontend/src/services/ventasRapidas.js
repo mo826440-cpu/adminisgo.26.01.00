@@ -1,14 +1,12 @@
 // Servicio de ventas rápidas: solo usa tablas ventas, venta_items, venta_pagos (sin ventas_rapidas).
 import { supabase } from './supabase'
+import { fetchVentasRegistros } from './ventasListado'
 import {
   createVenta,
   deleteVenta,
   getVentaById,
-  hydrateVentasRowsWithClienteUsuarioNombre,
   updateVenta,
 } from './ventas'
-
-const PAGE = 1000
 
 function mapVentaListadoShape(v) {
   const pagado = parseFloat(v.monto_pagado) || 0
@@ -30,75 +28,27 @@ function mapVentaListadoShape(v) {
 }
 
 /**
- * Ventas del comercio en rango de fechas (misma pantalla “registros”; incluye POS y rápidas).
+ * Listado de registros para la pantalla Ventas rápidas (últimos 100 + filtro opcional).
  *
- * Si `fechaDesde` y `fechaHasta` vienen ambos vacíos, se usa por defecto **últimos 3 meses**
- * (misma ventana razonable que el listado de ventas). Así no se paginan miles de filas
- * cuando la pantalla abre sin caja ni filtros manuales; si hace falta más historial, usar
- * filtros de fecha en la UI.
- *
- * @param {string|null} fechaDesde
- * @param {string|null} fechaHasta
- * @param {{ clienteId?: number|string|null, estadoPago?: 'PAGADO'|'DEBE'|null }} [opts]
+ * @param {{
+ *   limit?: number,
+ *   filtroTipo?: '' | 'fecha' | 'cliente' | 'metodo_pago' | 'estado',
+ *   filtroValor?: string
+ * }} [opts]
  */
-export const getVentasRapidas = async (fechaDesde = null, fechaHasta = null, opts = {}) => {
+export const getVentasRapidas = async (opts = {}) => {
   try {
-    let desde = fechaDesde
-    let hasta = fechaHasta
-    // Sin rango explícito: acotar en servidor (evita listar todo el comercio).
-    if (!desde && !hasta) {
-      const ahora = new Date()
-      const d = new Date(ahora.getFullYear(), ahora.getMonth() - 3, ahora.getDate())
-      const pad = (n) => String(n).padStart(2, '0')
-      desde = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
-      hasta = `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}T23:59:59`
-    }
-
-    const cid = Number(opts.clienteId)
-    const clienteId = Number.isFinite(cid) && cid > 0 ? cid : null
-    const estadoPago = opts.estadoPago === 'PAGADO' || opts.estadoPago === 'DEBE' ? opts.estadoPago : null
-
-    const rawChunks = []
-    let from = 0
-    for (;;) {
-      let q = supabase
-        .from('ventas')
-        .select(`
-          id,
-          fecha_hora,
-          total,
-          metodo_pago,
-          monto_pagado,
-          monto_deuda,
-          observaciones,
-          numero_ticket,
-          cliente_id,
-          usuario_id
-        `)
-        .is('deleted_at', null)
-        .order('fecha_hora', { ascending: false })
-
-      if (desde) q = q.gte('fecha_hora', desde)
-      if (hasta) q = q.lte('fecha_hora', hasta)
-      if (clienteId) q = q.eq('cliente_id', clienteId)
-      if (estadoPago === 'DEBE') q = q.gt('monto_deuda', 0.009)
-      if (estadoPago === 'PAGADO') q = q.lte('monto_deuda', 0.009)
-
-      const { data, error } = await q.range(from, from + PAGE - 1)
-      if (error) throw error
-      const chunk = data || []
-      rawChunks.push(...chunk)
-      if (chunk.length < PAGE) break
-      from += PAGE
-    }
-
-    const hydrated = await hydrateVentasRowsWithClienteUsuarioNombre(rawChunks)
-    const all = hydrated.map(mapVentaListadoShape)
-
-    return { data: all, error: null }
+    const { data, total, error } = await fetchVentasRegistros({
+      page: opts.page,
+      pageSize: opts.pageSize ?? opts.limit,
+      filtroTipo: opts.filtroTipo,
+      filtroValor: opts.filtroValor,
+    })
+    if (error) throw error
+    return { data: (data || []).map(mapVentaListadoShape), total: total ?? 0, error: null }
   } catch (error) {
     console.error('Error al obtener ventas (listado ventas rápidas):', error)
-    return { data: null, error }
+    return { data: null, total: 0, error }
   }
 }
 

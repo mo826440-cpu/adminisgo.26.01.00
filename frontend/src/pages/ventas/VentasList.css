@@ -35,54 +35,6 @@
   pointer-events: none;
 }
 
-/* Indicadores */
-.ventas-indicadores {
-  margin-bottom: 1rem; /* separa indicadores del resto */
-}
-
-.indicadores-header {
-  display: flex; /* alinea titulo y filtro en fila */
-  justify-content: space-between; /* separa extremos */
-  align-items: center; /* centra verticalmente */
-  margin-bottom: 1rem; /* espacio inferior */
-  flex-wrap: wrap; /* permite salto en pantallas chicas */
-  gap: 1rem; /* separacion entre items */
-}
-
-.indicadores-header h3 {
-  margin: 0; /* elimina margen por defecto */
-  font-size: 1.1rem; /* titulo compacto */
-  font-weight: 600; /* peso medio */
-}
-
-.indicadores-grid {
-  display: grid; /* layout en grilla */
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* columnas responsivas */
-  gap: 1rem; /* separacion entre cards */
-}
-
-.indicador-card {
-  padding: 0.5rem 1rem; /* espacio interno */
-  text-align: center; /* centra texto */
-}
-
-.indicador-card.indicador-verde {
-  background-color: #28a745; /* fondo verde */
-  color: white; /* texto blanco */
-}
-
-.indicador-label {
-  font-size: 0.75rem; /* etiqueta chica */
-  font-weight: 600; /* peso medio */
-  margin-bottom: 0.5rem; /* espacio inferior */
-  opacity: 0.9; /* leve transparencia */
-}
-
-.indicador-valor {
-  font-size: 1.75rem; /* numero destacado */
-  font-weight: 700; /* negrita */
-}
-
 /* Acciones */
 .ventas-acciones {
   margin-bottom: 2rem; /* separa acciones de la tabla */
@@ -295,36 +247,6 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .ventas-indicadores {
-    margin-bottom: 1.5rem;
-  }
-  
-  .indicadores-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .indicadores-header h3 {
-    font-size: 1rem;
-  }
-  
-  .indicadores-grid {
-    grid-template-columns: repeat(3, 1fr); /* tres columnas compactas */
-    gap: 0.5rem;
-  }
-  
-  .indicador-card {
-    padding: 0.5rem 0.25rem;
-  }
-  
-  .indicador-label {
-    font-size: 0.65rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .indicador-valor {
-    font-size: 1.1rem;
-  }
   
   .ventas-acciones {
     margin-bottom: 1.5rem;
