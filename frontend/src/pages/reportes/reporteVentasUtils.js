@@ -201,6 +201,18 @@ export function formatMoneyAR(val) {
   })}`
 }
 
+/** Parsea texto de moneda AR ($, miles con punto, decimales con coma) a string numérico. */
+export function parseMoneyAR(valor) {
+  if (valor == null || valor === '') return '0'
+  const numStr = valor.toString().replace(/\$/g, '').replace(/\./g, '').replace(',', '.')
+  const num = parseFloat(numStr) || 0
+  return num.toString()
+}
+
+export function parseMoneyARNumeric(valor) {
+  return Math.max(0, parseFloat(parseMoneyAR(valor)) || 0)
+}
+
 /** Escala para barras horizontales: máximo entre pagado y deuda en todos los meses */
 export function maxBarScale(rows) {
   let m = 0

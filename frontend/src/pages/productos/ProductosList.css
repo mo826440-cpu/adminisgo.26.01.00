@@ -78,9 +78,11 @@
 }
 
 .productos-precio-edit {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
+  flex-wrap: nowrap;
 }
 
 .productos-precio-prefix {
@@ -140,6 +142,109 @@
   overflow-y: auto;
   max-height: calc(100vh - 400px);
   position: relative;
+}
+
+.productos-table-container {
+  -webkit-overflow-scrolling: touch;
+}
+
+.productos-table {
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.productos-table thead th {
+  text-align: center;
+}
+
+.productos-table thead th,
+.productos-table tbody td {
+  border-right: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.productos-table thead th:last-child,
+.productos-table tbody td:last-child {
+  border-right: none;
+}
+
+.productos-th-nombre,
+.productos-td-nombre {
+  width: auto;
+  white-space: nowrap;
+}
+
+.productos-td-nombre .glass-tooltip__anchor {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.productos-table__nombre-text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(56, 189, 248, 0.35);
+  padding-bottom: 1px;
+  cursor: help;
+}
+
+[data-theme='dark'] .productos-table__nombre-text {
+  color: rgba(165, 243, 252, 0.95);
+}
+
+.productos-th-precio,
+.productos-td-precio,
+.productos-th-stock,
+.productos-td-stock,
+.productos-th-estado,
+.productos-td-estado {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.productos-th-acciones,
+.productos-td-acciones {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.productos-td-acciones .table-actions {
+  justify-content: center;
+}
+
+.producto-detalle-modal__nombre {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+}
+
+.producto-detalle-modal__lista {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr;
+  gap: 0.5rem 1rem;
+}
+
+.producto-detalle-modal__lista dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.producto-detalle-modal__lista dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .table.table-sticky-header {
@@ -241,7 +346,7 @@
   }
   
   .table {
-    min-width: 700px;
+    min-width: 520px;
     font-size: 0.85rem;
   }
   

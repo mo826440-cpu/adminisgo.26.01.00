@@ -19,6 +19,20 @@ export function getVentaEstadoDisplay(venta) {
   return total - pagado > 0.01 ? 'pendiente' : 'pagado'
 }
 
+/**
+ * Estado de cobro para registros (ventas normales y ventas rápidas).
+ * Ventas rápidas pueden persistir `DEBE`/`PAGADO` en BD; se normaliza a pendiente/pagado.
+ */
+export function getVentaEstadoDisplayRegistro(venta, opts = {}) {
+  const modo = opts.modo === 'rapidas' ? 'rapidas' : 'ventas'
+  if (modo === 'rapidas') {
+    const e = String(venta?.estado || '').toUpperCase()
+    if (e === 'PAGADO') return 'pagado'
+    if (e === 'DEBE' || e === 'PENDIENTE') return 'pendiente'
+  }
+  return getVentaEstadoDisplay(venta)
+}
+
 export function getVentaEstadoLabel(estado) {
   switch (estado) {
     case 'cancelado':
@@ -29,6 +43,20 @@ export function getVentaEstadoLabel(estado) {
       return 'Pagado'
     default:
       return estado
+  }
+}
+
+/** Etiqueta unificada para tablas de registros: PAGADO | PENDIENTE | CANCELADA */
+export function getVentaEstadoLabelTabla(estado) {
+  switch (estado) {
+    case 'cancelado':
+      return 'CANCELADA'
+    case 'pendiente':
+      return 'PENDIENTE'
+    case 'pagado':
+      return 'PAGADO'
+    default:
+      return String(estado || '').toUpperCase()
   }
 }
 

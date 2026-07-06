@@ -196,6 +196,39 @@ export const createProducto = async (producto) => {
 }
 
 /**
+ * Actualizar precio de venta de varios productos a la vez.
+ * @param {Array<number|string>} productoIds
+ * @param {number} precioVenta
+ */
+export const updateProductosPrecioBulk = async (productoIds, precioVenta) => {
+  const ids = (Array.isArray(productoIds) ? productoIds : []).filter((id) => id != null)
+  const precio = Number(precioVenta)
+  if (ids.length === 0) {
+    return { data: [], error: new Error('No hay productos seleccionados') }
+  }
+  if (!Number.isFinite(precio) || precio < 0) {
+    return { data: [], error: new Error('Precio inválido') }
+  }
+
+  try {
+    const responses = await Promise.all(
+      ids.map((id) =>
+        supabase.from('productos').update({ precio_venta: precio }).eq('id', id).select('id, precio_venta').single(),
+      ),
+    )
+    const failed = responses.find((r) => r.error)
+    if (failed?.error) throw failed.error
+    return { data: responses.map((r) => r.data).filter(Boolean), error: null }
+  } catch (error) {
+    console.error('Error al actualizar precios en lote:', error)
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error(error.message || 'Error al actualizar precios'),
+    }
+  }
+}
+
+/**
  * Actualizar un producto
  */
 export const updateProducto = async (id, producto) => {

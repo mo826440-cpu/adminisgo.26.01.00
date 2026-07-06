@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatMoneyAR } from '../pages/reportes/reporteVentasUtils'
+import { getVentaEstadoDisplay } from './ventaEstado'
 
 function slugArchivo(nombre) {
   const base = String(nombre || 'cliente')
@@ -22,84 +23,101 @@ function formatFechaCorta(iso) {
   }
 }
 
-function escapeCsvCampo(val) {
-  const t = String(val ?? '')
-  if (/[;"\n\r]/.test(t)) return `"${t.replace(/"/g, '""')}"`
-  return t
+function formatFechaSolo(fechaInput) {
+  if (!fechaInput) return '—'
+  try {
+    const d = fechaInput instanceof Date ? fechaInput : new Date(`${fechaInput}T12:00:00`)
+    return d.toLocaleDateString('es-AR')
+  } catch {
+    return String(fechaInput)
+  }
+}
+
+/** Estado de cobro para exportes PDF, no el `estado` operativo de la venta en BD. */
+function getVentaEstadoExportLabel(venta) {
+  const key = getVentaEstadoDisplay(venta)
+  if (key === 'cancelado') return 'Cancelada'
+  if (key === 'pendiente') return 'Incompleta'
+  return 'Completa'
 }
 
 /**
- * CSV separado por `;` y BOM UTF-8 — se abre bien en Excel regional AR.
- * @param {string} clienteNombre
- * @param {Array<Record<string, unknown>>} ventasRaw — filas de `ventas`
+ * Filtra ventas para exportes de historial del cliente.
+ * @param {Array<Record<string, unknown>>} ventasRaw
+ * @param {{ tipo?: 'total'|'deudas', fechaDesde?: string, fechaHasta?: string }} [options]
  */
-export function downloadClienteMovimientosCsv(clienteNombre, ventasRaw) {
-  const headers = [
-    'Fecha',
-    'Ticket',
-    'Total',
-    'Pagado',
-    'Deuda',
-    'Estado',
-    'Método',
-    'Facturación',
-    'Observaciones',
-  ]
-  const rows = (ventasRaw || []).map((v) => [
-    formatFechaCorta(v.fecha_hora),
-    v.numero_ticket ?? v.id,
-    Number(v.total || 0).toFixed(2),
-    Number(v.monto_pagado || 0).toFixed(2),
-    Number(v.monto_deuda || 0).toFixed(2),
-    v.estado ?? '',
-    v.metodo_pago ?? '',
-    v.facturacion ?? '',
-    String(v.observaciones || '').replace(/\r?\n/g, ' '),
-  ])
-  const lineas = [headers.map(escapeCsvCampo).join(';')]
-  for (const r of rows) {
-    lineas.push(r.map(escapeCsvCampo).join(';'))
+export function filterClienteMovimientosVentas(ventasRaw, options = {}) {
+  const { tipo = 'total', fechaDesde, fechaHasta } = options
+  let list = [...(ventasRaw || [])]
+
+  if (tipo === 'deudas') {
+    list = list.filter((v) => (parseFloat(v.monto_deuda) || 0) > 0.009)
   }
-  const bom = '\uFEFF'
-  const blob = new Blob([bom + lineas.join('\n')], { type: 'text/csv;charset=utf-8' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `movimientos_${slugArchivo(clienteNombre)}_${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
+
+  if (fechaDesde) {
+    const desde = new Date(`${fechaDesde}T00:00:00`)
+    list = list.filter((v) => v.fecha_hora && new Date(v.fecha_hora) >= desde)
+  }
+
+  if (fechaHasta) {
+    const hasta = new Date(`${fechaHasta}T23:59:59.999`)
+    list = list.filter((v) => v.fecha_hora && new Date(v.fecha_hora) <= hasta)
+  }
+
+  return list
+}
+
+export function calcularTotalDeudaVentas(ventas) {
+  return (ventas || []).reduce((sum, v) => sum + (parseFloat(v.monto_deuda) || 0), 0)
+}
+
+function getPeriodoExportLabel(fechaDesde, fechaHasta) {
+  if (!fechaDesde && !fechaHasta) return 'Período: todo el historial'
+  return `Período: ${formatFechaSolo(fechaDesde)} — ${formatFechaSolo(fechaHasta)}`
 }
 
 /**
  * PDF con jsPDF + autotable (misma familia que los informes del módulo Reportes).
  * @param {string} clienteNombre
  * @param {Array<Record<string, unknown>>} ventasRaw
+ * @param {{ tipo?: 'total'|'deudas', fechaDesde?: string, fechaHasta?: string }} [options]
  */
-export function downloadClienteMovimientosPdf(clienteNombre, ventasRaw) {
+export function downloadClienteMovimientosPdf(clienteNombre, ventasRaw, options = {}) {
+  const { tipo = 'total', fechaDesde, fechaHasta } = options
+  const lista = filterClienteMovimientosVentas(ventasRaw, { tipo, fechaDesde, fechaHasta })
+  const totalDeuda = calcularTotalDeudaVentas(lista)
+  const titulo =
+    tipo === 'deudas' ? 'Historial de ventas con deuda' : 'Historial total de ventas'
+  const vacioMsg =
+    tipo === 'deudas'
+      ? 'Sin ventas con deuda en el criterio seleccionado'
+      : 'Sin ventas en el criterio seleccionado'
+
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('Historial de movimientos (ventas)', 14, 16)
+  doc.text(titulo, 14, 16)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.text(`Cliente: ${String(clienteNombre || '—')}`, 14, 23)
   doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, 14, 28)
+  doc.text(getPeriodoExportLabel(fechaDesde, fechaHasta), 14, 33)
 
   const head = [['Fecha', 'Ticket', 'Total', 'Pagado', 'Deuda', 'Estado']]
-  const lista = ventasRaw || []
   const body =
     lista.length === 0
-      ? [['—', 'Sin ventas con este cliente', '', '', '', '']]
+      ? [['—', vacioMsg, '', '', '', '']]
       : lista.map((v) => [
           formatFechaCorta(v.fecha_hora),
           String(v.numero_ticket ?? v.id),
           formatMoneyAR(v.total),
           formatMoneyAR(v.monto_pagado),
           formatMoneyAR(v.monto_deuda),
-          String(v.estado ?? '').slice(0, 14),
+          getVentaEstadoExportLabel(v),
         ])
 
   autoTable(doc, {
-    startY: 33,
+    startY: 38,
     head,
     body,
     styles: { fontSize: 7, cellPadding: 1.2 },
@@ -108,5 +126,20 @@ export function downloadClienteMovimientosPdf(clienteNombre, ventasRaw) {
     margin: { left: 14, right: 14 },
   })
 
-  doc.save(`movimientos_${slugArchivo(clienteNombre)}_${new Date().toISOString().slice(0, 10)}.pdf`)
+  const finalY = (doc.lastAutoTable?.finalY ?? 38) + 8
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Total deuda: ${formatMoneyAR(totalDeuda)}`, 14, finalY)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text(
+    `${lista.length} venta(s) incluida(s)`,
+    14,
+    finalY + 5
+  )
+
+  const tipoSlug = tipo === 'deudas' ? 'deudas' : 'total'
+  doc.save(
+    `movimientos_${tipoSlug}_${slugArchivo(clienteNombre)}_${new Date().toISOString().slice(0, 10)}.pdf`
+  )
 }

@@ -1,6 +1,11 @@
 // Consulta liviana para tablas de registros (Ventas y Ventas rápidas): últimos N + filtro único.
 import { supabase } from './supabase'
-import { VENTA_ESTADO_CANCELADA, getVentaEstadoDisplay, getVentaEstadoLabel } from '../utils/ventaEstado'
+import {
+  VENTA_ESTADO_CANCELADA,
+  getVentaEstadoDisplay,
+  getVentaEstadoDisplayRegistro,
+  getVentaEstadoLabelTabla,
+} from '../utils/ventaEstado'
 import { hydrateVentasRowsWithClienteUsuarioNombre } from './ventas'
 
 export const VENTAS_REGISTROS_LIMIT = 100
@@ -85,20 +90,12 @@ export function extraerOpcionesFiltroRegistros(ventas, opts = {}) {
 
     let estadoVal
     let estadoLabel
-    if (modo === 'rapidas' && v.estado) {
-      if (v.estado === 'DEBE') {
-        estadoVal = 'pendiente'
-        estadoLabel = 'Pendiente'
-      } else if (v.estado === 'PAGADO') {
-        estadoVal = 'pagado'
-        estadoLabel = 'Pagado'
-      } else {
-        estadoVal = String(v.estado).toLowerCase()
-        estadoLabel = v.estado
-      }
+    if (modo === 'rapidas') {
+      estadoVal = getVentaEstadoDisplayRegistro(v, { modo: 'rapidas' })
+      estadoLabel = getVentaEstadoLabelTabla(estadoVal)
     } else {
       estadoVal = getVentaEstadoDisplay(v)
-      estadoLabel = getVentaEstadoLabel(estadoVal)
+      estadoLabel = getVentaEstadoLabelTabla(estadoVal)
     }
     if (estadoVal && !estadosMap.has(estadoVal)) {
       estadosMap.set(estadoVal, estadoLabel)

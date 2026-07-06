@@ -106,16 +106,26 @@
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
   letter-spacing: 0.04em;
   font-size: 0.78rem;
   text-transform: uppercase;
 }
 
+.clientes-table-futurist th:last-child {
+  border-right: none;
+}
+
 .clientes-table-futurist td {
   padding: 0.9rem 1rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
   color: var(--text-primary);
   vertical-align: middle;
+}
+
+.clientes-table-futurist td:last-child {
+  border-right: none;
 }
 
 .clientes-table-futurist tbody tr {
@@ -144,9 +154,21 @@
   text-align: center;
 }
 
+.clientes-table-futurist th.clientes-th-estado,
+.clientes-table-futurist th.clientes-th-acciones {
+  text-align: center;
+}
+
+.clientes-td-estado .clientes-badge,
+.clientes-td-estado .glass-tooltip__anchor {
+  display: inline-flex;
+  justify-content: center;
+}
+
 .clientes-th-acciones,
 .clientes-td-acciones {
-  width: 11rem;
+  width: 3.5rem;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -195,64 +217,209 @@
   cursor: help;
 }
 
-.clientes-acciones {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.clientes-btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.45);
-  color: rgba(226, 232, 240, 0.92);
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-}
-
-.clientes-btn-icon:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.55);
-  box-shadow: 0 0 14px rgba(34, 211, 238, 0.2);
-}
-
-.clientes-btn-icon:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.clientes-btn-icon--csv:hover:not(:disabled) {
-  color: #6ee7b7;
-}
-
-.clientes-btn-icon--pdf:hover:not(:disabled) {
-  color: #fca5a5;
-}
-
-.clientes-btn-icon--pago:hover:not(:disabled) {
-  color: #fde68a;
-  border-color: rgba(251, 191, 36, 0.55);
-  box-shadow: 0 0 14px rgba(251, 191, 36, 0.18);
-}
-
 .clientes-reporte-spinner {
   border-width: 0.14em;
   border-color: rgba(56, 189, 248, 0.35);
   border-right-color: rgba(34, 211, 238, 0.95);
 }
 
-.clientes-link-editar .btn {
+/* Columna expandir ventas */
+.clientes-col-expand,
+.clientes-th-expand,
+.clientes-td-expand {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.clientes-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
   border-radius: 8px;
+  background: transparent;
+  color: rgba(56, 189, 248, 0.85);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.clientes-expand-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  color: rgba(34, 211, 238, 1);
+}
+
+.clientes-expand-btn .bi {
+  font-size: 1.1rem;
+}
+
+.cliente-row--expanded {
+  background: rgba(56, 189, 248, 0.06) !important;
+}
+
+.cliente-ventas-row td {
+  padding: 0 !important;
+  border-top: none !important;
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.cliente-ventas-panel {
+  padding: 0.75rem 1rem 1rem 2.75rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.25);
+}
+
+.cliente-ventas-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.cliente-ventas-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.cliente-ventas-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: min(50vh, 22rem);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+  -webkit-overflow-scrolling: touch;
+}
+
+.cliente-ventas-table {
+  margin-bottom: 0;
+  font-size: 0.8125rem;
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.cliente-ventas-table thead th,
+.cliente-ventas-table tbody td {
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 0.45rem 0.75rem;
+  vertical-align: middle;
+}
+
+.cliente-ventas-table thead th:last-child,
+.cliente-ventas-table tbody td:last-child {
+  border-right: none;
+}
+
+.cliente-ventas-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-secondary) !important;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cliente-ventas-th-total,
+.cliente-ventas-td-total {
+  width: 1%;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.cliente-ventas-th-estado,
+.cliente-ventas-td-estado {
+  width: 7rem;
+  text-align: center;
+}
+
+.cliente-ventas-table th.cliente-ventas-th-estado,
+.cliente-ventas-table th.cliente-ventas-th-acciones {
+  text-align: center;
+}
+
+.cliente-ventas-th-acciones,
+.cliente-ventas-td-acciones {
+  width: 3.25rem;
+  text-align: center;
+}
+
+.clientes-venta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.clientes-venta-badge--pagado {
+  color: #022c22;
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.clientes-venta-badge--pendiente {
+  color: #fff1f2;
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+}
+
+.clientes-venta-badge--cancelada {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
+.clientes-ventas-actions-menu .actions-menu-button {
+  padding: 0.35rem 0.45rem;
+}
+
+.cliente-pdf-modal__hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.cliente-pdf-modal__modo {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.cliente-pdf-modal__legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.cliente-pdf-modal__radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cliente-pdf-modal__radio input {
+  accent-color: var(--color-primary, #0ea5e9);
+}
+
+.cliente-pdf-modal__fechas {
+  margin-top: 0.25rem;
 }
 
 @media (max-width: 768px) {

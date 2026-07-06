@@ -1,0 +1,21 @@
+.clientes-actions-menu {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.clientes-actions-menu .actions-menu-button {
+  padding: 0.35rem 0.45rem;
+}
+
+.clientes-td-acciones .actions-menu-dropdown {
+  right: 0;
+  left: auto;
+  min-width: 210px;
+}
+
+@media (max-width: 768px) {
+  .clientes-td-acciones .actions-menu-dropdown {
+    right: auto;
+    left: 0;
+  }
+}

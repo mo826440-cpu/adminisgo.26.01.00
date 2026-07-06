@@ -1,0 +1,13 @@
+.clientes-ventas-actions-dropdown {
+  min-width: 190px;
+}
+
+.clientes-ventas-actions-dropdown .actions-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.clientes-ventas-actions-dropdown .actions-menu-item:disabled:hover {
+  background: none;
+  color: var(--text-primary);
+}

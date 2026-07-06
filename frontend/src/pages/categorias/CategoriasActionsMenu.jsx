@@ -1,11 +1,14 @@
-// Menú de acciones (tres puntos) — mismo patrón que ventas/ActionsMenu
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/common'
 import '../ventas/ActionsMenu.css'
-import './ProductosActionsMenu.css'
 
-function ProductosActionsMenu({ producto, onVerDetalles, onDelete }) {
+function CategoriasActionsMenu({
+  categoriaId,
+  productosCount = 0,
+  onVerDetalles,
+  onExportarPdf,
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
@@ -27,16 +30,16 @@ function ProductosActionsMenu({ producto, onVerDetalles, onDelete }) {
     e.stopPropagation()
     setIsOpen(false)
     if (action === 'detalles' && onVerDetalles) {
-      onVerDetalles(producto)
+      onVerDetalles()
     } else if (action === 'editar') {
-      navigate(`/productos/${producto.id}`)
-    } else if (action === 'eliminar' && onDelete) {
-      onDelete(producto)
+      navigate(`/categorias/${categoriaId}`)
+    } else if (action === 'pdf' && onExportarPdf) {
+      onExportarPdf()
     }
   }
 
   return (
-    <div className="actions-menu-wrapper productos-actions-menu" ref={menuRef}>
+    <div className="actions-menu-wrapper categorias-actions-menu" ref={menuRef}>
       <Button
         variant="ghost"
         size="sm"
@@ -47,7 +50,7 @@ function ProductosActionsMenu({ producto, onVerDetalles, onDelete }) {
         }}
         className="actions-menu-button"
         title="Acciones"
-        aria-label={`Acciones de ${producto.nombre}`}
+        aria-label="Abrir menú de acciones"
         aria-expanded={isOpen}
       >
         <i className="bi bi-three-dots-vertical" aria-hidden />
@@ -72,11 +75,12 @@ function ProductosActionsMenu({ producto, onVerDetalles, onDelete }) {
           </button>
           <button
             type="button"
-            className="actions-menu-item actions-menu-item-danger"
-            onClick={(e) => handleAction('eliminar', e)}
+            className="actions-menu-item"
+            onClick={(e) => handleAction('pdf', e)}
+            disabled={productosCount === 0}
           >
-            <i className="bi bi-trash" aria-hidden />
-            <span>Eliminar</span>
+            <i className="bi bi-file-earmark-pdf" aria-hidden />
+            <span>Lista de precios PDF</span>
           </button>
         </div>
       )}
@@ -84,4 +88,4 @@ function ProductosActionsMenu({ producto, onVerDetalles, onDelete }) {
   )
 }
 
-export default ProductosActionsMenu
+export default CategoriasActionsMenu

@@ -35,6 +35,11 @@ import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
 import '../../styles/ticketThermalPrint.css'
 import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
+import {
+  getVentaEstadoDisplayRegistro,
+  getVentaEstadoLabelTabla,
+  getVentaEstadoBadgeVariant,
+} from '../../utils/ventaEstado'
 
 const METODOS_PAGO_OPCIONES = [
   ['efectivo', 'Efectivo'],
@@ -1195,7 +1200,7 @@ function VentasRapidas() {
                   Pagos (varios métodos como en Ventas)
                 </span>
                 <p className="venta-rapida-pagos-hint text-secondary" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0.75rem' }}>
-                  Saldo: lo que queda por cobrar antes de cada fila. Las filas «Pendiente» no suman al cobrado; si no cargás pagos o el total cobrado es menor al total, la venta queda en estado DEBE.
+                  Saldo: lo que queda por cobrar antes de cada fila. Las filas «Pendiente» no suman al cobrado; si no cargás pagos o el total cobrado es menor al total, la venta queda en estado PENDIENTE.
                 </p>
                 <div className="venta-rapida-pagos-grid" role="group" aria-labelledby="venta-rapida-pagos-label">
                   <div className="venta-rapida-pagos-head venta-rapida-pagos-row">
@@ -1407,7 +1412,9 @@ function VentasRapidas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ventasRapidas.map((venta) => (
+                  {ventasRapidas.map((venta) => {
+                    const estadoKey = getVentaEstadoDisplayRegistro(venta, { modo: 'rapidas' })
+                    return (
                     <tr key={venta.id}>
                       <td className="vr-reg-col--fecha">{formatearFechaHora(venta.fecha_hora)}</td>
                       <td className="ventas-rapidas-td-cliente vr-reg-col--hide-mobile">
@@ -1425,8 +1432,8 @@ function VentasRapidas() {
                       </td>
                       <td className="vr-reg-col--hide-mobile">{venta.metodo_pago}</td>
                       <td className="vr-reg-col--estado">
-                        <Badge variant={venta.estado === 'PAGADO' ? 'success' : 'warning'}>
-                          {venta.estado}
+                        <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
+                          {getVentaEstadoLabelTabla(estadoKey)}
                         </Badge>
                       </td>
                       <td className="vr-reg-col--acciones">
@@ -1440,7 +1447,8 @@ function VentasRapidas() {
                         />
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

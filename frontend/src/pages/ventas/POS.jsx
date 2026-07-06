@@ -8,6 +8,7 @@ import { getClientes, getClientePreferible } from '../../services/clientes'
 import { getFormasPago } from '../../services/formasPago'
 import { createVenta, getVentaById, updateVenta } from '../../services/ventas'
 import { ventaEstaCancelada } from '../../utils/ventaEstado'
+import { formatMoneyAR, parseMoneyAR, parseMoneyARNumeric } from '../reportes/reporteVentasUtils'
 import { useDateTime } from '../../context/DateTimeContext'
 import { utcToLocalDateTime, getCurrentLocalDateTime } from '../../utils/dateFormat'
 import './POS.css'
@@ -57,11 +58,12 @@ function POS() {
   const [showPrintOfferModal, setShowPrintOfferModal] = useState(false)
   const [savedVentaId, setSavedVentaId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [editingPrecioIdx, setEditingPrecioIdx] = useState(null)
+  const [precioRaw, setPrecioRaw] = useState('')
+  const [editingPagoIdx, setEditingPagoIdx] = useState(null)
+  const [pagoMontoRaw, setPagoMontoRaw] = useState('')
 
-  const formatCurrency = (value) => {
-    const num = Number(value || 0)
-    return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
+  const formatCurrency = formatMoneyAR
 
   const recalcCarritoItem = (item) => {
     const precio = parseFloat(item.precio_unitario) || 0
@@ -394,9 +396,7 @@ function POS() {
   }
 
   const handleCarritoPrecioChange = (index, raw) => {
-    const normalized = String(raw).trim().replace(',', '.')
-    const precio = parseFloat(normalized)
-    if (Number.isNaN(precio) || precio < 0) return
+    const precio = parseMoneyARNumeric(raw)
     actualizarItemCarrito(index, { precio_unitario: precio })
   }
 
@@ -424,9 +424,9 @@ function POS() {
   }
 
   const handlePagoMontoChange = (index, raw) => {
-    const monto = parseFloat(String(raw).replace(',', '.')) || 0
+    const monto = parseMoneyARNumeric(raw)
     setMetodosPago((prev) =>
-      prev.map((mp, i) => (i === index ? { ...mp, monto_pagado: Math.max(0, monto), _autoMonto: false } : mp))
+      prev.map((mp, i) => (i === index ? { ...mp, monto_pagado: monto, _autoMonto: false } : mp))
     )
     setError(null)
   }
@@ -633,144 +633,157 @@ function POS() {
         )}
 
         <div className="pos-page-body">
-          <Card className="pos-formulario pos-sidebar">
-            <div className="pos-sidebar-head">
+          <Card className="pos-formulario">
+            <div className="pos-form-head">
               <h3>{isEditing ? 'Editar venta' : 'Nueva venta'}</h3>
               <Button variant="outline" size="sm" onClick={handleCancelarVenta}>
                 Cancelar
               </Button>
             </div>
 
-            <form className="pos-sidebar-form" onSubmit={(e) => e.preventDefault()} onKeyDown={handleKeyPress}>
-              <div className="pos-sidebar-fields">
-              <div className="pos-sidebar-field autocomplete-wrapper">
-                <label className="form-label">
-                  CLIENTE
-                  <div className="pos-field-with-link">
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={clienteSearch}
-                      onChange={(e) => buscarCliente(e.target.value)}
-                      onKeyDown={handleClienteKeyDown}
-                      onFocus={() => {
-                        if (clienteSuggestions.length > 0) setShowClienteSuggestions(true)
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowClienteSuggestions(false), 150)
-                      }}
-                      autoComplete="off"
-                      placeholder="Buscar por nombre o documento"
-                    />
-                    <Link to="/clientes" className="pos-mgmt-link" title="Gestión de clientes">
-                      <i className="bi bi-people" />
-                    </Link>
-                  </div>
-                </label>
-                {showClienteSuggestions && clienteSuggestions.length > 0 && (
-                  <ul className="autocomplete-list" ref={clienteListRef}>
-                    {clienteSuggestions.map((c, idx) => (
-                      <li
-                        key={c.id}
-                        data-index={idx}
-                        className={idx === clienteActiveIndex ? 'active' : ''}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          seleccionarCliente(c)
+            <form className="pos-carga-form" onSubmit={(e) => e.preventDefault()} onKeyDown={handleKeyPress}>
+              <div className="pos-carga-row">
+                <div className="pos-carga-field autocomplete-wrapper">
+                  <label className="form-label">
+                    CLIENTE
+                    <div className="pos-field-with-link">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={clienteSearch}
+                        onChange={(e) => buscarCliente(e.target.value)}
+                        onKeyDown={handleClienteKeyDown}
+                        onFocus={() => {
+                          if (clienteSuggestions.length > 0) setShowClienteSuggestions(true)
                         }}
-                        onMouseEnter={() => setClienteActiveIndex(idx)}
+                        onBlur={() => {
+                          setTimeout(() => setShowClienteSuggestions(false), 150)
+                        }}
+                        autoComplete="off"
+                        placeholder="Buscar por nombre o documento"
+                      />
+                      <Link to="/clientes" className="pos-mgmt-link" title="Gestión de clientes">
+                        <i className="bi bi-people" />
+                      </Link>
+                    </div>
+                  </label>
+                  {showClienteSuggestions && clienteSuggestions.length > 0 && (
+                    <ul className="autocomplete-list" ref={clienteListRef}>
+                      {clienteSuggestions.map((c, idx) => (
+                        <li
+                          key={c.id}
+                          data-index={idx}
+                          className={idx === clienteActiveIndex ? 'active' : ''}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            seleccionarCliente(c)
+                          }}
+                          onMouseEnter={() => setClienteActiveIndex(idx)}
+                        >
+                          <strong>{c.nombre}</strong>
+                          {c.numero_documento ? ` — ${c.numero_documento}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="pos-carga-field autocomplete-wrapper">
+                  <label className="form-label">
+                    PRODUCTO O CÓDIGO DE BARRAS
+                    <div className="pos-field-with-link">
+                      <input
+                        ref={productoInputRef}
+                        type="text"
+                        name="producto"
+                        className="form-control"
+                        value={productoSearch}
+                        onChange={(e) => buscarProducto(e.target.value)}
+                        onKeyDown={handleProductoKeyDown}
+                        onFocus={() => {
+                          if (productoSuggestions.length > 0) setShowProductoSuggestions(true)
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setShowProductoSuggestions(false), 150)
+                        }}
+                        autoComplete="off"
+                        placeholder="Código de barras, interno o nombre"
+                        autoFocus
+                      />
+                      <Link to="/productos" className="pos-mgmt-link" title="Gestión de productos">
+                        <i className="bi bi-box-seam" />
+                      </Link>
+                    </div>
+                  </label>
+                  {showProductoSuggestions && productoSuggestions.length > 0 && (
+                    <ul className="autocomplete-list" ref={productoListRef}>
+                      {productoSuggestions.map((p, idx) => (
+                        <li
+                          key={p.id}
+                          data-index={idx}
+                          className={idx === productoActiveIndex ? 'active' : ''}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            aplicarProductoSeleccionado(p)
+                            setShowProductoSuggestions(false)
+                          }}
+                          onMouseEnter={() => setProductoActiveIndex(idx)}
+                        >
+                          <strong>{p.nombre}</strong>
+                          {p.codigo_barras ? ` — ${p.codigo_barras}` : p.codigo_interno ? ` — ${p.codigo_interno}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="pos-carga-field pos-carga-field--unidades">
+                  <label className="form-label" htmlFor="pos-unidades">
+                    UNIDADES
+                    <div className="pos-unidades-add">
+                      <input
+                        id="pos-unidades"
+                        type="number"
+                        className="form-control pos-unidades-input"
+                        min="1"
+                        step="1"
+                        value={unidades}
+                        onChange={(e) => handleUnidadesChange(e.target.value)}
+                        onKeyDown={handleUnidadesKeyDown}
+                      />
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="pos-btn-add"
+                        onClick={cargarAlCarrito}
+                        title="Agregar al carrito"
+                        aria-label="Agregar al carrito"
                       >
-                        <strong>{c.nombre}</strong>
-                        {c.numero_documento ? ` — ${c.numero_documento}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {clienteSeleccionado && (
-                  <span className="text-success pos-sidebar-hint">Cliente: {clienteSeleccionado.nombre}</span>
-                )}
+                        <i className="bi bi-plus-lg" aria-hidden />
+                      </Button>
+                    </div>
+                  </label>
+                </div>
               </div>
 
-              <div className="pos-sidebar-field autocomplete-wrapper">
-                <label className="form-label">
-                  PRODUCTO O CÓDIGO DE BARRAS
-                  <div className="pos-field-with-link">
-                    <input
-                      ref={productoInputRef}
-                      type="text"
-                      name="producto"
-                      className="form-control"
-                      value={productoSearch}
-                      onChange={(e) => buscarProducto(e.target.value)}
-                      onKeyDown={handleProductoKeyDown}
-                      onFocus={() => {
-                        if (productoSuggestions.length > 0) setShowProductoSuggestions(true)
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowProductoSuggestions(false), 150)
-                      }}
-                      autoComplete="off"
-                      placeholder="Código de barras, interno o nombre"
-                      autoFocus
-                    />
-                    <Link to="/productos" className="pos-mgmt-link" title="Gestión de productos">
-                      <i className="bi bi-box-seam" />
-                    </Link>
-                  </div>
-                </label>
-                {showProductoSuggestions && productoSuggestions.length > 0 && (
-                  <ul className="autocomplete-list" ref={productoListRef}>
-                    {productoSuggestions.map((p, idx) => (
-                      <li
-                        key={p.id}
-                        data-index={idx}
-                        className={idx === productoActiveIndex ? 'active' : ''}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          aplicarProductoSeleccionado(p)
-                          setShowProductoSuggestions(false)
-                        }}
-                        onMouseEnter={() => setProductoActiveIndex(idx)}
-                      >
-                        <strong>{p.nombre}</strong>
-                        {p.codigo_barras ? ` — ${p.codigo_barras}` : p.codigo_interno ? ` — ${p.codigo_interno}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {productoSeleccionado && stockActual !== null && (
-                  <span className="text-info pos-sidebar-hint">Stock disponible: {stockActual}</span>
-                )}
-              </div>
-              </div>
-
-              <div className="pos-sidebar-carga">
-                <label className="form-label pos-sidebar-carga-label" htmlFor="pos-unidades">
-                  UNIDADES
-                </label>
-                <input
-                  id="pos-unidades"
-                  type="number"
-                  className="form-control pos-sidebar-unidades-input"
-                  min="1"
-                  step="1"
-                  value={unidades}
-                  onChange={(e) => handleUnidadesChange(e.target.value)}
-                  onKeyDown={handleUnidadesKeyDown}
-                />
-                <Button type="button" variant="primary" className="pos-sidebar-cargar" onClick={cargarAlCarrito}>
-                  CARGAR
-                </Button>
-              </div>
+              {(clienteSeleccionado || (productoSeleccionado && stockActual !== null)) && (
+                <div className="pos-carga-meta">
+                  {clienteSeleccionado ? (
+                    <span className="text-success pos-carga-hint">Cliente: {clienteSeleccionado.nombre}</span>
+                  ) : null}
+                  {productoSeleccionado && stockActual !== null ? (
+                    <span className="text-info pos-carga-hint">Stock disponible: {stockActual}</span>
+                  ) : null}
+                </div>
+              )}
             </form>
           </Card>
 
-          <div className="pos-right-stack">
           <Card className="pos-carrito">
             <section className="pos-panel pos-panel--carrito">
               <h3 className="pos-panel-title">Carrito</h3>
               <div className="carrito-table-container pos-panel-scroll">
-                <table className="carrito-table carrito-table--carrito">
+                <table className="carrito-table carrito-table--carrito pos-table-bordered">
                   <thead>
                     <tr>
                       <th className="col-producto">Producto</th>
@@ -785,7 +798,7 @@ function POS() {
                     {carrito.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="pos-empty-row text-secondary">
-                          Agregá productos con el panel de la izquierda
+                          Agregá productos con los campos superiores
                         </td>
                       </tr>
                     ) : (
@@ -807,10 +820,34 @@ function POS() {
                             <input
                               type="text"
                               inputMode="decimal"
-                              className="carrito-inline-input carrito-inline-input--precio"
-                              defaultValue={item.precio_unitario}
-                              key={`precio-${index}-${item.precio_unitario}`}
-                              onBlur={(e) => handleCarritoPrecioChange(index, e.target.value)}
+                              autoComplete="off"
+                              className="carrito-inline-input carrito-inline-input--precio carrito-inline-input--moneda"
+                              placeholder="$0,00"
+                              value={
+                                editingPrecioIdx === index
+                                  ? precioRaw
+                                  : formatCurrency(item.precio_unitario)
+                              }
+                              onChange={(e) => {
+                                const valor = e.target.value
+                                if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                                  setPrecioRaw(valor)
+                                  handleCarritoPrecioChange(index, valor === '' ? '0' : valor)
+                                }
+                              }}
+                              onFocus={() => {
+                                setEditingPrecioIdx(index)
+                                const raw = parseMoneyAR(item.precio_unitario)
+                                setPrecioRaw(raw === '0' ? '' : raw)
+                              }}
+                              onBlur={() => {
+                                let valor = precioRaw
+                                if (!valor || valor.trim() === '' || valor === '$') valor = '0'
+                                else valor = parseMoneyAR(valor)
+                                handleCarritoPrecioChange(index, valor)
+                                setEditingPrecioIdx(null)
+                                setPrecioRaw('')
+                              }}
                               aria-label={`Precio unitario de ${item.nombre}`}
                             />
                           </td>
@@ -856,29 +893,29 @@ function POS() {
             </section>
           </Card>
 
-        <Card className="pos-pagos-card">
-          <section className="pos-panel pos-panel--pagos">
-                <div className="metodos-pago-section__header">
-                  <h4 className="pos-panel-title">Formas de pago</h4>
-                  <div className="metodos-pago-section__actions">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="pos-pago-add-line"
-                      onClick={agregarLineaPago}
-                      disabled={carrito.length === 0 || (deudaRestantePago <= 0.01 && metodosPago.length > 0)}
-                    >
-                      + Agregar línea
-                    </Button>
-                    <Link to="/configuraciones#formas-pago" className="pos-mgmt-link" title="Gestión de formas de pago">
-                      <i className="bi bi-credit-card" />
-                    </Link>
-                  </div>
+          <Card className="pos-pagos-card">
+            <section className="pos-panel pos-panel--pagos">
+              <div className="metodos-pago-section__header">
+                <h4 className="pos-panel-title">Formas de pago</h4>
+                <div className="metodos-pago-section__actions">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="pos-pago-add-line"
+                    onClick={agregarLineaPago}
+                    disabled={carrito.length === 0 || (deudaRestantePago <= 0.01 && metodosPago.length > 0)}
+                  >
+                    + Agregar línea
+                  </Button>
+                  <Link to="/configuraciones#formas-pago" className="pos-mgmt-link" title="Gestión de formas de pago">
+                    <i className="bi bi-credit-card" />
+                  </Link>
                 </div>
+              </div>
 
-                <div className="metodos-pago-table-container pos-pagos-table-wrap">
-                  <table className="carrito-table carrito-table--pagos">
+              <div className="metodos-pago-table-container pos-pagos-table-wrap">
+                <table className="carrito-table carrito-table--pagos pos-table-bordered">
                     <thead>
                       <tr>
                         <th className="col-pago-metodo">Forma de pago</th>
@@ -922,12 +959,36 @@ function POS() {
                               </td>
                               <td className="col-pago-monto">
                                 <input
-                                  type="number"
-                                  className="carrito-inline-input pos-pago-monto-input"
-                                  min="0"
-                                  step="0.01"
-                                  value={mp.monto_pagado}
-                                  onChange={(e) => handlePagoMontoChange(index, e.target.value)}
+                                  type="text"
+                                  inputMode="decimal"
+                                  autoComplete="off"
+                                  className="carrito-inline-input pos-pago-monto-input carrito-inline-input--moneda"
+                                  placeholder="$0,00"
+                                  value={
+                                    editingPagoIdx === index
+                                      ? pagoMontoRaw
+                                      : formatCurrency(mp.monto_pagado)
+                                  }
+                                  onChange={(e) => {
+                                    const valor = e.target.value
+                                    if (/^[\d.,$]*$/.test(valor) || valor === '') {
+                                      setPagoMontoRaw(valor)
+                                      handlePagoMontoChange(index, valor === '' ? '0' : valor)
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    setEditingPagoIdx(index)
+                                    const raw = parseMoneyAR(mp.monto_pagado)
+                                    setPagoMontoRaw(raw === '0' ? '' : raw)
+                                  }}
+                                  onBlur={() => {
+                                    let valor = pagoMontoRaw
+                                    if (!valor || valor.trim() === '' || valor === '$') valor = '0'
+                                    else valor = parseMoneyAR(valor)
+                                    handlePagoMontoChange(index, valor)
+                                    setEditingPagoIdx(null)
+                                    setPagoMontoRaw('')
+                                  }}
                                   aria-label={`Monto pagado línea ${index + 1}`}
                                 />
                               </td>
@@ -953,12 +1014,11 @@ function POS() {
                   </table>
                 </div>
               </section>
-        </Card>
-          </div>
+          </Card>
         </div>
 
         <div className="pos-page-footer">
-        <div className="carrito-actions-final pos-actions-bar">
+          <div className="carrito-actions-final pos-actions-bar">
           <Button
             variant="primary"
             onClick={handleConfirmarVenta}

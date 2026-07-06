@@ -9,7 +9,7 @@ import RegistrosVentasFiltro from '../../components/ventas/RegistrosVentasFiltro
 import {
   ventaEstaCancelada,
   getVentaEstadoDisplay,
-  getVentaEstadoLabel,
+  getVentaEstadoLabelTabla,
   getVentaEstadoBadgeVariant,
   getVentaFechaDisplay,
 } from '../../utils/ventaEstado'
@@ -267,7 +267,7 @@ function VentasList() {
                           <td className="hide-mobile">{formatearDeuda(venta)}</td>
                           <td>
                             <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
-                              {getVentaEstadoLabel(estadoKey)}
+                              {getVentaEstadoLabelTabla(estadoKey)}
                             </Badge>
                           </td>
                           <td>

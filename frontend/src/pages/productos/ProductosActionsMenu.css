@@ -1,0 +1,21 @@
+.productos-actions-menu {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.productos-actions-menu .actions-menu-button {
+  padding: 0.35rem 0.45rem;
+}
+
+.productos-td-acciones .actions-menu-dropdown {
+  right: 0;
+  left: auto;
+  min-width: 190px;
+}
+
+@media (max-width: 768px) {
+  .productos-td-acciones .actions-menu-dropdown {
+    right: auto;
+    left: 0;
+  }
+}

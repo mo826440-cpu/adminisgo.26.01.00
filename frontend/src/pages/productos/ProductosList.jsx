@@ -6,6 +6,9 @@ import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../co
 import { getProductos, getCategorias, deleteProducto, updateProducto } from '../../services/productos'
 import { downloadProductosCategoriaPdf } from '../../utils/productosCategoriaPdf'
 import ProductosActionsMenu from './ProductosActionsMenu'
+import GlassTooltip from '../../components/clientes/GlassTooltip'
+import PrecioVentaCalcIconButton from '../../components/productos/PrecioVentaCalcIconButton'
+import { formatMoneyAR } from '../reportes/reporteVentasUtils'
 import './ProductosList.css'
 import '../../styles/registros-seccion.css'
 
@@ -26,6 +29,37 @@ function precioToInputValue(val) {
   return Number.isFinite(num) ? String(num) : '0'
 }
 
+function datoOGuion(val) {
+  const s = val != null && String(val).trim() !== '' ? String(val).trim() : null
+  return s || '—'
+}
+
+function buildProductoTooltipContent(producto) {
+  return (
+    <>
+      <p className="glass-tooltip__title">Detalle del producto</p>
+      <div className="glass-tooltip__row">
+        <span className="glass-tooltip__label">Código barras</span>
+        <span className="glass-tooltip__value">{datoOGuion(producto.codigo_barras)}</span>
+      </div>
+      <div className="glass-tooltip__row">
+        <span className="glass-tooltip__label">Código interno</span>
+        <span className="glass-tooltip__value">{datoOGuion(producto.codigo_interno)}</span>
+      </div>
+      <div className="glass-tooltip__row">
+        <span className="glass-tooltip__label">Categoría</span>
+        <span className="glass-tooltip__value">{producto.categorias?.nombre || '—'}</span>
+      </div>
+      {producto.descripcion?.trim() ? (
+        <div className="glass-tooltip__row">
+          <span className="glass-tooltip__label">Descripción</span>
+          <span className="glass-tooltip__value">{producto.descripcion.trim()}</span>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
 function ProductosList() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -43,6 +77,7 @@ function ProductosList() {
   const [savingPrecioId, setSavingPrecioId] = useState(null)
   /** Borrador local mientras el usuario edita un precio en la tabla */
   const [precioDrafts, setPrecioDrafts] = useState({})
+  const [detalleProducto, setDetalleProducto] = useState(null)
 
   useEffect(() => {
     loadProductos()
@@ -159,16 +194,16 @@ function ProductosList() {
     if (Number.isNaN(parsed)) {
       setError('Precio inválido. Usá un número mayor o igual a 0.')
       clearPrecioDraft(producto.id)
-      return
+      return false
     }
     if (parsed < 0) {
       setError('El precio no puede ser negativo.')
       clearPrecioDraft(producto.id)
-      return
+      return false
     }
     if (Math.abs(parsed - actual) < 0.005) {
       clearPrecioDraft(producto.id)
-      return
+      return true
     }
 
     setSavingPrecioId(producto.id)
@@ -181,7 +216,7 @@ function ProductosList() {
     if (err) {
       setError(err.message || 'No se pudo actualizar el precio')
       clearPrecioDraft(producto.id)
-      return
+      return false
     }
 
     setProductos((prev) =>
@@ -192,6 +227,7 @@ function ProductosList() {
     clearPrecioDraft(producto.id)
     setSuccessMessage(`Precio de "${producto.nombre}" actualizado`)
     window.setTimeout(() => setSuccessMessage(null), 3000)
+    return true
   }
 
   const handlePrecioBlur = (producto, rawValue) => {
@@ -330,32 +366,26 @@ function ProductosList() {
             </div>
           ) : (
             <>
-              <div className="table-container">
-                <table className="table table-sticky-header">
+              <div className="table-container productos-table-container">
+                <table className="table table-sticky-header productos-table">
                   <thead>
                     <tr>
-                      <th>Nombre</th>
-                      <th>Código</th>
-                      <th>Precio</th>
-                      <th>Stock</th>
-                      <th>Categoría</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
+                      <th className="productos-th-nombre">Nombre</th>
+                      <th className="productos-th-precio">Precio</th>
+                      <th className="productos-th-stock">Stock</th>
+                      <th className="productos-th-estado">Estado</th>
+                      <th className="productos-th-acciones">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedProductos.map((producto) => (
                       <tr key={producto.id}>
-                        <td>
-                          <strong>{producto.nombre}</strong>
-                          {producto.descripcion && (
-                            <div className="text-secondary text-small">
-                              {producto.descripcion}
-                            </div>
-                          )}
+                        <td className="productos-td-nombre">
+                          <GlassTooltip content={buildProductoTooltipContent(producto)}>
+                            <span className="productos-table__nombre-text">{producto.nombre}</span>
+                          </GlassTooltip>
                         </td>
-                        <td>{producto.codigo_barras || '-'}</td>
-                        <td className="productos-precio-cell">
+                        <td className="productos-td-precio productos-precio-cell">
                           <div className="productos-precio-edit">
                             <span className="productos-precio-prefix" aria-hidden>
                               $
@@ -381,25 +411,36 @@ function ProductosList() {
                             ) : (
                               <i className="bi bi-pencil-square productos-precio-hint" aria-hidden />
                             )}
+                            <PrecioVentaCalcIconButton
+                              producto={producto}
+                              saving={savingPrecioId === producto.id}
+                              onApply={(precioVenta) =>
+                                guardarPrecioInline(producto, String(precioVenta))
+                              }
+                            />
                           </div>
                         </td>
-                        <td>
-                          <Badge 
-                            variant={producto.stock_actual <= (producto.stock_minimo || 0) ? 'warning' : 'success'}
+                        <td className="productos-td-stock">
+                          <Badge
+                            variant={
+                              producto.stock_actual <= (producto.stock_minimo || 0)
+                                ? 'warning'
+                                : 'success'
+                            }
                           >
                             {producto.stock_actual || 0}
                           </Badge>
                         </td>
-                        <td>{producto.categorias?.nombre || '-'}</td>
-                        <td>
+                        <td className="productos-td-estado">
                           <Badge variant={producto.activo ? 'success' : 'secondary'}>
                             {producto.activo ? 'Activo' : 'Inactivo'}
                           </Badge>
                         </td>
-                        <td>
+                        <td className="productos-td-acciones">
                           <div className="table-actions">
                             <ProductosActionsMenu
                               producto={producto}
+                              onVerDetalles={setDetalleProducto}
                               onDelete={handleDeleteClick}
                             />
                           </div>
@@ -421,6 +462,48 @@ function ProductosList() {
           )}
         </Card>
       </div>
+
+      <Modal
+        isOpen={Boolean(detalleProducto)}
+        onClose={() => setDetalleProducto(null)}
+        title="Detalle del producto"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDetalleProducto(null)}>
+              Cerrar
+            </Button>
+            {detalleProducto ? (
+              <Link to={`/productos/${detalleProducto.id}`}>
+                <Button variant="primary">Editar producto</Button>
+              </Link>
+            ) : null}
+          </>
+        }
+      >
+        {detalleProducto ? (
+          <div className="producto-detalle-modal">
+            <p className="producto-detalle-modal__nombre">
+              <strong>{detalleProducto.nombre}</strong>
+            </p>
+            <dl className="producto-detalle-modal__lista">
+              <dt>Código de barras</dt>
+              <dd>{datoOGuion(detalleProducto.codigo_barras)}</dd>
+              <dt>Código interno</dt>
+              <dd>{datoOGuion(detalleProducto.codigo_interno)}</dd>
+              <dt>Categoría</dt>
+              <dd>{detalleProducto.categorias?.nombre || '—'}</dd>
+              <dt>Precio venta</dt>
+              <dd>{formatMoneyAR(detalleProducto.precio_venta)}</dd>
+              <dt>Stock</dt>
+              <dd>{detalleProducto.stock_actual ?? 0}</dd>
+              <dt>Estado</dt>
+              <dd>{detalleProducto.activo ? 'Activo' : 'Inactivo'}</dd>
+              <dt>Descripción</dt>
+              <dd>{detalleProducto.descripcion?.trim() || 'Sin descripción'}</dd>
+            </dl>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal
         isOpen={showDeleteModal}
