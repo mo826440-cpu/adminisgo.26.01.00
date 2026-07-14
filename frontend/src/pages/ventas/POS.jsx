@@ -829,6 +829,7 @@ function POS() {
             </form>
           </Card>
 
+          <div className="pos-secundario-row">
           <Card className="pos-carrito">
             <section className="pos-panel pos-panel--carrito">
               <h3 className="pos-panel-title">Carrito</h3>
@@ -1065,6 +1066,7 @@ function POS() {
                 </div>
               </section>
           </Card>
+          </div>
         </div>
 
         <div className="pos-page-footer">

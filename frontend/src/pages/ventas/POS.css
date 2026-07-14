@@ -85,7 +85,8 @@
   overflow: visible;
 }
 
-.pos-page-body > .card {
+.pos-page-body > .card,
+.pos-secundario-row > .card {
   margin: 0;
   padding: var(--pos-padding-tarjeta);
   transform: none;
@@ -96,12 +97,14 @@
   overflow: visible;
 }
 
-.pos-page-body > .card:hover {
+.pos-page-body > .card:hover,
+.pos-secundario-row > .card:hover {
   transform: none;
   box-shadow: var(--shadow-sm);
 }
 
-.pos-page-body > .card > .card-body {
+.pos-page-body > .card > .card-body,
+.pos-secundario-row > .card > .card-body {
   padding: 0;
   flex: 0 0 auto;
   display: flex;
@@ -114,6 +117,24 @@
   position: relative;
   z-index: 40;
   overflow: visible;
+}
+
+/* Carrito (70%) + Formas de pago (30%) lado a lado */
+.pos-secundario-row {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: var(--pos-espacio-entre-secciones);
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-secundario-row > .pos-carrito,
+.pos-secundario-row > .pos-pagos-card {
+  min-width: 0;
+  height: 100%;
+  margin: 0;
 }
 
 .pos-carrito {
@@ -134,7 +155,7 @@
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .pos-pagos-card:hover {
@@ -143,18 +164,20 @@
 }
 
 .pos-pagos-card .card-body {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   padding: 0;
+  min-height: 0;
 }
 
 .pos-pagos-card .pos-panel--pagos {
-  flex: 0 0 auto;
-  overflow: visible;
+  flex: 1 1 auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* —— Formulario de carga (fila superior) —— */
@@ -169,9 +192,17 @@
 .pos-carrito .card-body {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  padding: 0;
+  flex: 1 1 auto;
   overflow: visible;
+  padding: 0;
+  min-height: 0;
+}
+
+.pos-carrito .pos-panel--carrito {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .pos-form-head {
@@ -306,7 +337,6 @@
 
 .pos-panel--carrito,
 .pos-panel--pagos {
-  flex: 0 0 auto;
   overflow: visible;
 }
 
@@ -321,15 +351,24 @@
 }
 
 .pos-panel-scroll,
-.carrito-table-container.pos-panel-scroll,
-.pos-pagos-table-wrap,
-.metodos-pago-table-container.pos-pagos-table-wrap {
+.carrito-table-container.pos-panel-scroll {
   flex: 0 0 auto;
   overflow-x: auto;
   overflow-y: visible;
   margin-bottom: 0;
   padding-bottom: var(--pos-seccion-espacio-inferior);
   -webkit-overflow-scrolling: touch;
+}
+
+.pos-pagos-table-wrap,
+.metodos-pago-table-container.pos-pagos-table-wrap {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  margin-bottom: 0;
+  padding-bottom: var(--pos-seccion-espacio-inferior);
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
 /* La tabla del carrito (no el padding del contenedor) ocupa el alto extra */
@@ -369,6 +408,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .metodos-pago-section__actions {
@@ -376,6 +416,23 @@
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+.pos-secundario-row .pos-pago-add-line {
+  font-size: 0.75rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+}
+
+.pos-secundario-row .carrito-table--pagos {
+  width: 100%;
+  min-width: 0;
+}
+
+.pos-secundario-row .carrito-table--pagos th,
+.pos-secundario-row .carrito-table--pagos td {
+  padding: 0.35rem 0.4rem;
+  font-size: 0.75rem;
 }
 
 .pos-pago-add-line {
@@ -621,6 +678,12 @@
 }
 
 /* —— Responsive —— */
+@media (max-width: 900px) {
+  .pos-secundario-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .pos-carga-row {
     grid-template-columns: 1fr;

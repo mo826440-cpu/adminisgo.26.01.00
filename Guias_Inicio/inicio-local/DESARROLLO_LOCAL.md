@@ -107,3 +107,5 @@ Flujo recomendado: desarrollar y probar con `npm run dev`; cuando el bloque de t
 1° cd c:\2026\adminisgo.26.01.00\frontend
 
 2° npm run dev
+
+3° http://localhost:5173
