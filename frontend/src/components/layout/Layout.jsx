@@ -1,5 +1,5 @@
 // Componente Layout principal
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
@@ -34,6 +34,7 @@ function Layout({ children }) {
     [isModuleGlassNav, location.pathname],
   )
   const [sidebarOpen, setSidebarOpen] = useState(readInitialSidebarOpen)
+  const [toolbarEndOverride, setToolbarEndOverride] = useState(null)
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
@@ -56,10 +57,25 @@ function Layout({ children }) {
     }
   }
 
+  // Limpiar override al cambiar de ruta (evita toolbar de otra página)
+  useEffect(() => {
+    setToolbarEndOverride(null)
+  }, [location.pathname])
+
+  const setToolbarEndOverrideStable = useCallback((node) => {
+    setToolbarEndOverride(node)
+  }, [])
+
   const layoutChromeValue = useMemo(
-    () => ({ toggleSidebar, sidebarOpen }),
-    [toggleSidebar, sidebarOpen],
+    () => ({
+      toggleSidebar,
+      sidebarOpen,
+      setToolbarEndOverride: setToolbarEndOverrideStable,
+    }),
+    [toggleSidebar, sidebarOpen, setToolbarEndOverrideStable],
   )
+
+  const resolvedToolbarEnd = toolbarEndOverride ?? moduleChrome?.toolbarEnd ?? null
 
   const layoutClassName = [
     'layout',
@@ -95,7 +111,7 @@ function Layout({ children }) {
                     title={moduleChrome.title}
                     subtitle={moduleChrome.subtitle}
                     iconClass={moduleChrome.icon}
-                    toolbarEnd={moduleChrome.toolbarEnd}
+                    toolbarEnd={resolvedToolbarEnd}
                   />
                 </div>
               ) : null}

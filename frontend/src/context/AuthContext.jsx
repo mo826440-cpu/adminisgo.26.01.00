@@ -126,6 +126,12 @@ export const AuthProvider = ({ children }) => {
     [isAdmin, permisosMap]
   )
 
+  /** Caja / venta rápida compartida: alcanza con ventas o ventas_rapidas. */
+  const puedeModuloVentasORapidas = useCallback(
+    () => puedeModulo('ventas') || puedeModulo('ventas_rapidas'),
+    [puedeModulo]
+  )
+
   const firstNavigatePath = useCallback(
     (excludePathname) => {
       const ex = excludePathname || ''
@@ -164,6 +170,7 @@ export const AuthProvider = ({ children }) => {
       permisosMap,
       loadingPermisos,
       puedeModulo,
+      puedeModuloVentasORapidas,
       firstNavigatePath,
       sinAccesoNingunModulo,
       refreshPermisos,
@@ -177,6 +184,7 @@ export const AuthProvider = ({ children }) => {
       permisosMap,
       loadingPermisos,
       puedeModulo,
+      puedeModuloVentasORapidas,
       firstNavigatePath,
       sinAccesoNingunModulo,
       refreshPermisos,

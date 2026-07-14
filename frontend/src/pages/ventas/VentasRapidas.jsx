@@ -1,39 +1,19 @@
-// Página de Ventas Rápidas
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+// Página de Ventas Rápidas (listado + herramientas compartidas de caja / venta rápida)
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Layout } from '../../components/layout'
-import { Card, Button, Input, Alert, Spinner, Modal, Badge, Pagination } from '../../components/common'
-import { abrirCaja, cerrarCaja, obtenerEstadoCaja } from '../../services/caja'
-import {
-  createVentaRapida,
-  getVentasRapidas,
-  getVentaRapidaById,
-  deleteVentaRapida,
-  updateVentaRapida,
-} from '../../services/ventasRapidas'
-import {
-  createCliente,
-  getClientes,
-  verificarEmailCliente,
-  verificarNombreCliente,
-  verificarNumeroDocumentoCliente,
-} from '../../services/clientes'
-import { getProductoPorCodigoBarras } from '../../services/productos'
-import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida'
-import { useAuthContext } from '../../context/AuthContext'
+import { Card, Button, Alert, Spinner, Modal, Badge, Pagination } from '../../components/common'
+import { getVentasRapidas, deleteVentaRapida } from '../../services/ventasRapidas'
 import { useDateTime } from '../../context/DateTimeContext'
-import { formatDate, formatDateTime } from '../../utils/dateFormat'
-import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPreviewModal'
-import TicketPrintBlock from '../../components/common/TicketPrintBlock'
-import { getComercio } from '../../services/comercio'
-import { useTicketPrintFormat } from '../../hooks/useTicketPrintFormat'
-import { useTicketPrintConfig } from '../../context/TicketPrintContext'
-import { buildVentaRapidaThermalPlainText } from '../../utils/thermalPlainReceipt'
-import { VENTAS_REGISTROS_LIMIT, extraerOpcionesFiltroRegistros, encodeFiltroFechaRango } from '../../services/ventasListado'
+import { formatDateTime } from '../../utils/dateFormat'
+import {
+  VENTAS_REGISTROS_LIMIT,
+  extraerOpcionesFiltroRegistros,
+  encodeFiltroFechaRango,
+} from '../../services/ventasListado'
 import RegistrosVentasFiltro from '../../components/ventas/RegistrosVentasFiltro'
+import VentasSharedToolsHost from '../../components/ventas/VentasSharedToolsHost'
 import './VentasRapidas.css'
 import '../../styles/registros-seccion.css'
-import '../../styles/ticketThermalPrint.css'
 import VentasRapidasActionsMenu from './VentasRapidasActionsMenu'
 import {
   getVentaEstadoDisplayRegistro,
@@ -41,103 +21,17 @@ import {
   getVentaEstadoBadgeVariant,
 } from '../../utils/ventaEstado'
 
-const METODOS_PAGO_OPCIONES = [
-  ['efectivo', 'Efectivo'],
-  ['transferencia', 'Transferencia'],
-  ['qr', 'QR'],
-  ['debito', 'Débito'],
-  ['credito', 'Crédito'],
-  ['cheque', 'Cheque'],
-  ['pendiente', 'Pendiente'],
-  ['otro', 'Otro método'],
-]
-
-function nuevaFilaPago() {
-  return {
-    key: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-    metodo_pago: 'efectivo',
-    monto: '0',
-  }
-}
-
 function VentasRapidas() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { user } = useAuthContext()
-  const { timezone, dateFormat } = useDateTime()
-  const clienteInputRef = useRef(null)
-  const ticketPrintRef = useRef(null)
+  const { timezone } = useDateTime()
+  const sharedToolsRef = useRef(null)
 
-  useTicketPrintFormat()
-  const { config: printConfig } = useTicketPrintConfig()
-
-  // Estados de caja
-  const [estadoCaja, setEstadoCaja] = useState(null)
-  const [loadingCaja, setLoadingCaja] = useState(true)
-  const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false)
-  const [showCerrarCajaModal, setShowCerrarCajaModal] = useState(false)
-  const [aperturaEfectivo, setAperturaEfectivo] = useState('0')
-  const [aperturaVirtual, setAperturaVirtual] = useState('0')
-  const [aperturaCredito, setAperturaCredito] = useState('0')
-  const [aperturaOtros, setAperturaOtros] = useState('0')
-  const [aperturaEditandoCampo, setAperturaEditandoCampo] = useState(null) // 'efectivo' | 'virtual' | 'credito' | 'otros'
-  const [aperturaValorRaw, setAperturaValorRaw] = useState('')
-  const [showVerMasApertura, setShowVerMasApertura] = useState(false)
-  const [observacionesApertura, setObservacionesApertura] = useState('')
-  const [observacionesCierre, setObservacionesCierre] = useState('')
-  const [procesandoCaja, setProcesandoCaja] = useState(false)
-  const [showMasCaja, setShowMasCaja] = useState(false) // Ver crédito y otros en indicadores
-
-  // Estados del formulario de venta
-  const [clientes, setClientes] = useState([])
-  const [clienteSearch, setClienteSearch] = useState('')
-  const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
-  const [clienteSuggestions, setClienteSuggestions] = useState([])
-  const [showClienteSuggestions, setShowClienteSuggestions] = useState(false)
-  const [clienteActiveIndex, setClienteActiveIndex] = useState(-1)
-  const [total, setTotal] = useState('0')
-  const [totalEditando, setTotalEditando] = useState(false)
-  const [totalValorRaw, setTotalValorRaw] = useState('')
-  const [filasPago, setFilasPago] = useState(() => [nuevaFilaPago()])
-  const [editingPagoIdx, setEditingPagoIdx] = useState(null)
-  const [pagoMontoRaw, setPagoMontoRaw] = useState('')
-  const [observaciones, setObservaciones] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(null)
-
-  /** Edición en esta misma página (null = alta nueva) */
-  const [edicionVenta, setEdicionVenta] = useState(null)
-
-  // Alta rápida de cliente (modal mini-form)
-  const [showNuevoClienteModal, setShowNuevoClienteModal] = useState(false)
-  const [showNuevoClienteNombreWarningModal, setShowNuevoClienteNombreWarningModal] = useState(false)
-  const [nuevoClienteSaving, setNuevoClienteSaving] = useState(false)
-  const [nuevoClienteError, setNuevoClienteError] = useState(null)
-  const [nuevoClienteForm, setNuevoClienteForm] = useState({
-    nombre: '',
-    tipo_documento: 'DNI',
-    numero_documento: '',
-    email: '',
-    telefono: '',
-    direccion: '',
-    activo: true,
-  })
-  const [nuevoClienteValidated, setNuevoClienteValidated] = useState(null)
-
-  // Impresión ticket (modal sin navegar al detalle)
-  const [thermalPreviewOpen, setThermalPreviewOpen] = useState(false)
-  const [ventaParaImprimir, setVentaParaImprimir] = useState(null)
-  const [comercioParaImprimir, setComercioParaImprimir] = useState(null)
-
-  const [productoVentaRapida, setProductoVentaRapida] = useState(null)
-  const [loadingProducto, setLoadingProducto] = useState(true)
-
-  // Estados de tabla de ventas rápidas
   const [ventasRapidas, setVentasRapidas] = useState([])
   const [totalVentasRapidas, setTotalVentasRapidas] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [loadingVentas, setLoadingVentas] = useState(false)
+  const [loadingVentas, setLoadingVentas] = useState(true)
+  const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
+
   const [filtroTipoDraft, setFiltroTipoDraft] = useState('')
   const [filtroValorDraft, setFiltroValorDraft] = useState('')
   const [filtroFechaDesdeDraft, setFiltroFechaDesdeDraft] = useState('')
@@ -148,102 +42,23 @@ function VentasRapidas() {
     metodosPago: [],
     estados: [],
   })
+
   const [ventaRapidaToDelete, setVentaRapidaToDelete] = useState(null)
   const [showDeleteVentaRapidaModal, setShowDeleteVentaRapidaModal] = useState(false)
   const [deletingVentaRapida, setDeletingVentaRapida] = useState(false)
 
-  /** Paneles principales colapsables (prioridad: tabla de registros a la vista). */
-  const [panelCajaAbierto, setPanelCajaAbierto] = useState(false)
-  const [panelFormAbierto, setPanelFormAbierto] = useState(false)
-
-  // Formatear moneda
   const formatearMoneda = (valor) => {
     const num = Number(valor || 0)
     return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  // Formatear fecha y hora
   const formatearFechaHora = (fecha) => {
     if (!fecha) return '-'
     return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
   }
 
-  const formatearFechaHoraTicket = (fecha) => {
-    if (!fecha) return '-'
-    return formatDateTime(fecha, 'DD/MM/YYYY HH:mm', timezone)
-  }
-
-  const ticketPlain = useMemo(() => {
-    if (!ventaParaImprimir) return ''
-    return buildVentaRapidaThermalPlainText({
-      ventaRapida: ventaParaImprimir,
-      comercio: comercioParaImprimir,
-      formatearMoneda,
-      formatearFechaHoraTicket,
-      printConfig,
-    })
-  }, [ventaParaImprimir, comercioParaImprimir, timezone, printConfig])
-
-  const clearPrintIntent = () => {
-    // Ojo: ThermalPrintPreviewModal llama onClose() ANTES de window.print().
-    // Si vaciamos el ticket acá, la vista de impresión queda en blanco.
-    setThermalPreviewOpen(false)
-  }
-
-  const abrirModalImpresion = async (ventaId) => {
-    const idNum = Number(ventaId)
-    const id = Number.isFinite(idNum) ? idNum : ventaId
-    const [ventaData, comercioData] = await Promise.all([getVentaRapidaById(id), getComercio()])
-    if (ventaData.error || !ventaData.data) {
-      throw ventaData.error || new Error('No se pudo cargar la venta para imprimir.')
-    }
-    setVentaParaImprimir(ventaData.data)
-    setComercioParaImprimir(comercioData.data || null)
-    setThermalPreviewOpen(true)
-  }
-
-  // Cargar estado de caja
-  const loadEstadoCaja = async () => {
-    setLoadingCaja(true)
-    const { data, error: err } = await obtenerEstadoCaja()
-    if (err) {
-      setError(err.message || 'Error al cargar estado de caja')
-    } else {
-      setEstadoCaja(data)
-    }
-    setLoadingCaja(false)
-  }
-
-  const loadProductoVentaRapida = useCallback(async () => {
-    setLoadingProducto(true)
-    const { data, error: err } = await getProductoPorCodigoBarras(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA)
-    if (err) {
-      console.error('Error al cargar producto venta rápida:', err)
-      setProductoVentaRapida(null)
-    } else {
-      setProductoVentaRapida(data)
-    }
-    setLoadingProducto(false)
-  }, [])
-
-  useEffect(() => {
-    loadProductoVentaRapida()
-  }, [loadProductoVentaRapida, location.key])
-
-  // Cargar clientes
-  const loadClientes = async () => {
-    const { data, error: err } = await getClientes()
-    if (err) {
-      console.error('Error al cargar clientes:', err)
-    } else {
-      setClientes(data || [])
-    }
-  }
-
-  // Cargar ventas rápidas
   const loadVentasRapidas = useCallback(async () => {
     setLoadingVentas(true)
-
     const { data, total, error: err } = await getVentasRapidas({
       page: currentPage,
       pageSize: VENTAS_REGISTROS_LIMIT,
@@ -251,7 +66,7 @@ function VentasRapidas() {
       filtroValor: filtroActivo.valor,
     })
     if (err) {
-      console.error('Error al cargar ventas rápidas:', err)
+      setError(err.message || 'Error al cargar ventas rápidas')
     } else {
       const rows = data || []
       setVentasRapidas(rows)
@@ -262,6 +77,10 @@ function VentasRapidas() {
     }
     setLoadingVentas(false)
   }, [filtroActivo, currentPage])
+
+  useEffect(() => {
+    loadVentasRapidas()
+  }, [loadVentasRapidas])
 
   const handleTipoFiltroChange = (tipo) => {
     setFiltroTipoDraft(tipo)
@@ -299,551 +118,31 @@ function VentasRapidas() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const hayFiltroActivo = Boolean(filtroActivo.tipo && filtroActivo.valor)
-  const totalPages = Math.max(1, Math.ceil(totalVentasRapidas / VENTAS_REGISTROS_LIMIT))
-  const startIndex =
-    totalVentasRapidas === 0 ? 0 : (currentPage - 1) * VENTAS_REGISTROS_LIMIT + 1
-  const endIndex = Math.min(currentPage * VENTAS_REGISTROS_LIMIT, totalVentasRapidas)
-
-  useEffect(() => {
-    loadEstadoCaja()
-    loadClientes()
-  }, [])
-
-  useEffect(() => {
-    loadVentasRapidas()
-  }, [loadVentasRapidas])
-
-  useEffect(() => {
-    if (edicionVenta) setPanelFormAbierto(true)
-  }, [edicionVenta])
-
-  // Filtrar clientes para autocompletado
-  useEffect(() => {
-    if (!clienteSearch.trim()) {
-      setClienteSuggestions([])
-      setShowClienteSuggestions(false)
-      return
-    }
-
-    const termino = clienteSearch.toLowerCase()
-    const filtrados = clientes.filter(c =>
-      c.nombre?.toLowerCase().includes(termino) ||
-      c.email?.toLowerCase().includes(termino) ||
-      c.telefono?.includes(termino)
-    )
-    setClienteSuggestions(filtrados.slice(0, 10))
-    setShowClienteSuggestions(filtrados.length > 0)
-  }, [clienteSearch, clientes])
-
-  // Función para formatear número a formato de moneda (con símbolo $)
-  const formatearNumeroMoneda = (valor) => {
-    if (!valor || valor === '0' || valor === '' || valor === '0.00' || valor === '0.0') return '$0,00'
-    // Si el valor ya tiene formato con $, parsearlo primero
-    let num
-    if (typeof valor === 'string' && valor.includes('$')) {
-      num = parseFloat(valor.replace(/\$/g, '').replace(/\./g, '').replace(',', '.')) || 0
-    } else {
-      // Remover cualquier carácter no numérico excepto punto y coma
-      const cleaned = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.')
-      num = parseFloat(cleaned) || 0
-    }
-    if (isNaN(num) || num === 0) return '$0,00'
-    return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const handleEditarVenta = (ventaId) => {
+    sharedToolsRef.current?.iniciarEdicion?.(ventaId)
   }
 
-  // Función para parsear formato de moneda a número
-  const parsearMoneda = (valor) => {
-    if (!valor || valor === '') return '0'
-    // Remover símbolo $, puntos (separadores de miles) y reemplazar coma por punto
-    const numStr = valor.toString().replace(/\$/g, '').replace(/\./g, '').replace(',', '.')
-    const num = parseFloat(numStr) || 0
-    return num.toString()
-  }
-
-  /** Monto que impacta cobro (excluye filas «pendiente»). */
-  const montoCuentaParaCobro = (row) => {
-    if (!row || row.metodo_pago === 'pendiente') return 0
-    return Math.max(0, parseFloat(parsearMoneda(row.monto)) || 0)
-  }
-
-  const totalNumeroNoNegativo = (totalStr) =>
-    Math.max(0, parseFloat(parsearMoneda(totalStr)) || 0)
-
-  const saldoAntesDeFilaEnFilas = (rows, totalStr, idx) => {
-    const totalNum = totalNumeroNoNegativo(totalStr)
-    let acum = 0
-    for (let j = 0; j < idx; j++) acum += montoCuentaParaCobro(rows[j])
-    return Math.max(0, totalNum - acum)
-  }
-
-  const saldoAntesDeFila = (idx) => saldoAntesDeFilaEnFilas(filasPago, total, idx)
-
-  /**
-   * Al cambiar $Total: refleja el mismo importe en la primera fila que cuenta como cobro
-   * y recorta filas siguientes para que la suma no supere el total (misma regla que el saldo).
-   */
-  const mirrorFilasPagoAlTotal = (prevFilas, totalStr) => {
-    const totalNum = totalNumeroNoNegativo(totalStr)
-    const mirrorIdx = prevFilas.findIndex((r) => r.metodo_pago !== 'pendiente')
-    if (mirrorIdx < 0) return prevFilas
-    const next = prevFilas.map((r) => ({ ...r }))
-    next[mirrorIdx] = { ...next[mirrorIdx], monto: String(totalNum) }
-    let acum = 0
-    for (let i = 0; i < next.length; i++) {
-      if (next[i].metodo_pago === 'pendiente') continue
-      const saldo = Math.max(0, totalNum - acum)
-      let m = Math.max(0, parseFloat(parsearMoneda(next[i].monto)) || 0)
-      m = Math.min(m, saldo)
-      next[i] = { ...next[i], monto: String(m) }
-      acum += m
-    }
-    return next
-  }
-
-  const agregarFilaPago = () => {
-    setFilasPago((prev) => [...prev, nuevaFilaPago()])
-  }
-
-  const quitarFilaPago = (idx) => {
-    setFilasPago((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)))
-    setEditingPagoIdx((cur) => (cur === idx ? null : cur))
-  }
-
-  const actualizarFilaPago = (idx, patch) => {
-    setFilasPago((prev) => prev.map((row, i) => (i === idx ? { ...row, ...patch } : row)))
-  }
-
-  const normalizeMetodoPagoFila = (m) => {
-    const x = String(m || '').trim().toLowerCase()
-    return METODOS_PAGO_OPCIONES.some(([v]) => v === x) ? x : 'otro'
-  }
-
-  const ventaDetalleToFilasPago = (venta) => {
-    const rows = []
-    for (const p of venta.pagos || []) {
-      rows.push({
-        key: `ed-${p.id ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
-        metodo_pago: normalizeMetodoPagoFila(p.metodo_pago),
-        monto: String(parseFloat(p.monto_pagado) || 0),
-      })
-    }
-    const deuda = parseFloat(venta.monto_deuda) || 0
-    if (deuda > 0.009) {
-      rows.push({
-        key: `ed-pend-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        metodo_pago: 'pendiente',
-        monto: String(deuda),
-      })
-    }
-    return rows.length > 0 ? rows : [nuevaFilaPago()]
-  }
-
-  const limpiarFormularioVentaRapida = () => {
-    setEdicionVenta(null)
-    setClienteSeleccionado(null)
-    setClienteSearch('')
-    setTotal('0')
-    setTotalEditando(false)
-    setTotalValorRaw('')
-    setFilasPago([nuevaFilaPago()])
-    setEditingPagoIdx(null)
-    setPagoMontoRaw('')
-    setObservaciones('')
-  }
-
-  const scrollVentasRapidasMensajes = () => {
-    requestAnimationFrame(() => {
-      document.getElementById('ventas-rapidas-mensajes')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }
-
-  const iniciarEdicionVenta = async (ventaId) => {
-    setError(null)
-    setSuccessMessage(null)
-    const id = Number(ventaId)
-    const { data, error: err } = await getVentaRapidaById(Number.isFinite(id) ? id : ventaId)
-    if (err || !data) {
-      setError(err?.message || 'No se pudo cargar la venta')
-      scrollVentasRapidasMensajes()
-      return
-    }
-    const items = data.items || []
-    if (items.length !== 1) {
-      setError(
-        'Esta venta tiene varios productos. Editála desde el menú Ventas (formulario POS).'
-      )
-      scrollVentasRapidasMensajes()
-      return
-    }
-    const codigo = String(items[0].productos?.codigo_barras || '').trim()
-    if (codigo !== String(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA).trim()) {
-      setError(
-        'Solo podés editar aquí ventas del producto genérico de venta rápida. Las demás se editan en Ventas.'
-      )
-      scrollVentasRapidasMensajes()
-      return
-    }
-    setEdicionVenta({
-      id: data.id,
-      fecha_hora: data.fecha_hora,
-      facturacion: data.facturacion ?? null,
-      numero_ticket: data.numero_ticket,
-    })
-    setTotal(String(parseFloat(data.total) || 0))
-    setTotalEditando(false)
-    setTotalValorRaw('')
-    const cid = data.cliente_id
-    if (cid && data.clientes) {
-      setClienteSeleccionado({
-        id: cid,
-        nombre: data.clientes.nombre,
-        email: data.clientes.email,
-      })
-      setClienteSearch(data.clientes.nombre || '')
-    } else {
-      setClienteSeleccionado(null)
-      setClienteSearch('')
-    }
-    setObservaciones(data.observaciones || '')
-    setFilasPago(ventaDetalleToFilasPago(data))
-    setEditingPagoIdx(null)
-    setPagoMontoRaw('')
-    setTimeout(() => {
-      document.getElementById('venta-rapida-card-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 150)
-  }
-
-  const cancelarEdicionVenta = () => {
-    limpiarFormularioVentaRapida()
-    setError(null)
-  }
-
-  // Abrir caja con desglose efectivo / virtual / crédito / otros
-  const handleAbrirCaja = async () => {
-    const efectivoStr = aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : aperturaEfectivo
-    const virtualStr = aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : aperturaVirtual
-    const creditoStr = aperturaEditandoCampo === 'credito' ? aperturaValorRaw : aperturaCredito
-    const otrosStr = aperturaEditandoCampo === 'otros' ? aperturaValorRaw : aperturaOtros
-    const efectivo = parseFloat(parsearMoneda(efectivoStr) || 0)
-    const virtual = parseFloat(parsearMoneda(virtualStr) || 0)
-    const credito = parseFloat(parsearMoneda(creditoStr) || 0)
-    const otros = parseFloat(parsearMoneda(otrosStr) || 0)
-    if (efectivo < 0 || virtual < 0 || credito < 0 || otros < 0) {
-      setError('Ningún importe puede ser negativo')
-      return
-    }
-    if (efectivo === 0 && virtual === 0 && credito === 0 && otros === 0) {
-      setError('Ingresá al menos un importe (efectivo y/o virtual)')
-      return
-    }
-
-    setProcesandoCaja(true)
-    setError(null)
-    const { error: err } = await abrirCaja(
-      { efectivo, virtual, credito, otros },
-      observacionesApertura
-    )
-    
-    if (err) {
-      setError(err.message || 'Error al abrir caja')
-      setProcesandoCaja(false)
-      return
-    }
-
-    setShowAbrirCajaModal(false)
-    setAperturaEfectivo('0')
-    setAperturaVirtual('0')
-    setAperturaCredito('0')
-    setAperturaOtros('0')
-    setAperturaEditandoCampo(null)
-    setAperturaValorRaw('')
-    setShowVerMasApertura(false)
-    setObservacionesApertura('')
-    await loadEstadoCaja()
-    setProcesandoCaja(false)
-  }
-
-  // Cerrar caja
-  const handleCerrarCaja = async () => {
-    setProcesandoCaja(true)
-    setError(null)
-    const { error: err } = await cerrarCaja(observacionesCierre)
-    
-    if (err) {
-      setError(err.message || 'Error al cerrar caja')
-      setProcesandoCaja(false)
-      return
-    }
-
-    setShowCerrarCajaModal(false)
-    setObservacionesCierre('')
-    await loadEstadoCaja()
-    setProcesandoCaja(false)
-  }
-
-  // Eliminar venta rápida (también quita el registro de la tabla Ventas)
   const handleEliminarVentaRapida = async () => {
     if (!ventaRapidaToDelete) return
     setDeletingVentaRapida(true)
-    setError(null)
     const { error: err } = await deleteVentaRapida(ventaRapidaToDelete.id)
     if (err) {
-      setError(err.message || 'Error al eliminar el registro')
+      setError(err.message || 'Error al eliminar la venta rápida')
       setDeletingVentaRapida(false)
       return
     }
+    setDeletingVentaRapida(false)
     setShowDeleteVentaRapidaModal(false)
     setVentaRapidaToDelete(null)
-    setSuccessMessage('Registro eliminado. También se quitó de la tabla de Ventas.')
+    setSuccessMessage('Venta rápida eliminada correctamente')
     await loadVentasRapidas()
-    await loadEstadoCaja()
-    setDeletingVentaRapida(false)
+    await sharedToolsRef.current?.refrescarCaja?.()
   }
 
-  // Aplicar cliente seleccionado
-  const aplicarClienteSeleccionado = (cliente) => {
-    setClienteSeleccionado(cliente)
-    setClienteSearch(cliente.nombre)
-    setShowClienteSuggestions(false)
-    setClienteActiveIndex(-1)
-  }
-
-  const openNuevoClienteModal = () => {
-    setNuevoClienteError(null)
-    setNuevoClienteValidated(null)
-    setNuevoClienteForm((prev) => ({
-      ...prev,
-      nombre: (clienteSearch || '').trim(),
-    }))
-    setShowNuevoClienteModal(true)
-  }
-
-  const closeNuevoClienteModal = () => {
-    if (nuevoClienteSaving) return
-    setShowNuevoClienteModal(false)
-    setShowNuevoClienteNombreWarningModal(false)
-    setNuevoClienteError(null)
-    setNuevoClienteValidated(null)
-  }
-
-  const validarNuevoCliente = async () => {
-    const errores = []
-    if (!nuevoClienteForm.nombre.trim()) errores.push('El nombre es obligatorio')
-
-    if (nuevoClienteForm.email && nuevoClienteForm.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(nuevoClienteForm.email.trim())) {
-        errores.push('El email no tiene un formato válido')
-      }
-    }
-
-    if (errores.length) {
-      setNuevoClienteError(errores.join('. '))
-      return null
-    }
-
-    const clienteData = {
-      nombre: nuevoClienteForm.nombre.trim(),
-      email: nuevoClienteForm.email?.trim() || null,
-      telefono: nuevoClienteForm.telefono?.trim() || null,
-      direccion: nuevoClienteForm.direccion?.trim() || null,
-      numero_documento: nuevoClienteForm.numero_documento?.trim() || null,
-      tipo_documento: nuevoClienteForm.tipo_documento || 'DNI',
-      activo: true,
-    }
-
-    // Documento duplicado: bloquear
-    if (clienteData.numero_documento) {
-      const { existe: existeDoc, error: errDoc } = await verificarNumeroDocumentoCliente(clienteData.numero_documento)
-      if (errDoc) {
-        setNuevoClienteError('Error al verificar el número de documento. Por favor, intenta nuevamente.')
-        return null
-      }
-      if (existeDoc) {
-        setNuevoClienteError('El número de documento ya está registrado. Por favor, verifica los datos.')
-        return null
-      }
-    }
-
-    // Email duplicado: bloquear
-    if (clienteData.email) {
-      const { existe: existeEmail, error: errEmail } = await verificarEmailCliente(clienteData.email)
-      if (errEmail) {
-        setNuevoClienteError('Error al verificar el email. Por favor, intenta nuevamente.')
-        return null
-      }
-      if (existeEmail) {
-        setNuevoClienteError('El email ya está en uso. Por favor, usa un email diferente.')
-        return null
-      }
-    }
-
-    // Nombre duplicado: advertencia (no bloquea)
-    const { existe: existeNombre, error: errNom } = await verificarNombreCliente(clienteData.nombre)
-    if (errNom) {
-      setNuevoClienteError('Error al verificar el nombre. Por favor, intenta nuevamente.')
-      return null
-    }
-    if (existeNombre) {
-      setNuevoClienteValidated(clienteData)
-      setShowNuevoClienteNombreWarningModal(true)
-      return null
-    }
-
-    return clienteData
-  }
-
-  const handleGuardarNuevoCliente = async () => {
-    if (nuevoClienteSaving) return
-    setNuevoClienteError(null)
-
-    const validated = nuevoClienteValidated || (await validarNuevoCliente())
-    if (!validated) return
-
-    setNuevoClienteSaving(true)
-    const { data, error: err } = await createCliente(validated)
-    if (err || !data) {
-      setNuevoClienteError(err?.message || 'Error al crear cliente')
-      setNuevoClienteSaving(false)
-      return
-    }
-
-    const { data: clientesData } = await getClientes()
-    if (clientesData) setClientes(clientesData)
-
-    aplicarClienteSeleccionado(data)
-    setShowNuevoClienteNombreWarningModal(false)
-    setShowNuevoClienteModal(false)
-    setNuevoClienteValidated(null)
-    setNuevoClienteSaving(false)
-  }
-
-  // Manejar teclado en autocompletado de cliente
-  const handleClienteKeyDown = (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setClienteActiveIndex((prev) => (prev + 1) % clienteSuggestions.length)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setClienteActiveIndex((prev) => (prev - 1 + clienteSuggestions.length) % clienteSuggestions.length)
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (clienteActiveIndex >= 0) {
-        aplicarClienteSeleccionado(clienteSuggestions[clienteActiveIndex])
-      }
-    } else if (e.key === 'Escape') {
-      setShowClienteSuggestions(false)
-    }
-  }
-
-  // Registrar venta rápida
-  const handleRegistrarVenta = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setSuccessMessage(null)
-
-    const totalNum = parseFloat(parsearMoneda(total))
-    if (totalNum <= 0) {
-      setError('El total debe ser mayor a 0')
-      return
-    }
-
-    let sumPagado = 0
-    for (const row of filasPago) {
-      sumPagado += montoCuentaParaCobro(row)
-    }
-
-    if (sumPagado > totalNum + 0.02) {
-      setError('La suma de los montos pagados no puede superar el total de la venta.')
-      return
-    }
-
-    const pagosPayload = filasPago
-      .map((row) => ({
-        metodo_pago: row.metodo_pago,
-        monto_pagado: Math.max(0, parseFloat(parsearMoneda(row.monto)) || 0),
-        fecha_pago: new Date().toISOString(),
-      }))
-      .filter((p) => p.metodo_pago && p.metodo_pago !== 'pendiente' && p.monto_pagado > 0)
-
-    if (!estadoCaja?.cajaAbierta) {
-      setError('Debes abrir la caja antes de registrar una venta')
-      return
-    }
-
-    if (loadingProducto) {
-      setError('Esperá a que termine de verificarse el producto.')
-      return
-    }
-
-    if (!productoVentaRapida?.id) {
-      setError(
-        `No hay producto activo con código de barras ${CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}. Registralo antes de cargar la venta (ícono al lado del mensaje).`
-      )
-      return
-    }
-
-    setSaving(true)
-
-    const eraEdicion = Boolean(edicionVenta?.id)
-
-    const ventaData = {
-      cliente_id: clienteSeleccionado?.id || null,
-      fecha_hora: edicionVenta?.fecha_hora || new Date().toISOString(),
-      total: totalNum,
-      pagos: pagosPayload,
-      observaciones: observaciones.trim() || null,
-      producto_id: productoVentaRapida.id,
-      facturacion: edicionVenta?.facturacion ?? null,
-    }
-
-    const { data: ventaGuardada, error: err } = eraEdicion
-      ? await updateVentaRapida(edicionVenta.id, ventaData)
-      : await createVentaRapida(ventaData)
-
-    if (err) {
-      setError(err.message || (eraEdicion ? 'Error al actualizar la venta' : 'Error al registrar la venta'))
-      setSaving(false)
-      return
-    }
-
-    limpiarFormularioVentaRapida()
-
-    setSuccessMessage(eraEdicion ? 'Venta actualizada correctamente' : 'Venta registrada correctamente')
-    setSaving(false)
-
-    // Alta nueva: mostrar automáticamente la opción de imprimir el ticket (sin navegar).
-    const ventaId = !eraEdicion ? ventaGuardada?.id : null
-
-    await Promise.all([loadVentasRapidas(), loadEstadoCaja()])
-
-    if (ventaId) {
-      try {
-        await abrirModalImpresion(ventaId)
-      } catch (e2) {
-        setError(e2?.message || 'No se pudo preparar la impresión del ticket.')
-      }
-    }
-
-    // Enfocar campo total para siguiente venta
-    setTimeout(() => {
-      document.querySelector('#venta-rapida-total')?.focus()
-    }, 100)
-  }
-
-  if (loadingCaja) {
-    return (
-      <Layout>
-        <div className="container">
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <Spinner size="lg" />
-            <p style={{ marginTop: '1rem' }}>Cargando...</p>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
+  const hayFiltroActivo = Boolean(filtroActivo.tipo && filtroActivo.valor)
+  const totalPages = Math.max(1, Math.ceil(totalVentasRapidas / VENTAS_REGISTROS_LIMIT))
+  const startIndex = totalVentasRapidas === 0 ? 0 : (currentPage - 1) * VENTAS_REGISTROS_LIMIT + 1
+  const endIndex = Math.min(currentPage * VENTAS_REGISTROS_LIMIT, totalVentasRapidas)
 
   return (
     <Layout>
@@ -854,7 +153,6 @@ function VentasRapidas() {
               {error}
             </Alert>
           )}
-
           {successMessage && (
             <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
               {successMessage}
@@ -862,487 +160,13 @@ function VentasRapidas() {
           )}
         </div>
 
-        {/* Gestión de caja (colapsable) */}
-        <section className="vr-glass-disclosure" aria-label="Gestión de caja">
-          <button
-            type="button"
-            className="vr-glass-disclosure__trigger"
-            aria-expanded={panelCajaAbierto}
-            onClick={() => setPanelCajaAbierto((v) => !v)}
-          >
-            <span className="vr-glass-disclosure__chevron" aria-hidden>
-              <i className={`bi bi-chevron-${panelCajaAbierto ? 'up' : 'down'}`} />
-            </span>
-            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
-              <i className="bi bi-cash-stack" />
-            </span>
-            <span className="vr-glass-disclosure__label">
-              <span className="vr-glass-disclosure__title">Gestión de caja</span>
-              <span className="vr-glass-disclosure__subtitle">Apertura, cierre e indicadores</span>
-            </span>
-          </button>
-          {panelCajaAbierto ? (
-            <div className="vr-glass-disclosure__body">
-              <div className="ventas-rapidas-caja-section">
-                <Card>
-            <div className="caja-header">
-              <h2>Gestión de Caja</h2>
-              <div className="caja-buttons">
-                <Button
-                  variant="primary"
-                  onClick={() => setShowAbrirCajaModal(true)}
-                  disabled={estadoCaja?.cajaAbierta || procesandoCaja}
-                >
-                  Abrir Caja
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/ventas-rapidas/historial')}
-                >
-                  Ver Historial
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => setShowCerrarCajaModal(true)}
-                  disabled={!estadoCaja?.cajaAbierta || procesandoCaja}
-                >
-                  Cerrar Caja
-                </Button>
-              </div>
-            </div>
-
-            <div className="caja-indicators">
-              <div className="caja-indicator caja-indicator-inicio">
-                <h3>Inicio de Caja</h3>
-                {estadoCaja?.inicioCaja ? (
-                  <>
-                    <div className="indicator-value">{formatearMoneda(estadoCaja.inicioCaja.importe)}</div>
-                    {estadoCaja.inicioCaja.desglose && (
-                      <div className="indicator-desglose">
-                        Efectivo {formatearMoneda(estadoCaja.inicioCaja.desglose.efectivo)} · Virtual {formatearMoneda(estadoCaja.inicioCaja.desglose.virtual)}
-                        {(estadoCaja.inicioCaja.desglose.credito > 0 || estadoCaja.inicioCaja.desglose.otros > 0) && (
-                          <> · Crédito {formatearMoneda(estadoCaja.inicioCaja.desglose.credito)} · Otros {formatearMoneda(estadoCaja.inicioCaja.desglose.otros)}</>
-                        )}
-                      </div>
-                    )}
-                    <div className="indicator-info">
-                      Usuario: {estadoCaja.inicioCaja.usuarios?.nombre || user?.nombre || '-'}
-                    </div>
-                    <div className="indicator-info">
-                      {formatearFechaHora(estadoCaja.inicioCaja.fecha_hora)}
-                    </div>
-                  </>
-                ) : (
-                  <div className="indicator-value">$0,00</div>
-                )}
-              </div>
-
-              {estadoCaja?.estadoActual?.desglose ? (
-                <>
-                  <div className="caja-indicator">
-                    <h3>Caja efectivo</h3>
-                    <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.efectivo)}</div>
-                  </div>
-                  <div className="caja-indicator">
-                    <h3>Caja virtual</h3>
-                    <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.virtual)}</div>
-                    <div className="indicator-info" style={{ fontSize: '0.75rem' }}>QR, transferencia, débito</div>
-                  </div>
-                  {showMasCaja && (
-                    <>
-                      <div className="caja-indicator">
-                        <h3>Caja crédito</h3>
-                        <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.credito)}</div>
-                      </div>
-                      <div className="caja-indicator">
-                        <h3>Caja otros métodos</h3>
-                        <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.desglose.otros)}</div>
-                        <div className="indicator-info" style={{ fontSize: '0.75rem' }}>Cheque, otro</div>
-                      </div>
-                    </>
-                  )}
-                  <div className="caja-indicators-ver-mas">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowMasCaja((v) => !v)}
-                    >
-                      {showMasCaja ? 'Ocultar crédito y otros' : 'Ver crédito y otros'}
-                    </Button>
-                  </div>
-                </>
-              ) : estadoCaja?.estadoActual ? (
-                <div className="caja-indicator">
-                  <h3>Estado actual</h3>
-                  <div className="indicator-value">{formatearMoneda(estadoCaja.estadoActual.importe)}</div>
-                </div>
-              ) : null}
-            </div>
-                </Card>
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="vr-glass-disclosure" aria-label="Registrar o editar venta rápida">
-          <button
-            type="button"
-            className="vr-glass-disclosure__trigger"
-            aria-expanded={panelFormAbierto}
-            onClick={() => setPanelFormAbierto((v) => !v)}
-          >
-            <span className="vr-glass-disclosure__chevron" aria-hidden>
-              <i className={`bi bi-chevron-${panelFormAbierto ? 'up' : 'down'}`} />
-            </span>
-            <span className="vr-glass-disclosure__iconWrap" aria-hidden>
-              <i className="bi bi-receipt-cutoff" />
-            </span>
-            <span className="vr-glass-disclosure__label">
-              <span className="vr-glass-disclosure__title">
-                {edicionVenta ? 'Editar venta rápida' : 'Nueva venta rápida'}
-              </span>
-              <span className="vr-glass-disclosure__subtitle">
-                {edicionVenta ? 'Modificá pagos y total' : 'Atajo de teclado F2'}
-              </span>
-            </span>
-          </button>
-          {panelFormAbierto ? (
-            <div className="vr-glass-disclosure__body">
-              <Card id="venta-rapida-card-form">
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-            <h2 style={{ margin: 0 }}>{edicionVenta ? 'Editar venta rápida' : 'Cargar Venta (F2)'}</h2>
-            {edicionVenta && (
-              <Button type="button" variant="outline" size="sm" onClick={cancelarEdicionVenta}>
-                Cancelar edición
-              </Button>
-            )}
-          </div>
-          {edicionVenta && (
-            <div className="venta-rapida-edicion-banner" role="status">
-              Editando venta
-              {edicionVenta.numero_ticket ? (
-                <>
-                  {' '}
-                  — Ticket <strong>{edicionVenta.numero_ticket}</strong>
-                </>
-              ) : null}
-              . Los cambios reemplazan ítems y pagos de esta venta.
-            </div>
-          )}
-          <form onSubmit={handleRegistrarVenta}>
-            <div className="venta-rapida-form">
-              <div className="form-row venta-rapida-producto-row">
-                <div className="form-col" style={{ flex: '1 1 100%' }}>
-                  <span className="form-label">Producto</span>
-                  {loadingProducto ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minHeight: '2.25rem' }}>
-                      <Spinner size="sm" />
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                        Buscando producto con código {CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}…
-                      </span>
-                    </div>
-                  ) : productoVentaRapida ? (
-                    <div className="venta-rapida-producto-ok">
-                      <span className="bi bi-check-circle-fill venta-rapida-producto-ok-icon" aria-hidden />
-                      <span>
-                        <strong>{productoVentaRapida.nombre}</strong>
-                        {' · '}
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                          Cód. barras {productoVentaRapida.codigo_barras || CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}
-                        </span>
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="venta-rapida-producto-error" role="alert">
-                      <span className="venta-rapida-producto-error-text">
-                        No hay producto activo con código de barras <strong>{CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA}</strong>.
-                        Registrá el producto para poder cargar ventas rápidas.
-                      </span>
-                      <Link
-                        to={`/productos/nuevo?codigo_barras=${encodeURIComponent(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA)}`}
-                        className="venta-rapida-producto-error-link"
-                        title="Ir al formulario de producto (código precargado)"
-                      >
-                        <i className="bi bi-box-seam" aria-hidden />
-                        <span className="sr-only">Registrar producto</span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-col autocomplete-wrapper venta-rapida-cliente-col">
-                  <label className="form-label" htmlFor="venta-rapida-cliente-search">
-                    Cliente (opcional)
-                  </label>
-                  <input
-                    id="venta-rapida-cliente-search"
-                    name="venta_rapida_cliente_search"
-                    ref={clienteInputRef}
-                    type="text"
-                    className="form-control"
-                    placeholder="Buscar clientes cargados"
-                    autoComplete="off"
-                    value={clienteSearch}
-                    onChange={(e) => {
-                      setClienteSearch(e.target.value)
-                      if (!e.target.value) {
-                        setClienteSeleccionado(null)
-                      }
-                    }}
-                    onKeyDown={handleClienteKeyDown}
-                    onFocus={() => {
-                      if (clienteSearch && clienteSuggestions.length > 0) {
-                        setShowClienteSuggestions(true)
-                      }
-                    }}
-                    onBlur={() => {
-                      setTimeout(() => setShowClienteSuggestions(false), 200)
-                    }}
-                  />
-                  {showClienteSuggestions && clienteSuggestions.length > 0 && (
-                    <ul className="autocomplete-list">
-                      {clienteSuggestions.map((c, idx) => (
-                        <li
-                          key={c.id}
-                          data-index={idx}
-                          className={idx === clienteActiveIndex ? 'active' : ''}
-                          onClick={() => aplicarClienteSeleccionado(c)}
-                        >
-                          {c.nombre} {c.email && `(${c.email})`}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="venta-rapida-cliente-add-btn-col">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openNuevoClienteModal}
-                    title="Agregar cliente"
-                    aria-label="Agregar cliente"
-                    className="venta-rapida-cliente-add-btn"
-                  >
-                    <i className="bi bi-person-plus" aria-hidden />
-                  </Button>
-                </div>
-
-                <div className="form-col">
-                  <label className="form-label" htmlFor="venta-rapida-total">
-                    $Total
-                  </label>
-                  <input
-                    id="venta-rapida-total"
-                    type="text"
-                    name="venta_rapida_total"
-                    className="form-control"
-                    autoComplete="off"
-                    inputMode="decimal"
-                    value={totalEditando ? (totalValorRaw || '') : formatearNumeroMoneda(total)}
-                      onChange={(e) => {
-                        const valor = e.target.value
-                        // Permitir números, puntos, comas y símbolo $
-                        if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                          setTotalEditando(true)
-                          setTotalValorRaw(valor)
-                          const valorParseado = parsearMoneda(valor === '' ? '0' : valor)
-                          const totalClamped = String(totalNumeroNoNegativo(valorParseado))
-                          setTotal(totalClamped)
-                          setFilasPago((prev) => mirrorFilasPagoAlTotal(prev, totalClamped))
-                          const mirrorIdx = filasPago.findIndex((r) => r.metodo_pago !== 'pendiente')
-                          if (mirrorIdx >= 0 && editingPagoIdx === mirrorIdx) {
-                            setPagoMontoRaw(totalClamped === '0' ? '' : totalClamped)
-                          }
-                        }
-                      }}
-                      onFocus={(e) => {
-                        setTotalEditando(true)
-                        // Mostrar el valor sin formato cuando se enfoca
-                        const valorSinFormato = parsearMoneda(e.target.value)
-                        setTotalValorRaw(valorSinFormato === '0' ? '' : valorSinFormato)
-                      }}
-                      onBlur={(e) => {
-                        let valor = e.target.value
-                        // Si está vacío o solo tiene $, usar 0
-                        if (!valor || valor.trim() === '' || valor === '$') {
-                          valor = '0'
-                        } else {
-                          valor = parsearMoneda(valor)
-                        }
-                        const totalClamped = String(totalNumeroNoNegativo(valor))
-                        const prevNum = totalNumeroNoNegativo(total)
-                        const nextNum = totalNumeroNoNegativo(totalClamped)
-                        setTotal(totalClamped)
-                        // Solo redistribuir pagos cuando el total cambió (p. ej. al editar el importe).
-                        // Si solo hubo blur sin cambio — típico al pasar del Total en foco a otro campo —
-                        // mirrorFilasPagoAlTotal pondría todo en la 1.ª fila no pendiente y anularía el resto.
-                        if (Math.abs(prevNum - nextNum) > 0.009) {
-                          setFilasPago((prev) => mirrorFilasPagoAlTotal(prev, totalClamped))
-                        }
-                        setTotalEditando(false)
-                        setTotalValorRaw('')
-                      }}
-                      placeholder="$0,00"
-                      required
-                      autoFocus
-                    />
-                </div>
-
-              </div>
-
-              <div className="venta-rapida-pagos-section">
-                <span className="form-label" id="venta-rapida-pagos-label">
-                  Pagos (varios métodos como en Ventas)
-                </span>
-                <p className="venta-rapida-pagos-hint text-secondary" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0.75rem' }}>
-                  Saldo: lo que queda por cobrar antes de cada fila. Las filas «Pendiente» no suman al cobrado; si no cargás pagos o el total cobrado es menor al total, la venta queda en estado PENDIENTE.
-                </p>
-                <div className="venta-rapida-pagos-grid" role="group" aria-labelledby="venta-rapida-pagos-label">
-                  <div className="venta-rapida-pagos-head venta-rapida-pagos-row">
-                    <span className="venta-rapida-pagos-cell venta-rapida-pagos-cell--saldo">Saldo</span>
-                    <span className="venta-rapida-pagos-cell">Forma de pago</span>
-                    <span className="venta-rapida-pagos-cell">$Pagado</span>
-                    <span className="venta-rapida-pagos-cell venta-rapida-pagos-cell--accion" aria-hidden />
-                  </div>
-                  {filasPago.map((row, idx) => (
-                    <div key={row.key} className="venta-rapida-pagos-row">
-                      <div
-                        className="venta-rapida-pagos-cell venta-rapida-pagos-cell--saldo venta-rapida-saldo-readonly"
-                        title="Saldo pendiente antes de aplicar esta fila"
-                      >
-                        {formatearMoneda(String(saldoAntesDeFila(idx)))}
-                      </div>
-                      <div className="venta-rapida-pagos-cell">
-                        <select
-                          id={`venta-rapida-metodo-${row.key}`}
-                          name={`venta_rapida_metodo_pago_${idx}`}
-                          className="form-control"
-                          autoComplete="off"
-                          aria-label={`Forma de pago, fila ${idx + 1}`}
-                          value={row.metodo_pago}
-                          onChange={(e) => actualizarFilaPago(idx, { metodo_pago: e.target.value })}
-                        >
-                          {METODOS_PAGO_OPCIONES.map(([val, label]) => (
-                            <option key={val} value={val}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="venta-rapida-pagos-cell">
-                        <input
-                          id={`venta-rapida-monto-${row.key}`}
-                          type="text"
-                          name={`venta_rapida_monto_pagado_${idx}`}
-                          className="form-control"
-                          autoComplete="off"
-                          inputMode="decimal"
-                          aria-label={`Monto pagado, fila ${idx + 1}`}
-                          placeholder="$0,00"
-                          value={
-                            editingPagoIdx === idx ? pagoMontoRaw : formatearNumeroMoneda(row.monto)
-                          }
-                          onChange={(e) => {
-                            const valor = e.target.value
-                            if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                              const parsed = Math.max(
-                                0,
-                                parseFloat(parsearMoneda(valor === '' ? '0' : valor)) || 0
-                              )
-                              const saldo = saldoAntesDeFilaEnFilas(filasPago, total, idx)
-                              const capped = Math.min(parsed, saldo)
-                              setPagoMontoRaw(
-                                valor === '' ? '' : capped === parsed ? valor : String(capped)
-                              )
-                              actualizarFilaPago(idx, { monto: String(capped) })
-                            }
-                          }}
-                          onFocus={() => {
-                            setEditingPagoIdx(idx)
-                            const raw = parsearMoneda(row.monto)
-                            setPagoMontoRaw(raw === '0' ? '' : raw)
-                          }}
-                          onBlur={() => {
-                            setFilasPago((prev) => {
-                              let valor = pagoMontoRaw
-                              if (!valor || valor.trim() === '' || valor === '$') valor = '0'
-                              else valor = parsearMoneda(valor)
-                              let parsed = Math.max(0, parseFloat(valor) || 0)
-                              const saldo = saldoAntesDeFilaEnFilas(prev, total, idx)
-                              parsed = Math.min(parsed, saldo)
-                              return prev.map((r, i) =>
-                                i === idx ? { ...r, monto: String(parsed) } : r
-                              )
-                            })
-                            setEditingPagoIdx(null)
-                            setPagoMontoRaw('')
-                          }}
-                        />
-                      </div>
-                      <div className="venta-rapida-pagos-cell venta-rapida-pagos-cell--accion">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={filasPago.length <= 1}
-                          onClick={() => quitarFilaPago(idx)}
-                          title={filasPago.length <= 1 ? 'Debe haber al menos una fila' : 'Quitar fila'}
-                        >
-                          Quitar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: '0.75rem' }}>
-                  <Button type="button" variant="outline" size="sm" onClick={agregarFilaPago}>
-                    + Agregar forma de pago
-                  </Button>
-                </div>
-              </div>
-
-              <div className="form-actions">
-                <div className="venta-rapida-form-submit">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    loading={saving}
-                    disabled={
-                      saving ||
-                      !estadoCaja?.cajaAbierta ||
-                      loadingProducto ||
-                      !productoVentaRapida?.id
-                    }
-                    title={
-                      saving || loadingProducto
-                        ? undefined
-                        : !productoVentaRapida?.id
-                          ? 'No hay producto activo con el código de venta rápida. Creá o activá el producto en Referencias.'
-                          : !estadoCaja?.cajaAbierta
-                            ? 'Abrí la caja desde el panel «Gestión de caja» (sin caja abierta no se pueden registrar ventas rápidas).'
-                            : undefined
-                    }
-                  >
-                    {edicionVenta ? 'Guardar cambios' : 'Registrar Venta'}
-                  </Button>
-                  {!estadoCaja?.cajaAbierta && !loadingProducto && productoVentaRapida?.id && (
-                    <p className="venta-rapida-aviso-caja" role="status">
-                      Abrí la caja desde el panel «Gestión de caja» (etiqueta superior) para poder registrar ventas.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </form>
-              </Card>
-            </div>
-          ) : null}
-        </section>
+        <VentasSharedToolsHost
+          ref={sharedToolsRef}
+          enableFormHotkeyF2
+          onVentaRapidaSuccess={async () => {
+            await loadVentasRapidas()
+          }}
+        />
 
         <Card style={{ marginTop: '1.5rem' }}>
           <div className="section-label">SECCIÓN</div>
@@ -1381,542 +205,97 @@ function VentasRapidas() {
             </p>
           ) : (
             <>
-            <div className="ventas-rapidas-registros-scroll table-container">
-              <table className="table ventas-rapidas-registros-table table-sticky-header">
-                <colgroup>
-                  <col className="vr-reg-col vr-reg-col--fecha" />
-                  <col className="vr-reg-col vr-reg-col--hide-mobile vr-reg-col--cliente" />
-                  <col className="vr-reg-col vr-reg-col--total" />
-                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
-                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
-                  <col className="vr-reg-col vr-reg-col--hide-mobile" />
-                  <col className="vr-reg-col vr-reg-col--estado" />
-                  <col className="vr-reg-col vr-reg-col--acciones" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th className="vr-reg-col--fecha">
-                      <span className="vr-reg-label vr-reg-label--desktop">Fecha y Hora</span>
-                      <span className="vr-reg-label vr-reg-label--mobile">Fecha</span>
-                    </th>
-                    <th className="vr-reg-col--hide-mobile">Cliente</th>
-                    <th className="ventas-rapidas-th-num vr-reg-col--total">
-                      <span className="vr-reg-label vr-reg-label--desktop">$Total</span>
-                      <span className="vr-reg-label vr-reg-label--mobile">Total</span>
-                    </th>
-                    <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pagado</th>
-                    <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pendiente</th>
-                    <th className="vr-reg-col--hide-mobile">Forma de Pago</th>
-                    <th className="vr-reg-col--estado">Estado</th>
-                    <th className="vr-reg-col--acciones">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ventasRapidas.map((venta) => {
-                    const estadoKey = getVentaEstadoDisplayRegistro(venta, { modo: 'rapidas' })
-                    return (
-                    <tr key={venta.id}>
-                      <td className="vr-reg-col--fecha">{formatearFechaHora(venta.fecha_hora)}</td>
-                      <td className="ventas-rapidas-td-cliente vr-reg-col--hide-mobile">
-                        {venta.clientes?.nombre?.trim() || 'Cliente genérico'}
-                      </td>
-                      <td className="ventas-rapidas-td-num vr-reg-col--total">{formatearMoneda(venta.total)}</td>
-                      <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
-                        {formatearMoneda(venta.monto_pagado)}
-                      </td>
-                      <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
-                        {formatearMoneda(
-                          venta.monto_pendiente ??
-                            Math.max(0, Number(venta.total || 0) - Number(venta.monto_pagado || 0))
-                        )}
-                      </td>
-                      <td className="vr-reg-col--hide-mobile">{venta.metodo_pago}</td>
-                      <td className="vr-reg-col--estado">
-                        <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
-                          {getVentaEstadoLabelTabla(estadoKey)}
-                        </Badge>
-                      </td>
-                      <td className="vr-reg-col--acciones">
-                        <VentasRapidasActionsMenu
-                          ventaRapidaId={venta.id}
-                          onEditar={iniciarEdicionVenta}
-                          onDelete={() => {
-                            setVentaRapidaToDelete(venta)
-                            setShowDeleteVentaRapidaModal(true)
-                          }}
-                        />
-                      </td>
+              <div className="ventas-rapidas-registros-scroll table-container">
+                <table className="table ventas-rapidas-registros-table table-sticky-header">
+                  <colgroup>
+                    <col className="vr-reg-col vr-reg-col--fecha" />
+                    <col className="vr-reg-col vr-reg-col--hide-mobile vr-reg-col--cliente" />
+                    <col className="vr-reg-col vr-reg-col--total" />
+                    <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                    <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                    <col className="vr-reg-col vr-reg-col--hide-mobile" />
+                    <col className="vr-reg-col vr-reg-col--estado" />
+                    <col className="vr-reg-col vr-reg-col--acciones" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th className="vr-reg-col--fecha">
+                        <span className="vr-reg-label vr-reg-label--desktop">Fecha y Hora</span>
+                        <span className="vr-reg-label vr-reg-label--mobile">Fecha</span>
+                      </th>
+                      <th className="vr-reg-col--hide-mobile">Cliente</th>
+                      <th className="ventas-rapidas-th-num vr-reg-col--total">
+                        <span className="vr-reg-label vr-reg-label--desktop">$Total</span>
+                        <span className="vr-reg-label vr-reg-label--mobile">Total</span>
+                      </th>
+                      <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pagado</th>
+                      <th className="ventas-rapidas-th-num vr-reg-col--hide-mobile">$ Pendiente</th>
+                      <th className="vr-reg-col--hide-mobile">Forma de Pago</th>
+                      <th className="vr-reg-col--estado">Estado</th>
+                      <th className="vr-reg-col--acciones">Acciones</th>
                     </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {ventasRapidas.map((venta) => {
+                      const estadoKey = getVentaEstadoDisplayRegistro(venta, { modo: 'rapidas' })
+                      return (
+                        <tr key={venta.id}>
+                          <td className="vr-reg-col--fecha">{formatearFechaHora(venta.fecha_hora)}</td>
+                          <td className="ventas-rapidas-td-cliente vr-reg-col--hide-mobile">
+                            {venta.clientes?.nombre?.trim() || 'Cliente genérico'}
+                          </td>
+                          <td className="ventas-rapidas-td-num vr-reg-col--total">
+                            {formatearMoneda(venta.total)}
+                          </td>
+                          <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
+                            {formatearMoneda(venta.monto_pagado)}
+                          </td>
+                          <td className="ventas-rapidas-td-num vr-reg-col--hide-mobile">
+                            {formatearMoneda(
+                              venta.monto_pendiente ??
+                                Math.max(0, Number(venta.total || 0) - Number(venta.monto_pagado || 0)),
+                            )}
+                          </td>
+                          <td className="vr-reg-col--hide-mobile">{venta.metodo_pago}</td>
+                          <td className="vr-reg-col--estado">
+                            <Badge variant={getVentaEstadoBadgeVariant(estadoKey)}>
+                              {getVentaEstadoLabelTabla(estadoKey)}
+                            </Badge>
+                          </td>
+                          <td className="vr-reg-col--acciones">
+                            <VentasRapidasActionsMenu
+                              ventaRapidaId={venta.id}
+                              onEditar={handleEditarVenta}
+                              onDelete={() => {
+                                setVentaRapidaToDelete(venta)
+                                setShowDeleteVentaRapidaModal(true)
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            )}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
 
-            <div className="table-info" style={{ marginTop: '1rem' }}>
-              {totalVentasRapidas > 0
-                ? `Mostrando ${startIndex}-${endIndex} de ${totalVentasRapidas} ventas`
-                : 'Sin registros para mostrar'}
-            </div>
+              <div className="table-info" style={{ marginTop: '1rem' }}>
+                {totalVentasRapidas > 0
+                  ? `Mostrando ${startIndex}-${endIndex} de ${totalVentasRapidas} ventas`
+                  : 'Sin registros para mostrar'}
+              </div>
             </>
           )}
         </Card>
 
-        {/* Modal: alta rápida de cliente (sin salir de Ventas Rápidas) */}
-        <Modal
-          isOpen={showNuevoClienteModal}
-          onClose={closeNuevoClienteModal}
-          title="Nuevo cliente"
-          closeOnOverlayClick={!nuevoClienteSaving}
-          footer={
-            <>
-              <Button variant="outline" onClick={closeNuevoClienteModal} disabled={nuevoClienteSaving}>
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleGuardarNuevoCliente}
-                loading={nuevoClienteSaving}
-                disabled={nuevoClienteSaving}
-              >
-                Crear cliente
-              </Button>
-            </>
-          }
-        >
-          {nuevoClienteError ? (
-            <Alert variant="danger" dismissible onDismiss={() => setNuevoClienteError(null)}>
-              {nuevoClienteError}
-            </Alert>
-          ) : null}
-
-          <div className="form-row">
-            <div className="form-col form-col-full">
-              <Input
-                label="Nombre completo"
-                name="nuevo_cliente_nombre"
-                value={nuevoClienteForm.nombre}
-                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, nombre: e.target.value }))}
-                required
-                placeholder="Nombre del cliente"
-                disabled={nuevoClienteSaving}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label">
-                Tipo de documento
-                <select
-                  className="form-control"
-                  value={nuevoClienteForm.tipo_documento}
-                  onChange={(e) => setNuevoClienteForm((p) => ({ ...p, tipo_documento: e.target.value }))}
-                  disabled={nuevoClienteSaving}
-                >
-                  <option value="DNI">DNI</option>
-                  <option value="CUIT">CUIT</option>
-                  <option value="CUIL">CUIL</option>
-                  <option value="LC">LC</option>
-                  <option value="LE">LE</option>
-                  <option value="Pasaporte">Pasaporte</option>
-                </select>
-              </label>
-            </div>
-            <div className="form-col">
-              <Input
-                label="Número de documento"
-                name="nuevo_cliente_numero_documento"
-                value={nuevoClienteForm.numero_documento}
-                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, numero_documento: e.target.value }))}
-                placeholder="Número de documento (opcional)"
-                disabled={nuevoClienteSaving}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col">
-              <Input
-                label="Email"
-                name="nuevo_cliente_email"
-                type="email"
-                value={nuevoClienteForm.email}
-                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, email: e.target.value }))}
-                placeholder="cliente@email.com (opcional)"
-                disabled={nuevoClienteSaving}
-              />
-            </div>
-            <div className="form-col">
-              <Input
-                label="Teléfono"
-                name="nuevo_cliente_telefono"
-                value={nuevoClienteForm.telefono}
-                onChange={(e) => setNuevoClienteForm((p) => ({ ...p, telefono: e.target.value }))}
-                placeholder="Teléfono (opcional)"
-                disabled={nuevoClienteSaving}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col form-col-full">
-              <label className="form-label">
-                Dirección
-                <textarea
-                  className="form-control"
-                  rows="2"
-                  value={nuevoClienteForm.direccion}
-                  onChange={(e) => setNuevoClienteForm((p) => ({ ...p, direccion: e.target.value }))}
-                  placeholder="Dirección (opcional)"
-                  disabled={nuevoClienteSaving}
-                />
-              </label>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Modal: advertencia por nombre duplicado (no bloquea) */}
-        <Modal
-          isOpen={showNuevoClienteNombreWarningModal}
-          onClose={() => {
-            if (nuevoClienteSaving) return
-            setShowNuevoClienteNombreWarningModal(false)
-            setNuevoClienteValidated(null)
-          }}
-          title="Advertencia: nombre duplicado"
-          variant="warning"
-          closeOnOverlayClick={false}
-          footer={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowNuevoClienteNombreWarningModal(false)
-                  setNuevoClienteValidated(null)
-                }}
-                disabled={nuevoClienteSaving}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleGuardarNuevoCliente}
-                loading={nuevoClienteSaving}
-                disabled={nuevoClienteSaving}
-              >
-                Continuar y crear
-              </Button>
-            </>
-          }
-        >
-          <p>
-            Ya existe un cliente registrado con el nombre <strong>"{nuevoClienteForm.nombre}"</strong>.
-          </p>
-          <p style={{ marginTop: '0.75rem' }}>¿Deseas continuar con la carga de todos modos?</p>
-        </Modal>
-
-        {/* Modal Abrir Caja */}
-        <Modal
-          isOpen={showAbrirCajaModal}
-          onClose={() => {
-            setShowAbrirCajaModal(false)
-            setAperturaEfectivo('0')
-            setAperturaVirtual('0')
-            setAperturaCredito('0')
-            setAperturaOtros('0')
-            setAperturaEditandoCampo(null)
-            setAperturaValorRaw('')
-            setShowVerMasApertura(false)
-            setObservacionesApertura('')
-          }}
-          title="Abrir Caja"
-          footer={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAbrirCajaModal(false)
-                  setAperturaEfectivo('0')
-                  setAperturaVirtual('0')
-                  setAperturaCredito('0')
-                  setAperturaOtros('0')
-                  setAperturaEditandoCampo(null)
-                  setAperturaValorRaw('')
-                  setShowVerMasApertura(false)
-                  setObservacionesApertura('')
-                }}
-                disabled={procesandoCaja}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleAbrirCaja}
-                loading={procesandoCaja}
-                disabled={procesandoCaja}
-              >
-                Abrir Caja
-              </Button>
-            </>
-          }
-        >
-          <div className="form-group">
-            <label className="form-label" htmlFor="modal-apertura-fecha-hora">
-              Fecha y Hora (Automático)
-            </label>
-            <input
-              id="modal-apertura-fecha-hora"
-              name="modal_apertura_fecha_hora"
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              value={formatDateTime(new Date().toISOString(), dateFormat, timezone)}
-              disabled
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="modal-apertura-usuario">
-              Usuario (Automático)
-            </label>
-            <input
-              id="modal-apertura-usuario"
-              name="modal_apertura_usuario"
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              value={user?.nombre || '-'}
-              disabled
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="modal-apertura-efectivo">
-              Caja efectivo ($)
-            </label>
-            <input
-              id="modal-apertura-efectivo"
-              name="modal_apertura_efectivo"
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              inputMode="decimal"
-              value={aperturaEditandoCampo === 'efectivo' ? aperturaValorRaw : (aperturaEfectivo === '0' ? '' : formatearNumeroMoneda(aperturaEfectivo))}
-                onFocus={() => {
-                  setAperturaEditandoCampo('efectivo')
-                  setAperturaValorRaw(aperturaEfectivo === '0' ? '' : aperturaEfectivo)
-                }}
-                onChange={(e) => {
-                  const valor = e.target.value
-                  if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                    setAperturaValorRaw(valor)
-                  }
-                }}
-                onBlur={() => {
-                  const v = parsearMoneda(aperturaValorRaw) || '0'
-                  setAperturaEfectivo(v)
-                  setAperturaEditandoCampo(null)
-                  setAperturaValorRaw('')
-                }}
-                placeholder="$0,00"
-                autoFocus
-              />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="modal-apertura-virtual">
-              Caja virtual ($) — QR, transferencia, débito
-            </label>
-            <input
-              id="modal-apertura-virtual"
-              name="modal_apertura_virtual"
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              inputMode="decimal"
-              value={aperturaEditandoCampo === 'virtual' ? aperturaValorRaw : (aperturaVirtual === '0' ? '' : formatearNumeroMoneda(aperturaVirtual))}
-                onFocus={() => {
-                  setAperturaEditandoCampo('virtual')
-                  setAperturaValorRaw(aperturaVirtual === '0' ? '' : aperturaVirtual)
-                }}
-                onChange={(e) => {
-                  const valor = e.target.value
-                  if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                    setAperturaValorRaw(valor)
-                  }
-                }}
-                onBlur={() => {
-                  const v = parsearMoneda(aperturaValorRaw) || '0'
-                  setAperturaVirtual(v)
-                  setAperturaEditandoCampo(null)
-                  setAperturaValorRaw('')
-                }}
-                placeholder="$0,00"
-              />
-          </div>
-          <div style={{ marginBottom: '0.75rem' }}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowVerMasApertura((v) => !v)}
-            >
-              {showVerMasApertura ? 'Ocultar crédito y otros' : 'Ver crédito y otros'}
-            </Button>
-          </div>
-          {showVerMasApertura && (
-            <>
-              <div className="form-group">
-                <label className="form-label" htmlFor="modal-apertura-credito">
-                  Caja crédito ($)
-                </label>
-                <input
-                  id="modal-apertura-credito"
-                  name="modal_apertura_credito"
-                  type="text"
-                  className="form-control"
-                  autoComplete="off"
-                  inputMode="decimal"
-                  value={aperturaEditandoCampo === 'credito' ? aperturaValorRaw : (aperturaCredito === '0' ? '' : formatearNumeroMoneda(aperturaCredito))}
-                    onFocus={() => {
-                      setAperturaEditandoCampo('credito')
-                      setAperturaValorRaw(aperturaCredito === '0' ? '' : aperturaCredito)
-                    }}
-                    onChange={(e) => {
-                      const valor = e.target.value
-                      if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                        setAperturaValorRaw(valor)
-                      }
-                    }}
-                    onBlur={() => {
-                      const v = parsearMoneda(aperturaValorRaw) || '0'
-                      setAperturaCredito(v)
-                      setAperturaEditandoCampo(null)
-                      setAperturaValorRaw('')
-                    }}
-                    placeholder="$0,00"
-                  />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="modal-apertura-otros">
-                  Caja otros métodos ($) — cheque, otro
-                </label>
-                <input
-                  id="modal-apertura-otros"
-                  name="modal_apertura_otros"
-                  type="text"
-                  className="form-control"
-                  autoComplete="off"
-                  inputMode="decimal"
-                  value={aperturaEditandoCampo === 'otros' ? aperturaValorRaw : (aperturaOtros === '0' ? '' : formatearNumeroMoneda(aperturaOtros))}
-                    onFocus={() => {
-                      setAperturaEditandoCampo('otros')
-                      setAperturaValorRaw(aperturaOtros === '0' ? '' : aperturaOtros)
-                    }}
-                    onChange={(e) => {
-                      const valor = e.target.value
-                      if (/^[\d.,$]*$/.test(valor) || valor === '') {
-                        setAperturaValorRaw(valor)
-                      }
-                    }}
-                    onBlur={() => {
-                      const v = parsearMoneda(aperturaValorRaw) || '0'
-                      setAperturaOtros(v)
-                      setAperturaEditandoCampo(null)
-                      setAperturaValorRaw('')
-                    }}
-                    placeholder="$0,00"
-                  />
-              </div>
-            </>
-          )}
-          <div className="form-group">
-            <label className="form-label" htmlFor="modal-apertura-observaciones">
-              Observaciones (opcional)
-            </label>
-            <textarea
-              id="modal-apertura-observaciones"
-              name="modal_apertura_observaciones"
-              className="form-control"
-              rows="3"
-              autoComplete="off"
-              value={observacionesApertura}
-              onChange={(e) => setObservacionesApertura(e.target.value)}
-            />
-          </div>
-        </Modal>
-
-        {/* Modal Cerrar Caja */}
-        <Modal
-          isOpen={showCerrarCajaModal}
-          onClose={() => {
-            setShowCerrarCajaModal(false)
-            setObservacionesCierre('')
-          }}
-          title="Cerrar Caja"
-          footer={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCerrarCajaModal(false)
-                  setObservacionesCierre('')
-                }}
-                disabled={procesandoCaja}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleCerrarCaja}
-                loading={procesandoCaja}
-                disabled={procesandoCaja}
-              >
-                Cerrar Caja
-              </Button>
-            </>
-          }
-        >
-          <div>
-            <p style={{ marginBottom: '0.5rem' }}>¿Estás seguro de que deseas cerrar la caja?</p>
-            {estadoCaja?.estadoActual?.desglose && (
-              <div className="caja-cierre-desglose" style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem 1.5rem', fontSize: '0.95rem' }}>
-                  <div><strong>Caja efectivo:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.efectivo)}</div>
-                  <div><strong>Caja virtual:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.virtual)}</div>
-                  <div><strong>Caja crédito:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.credito)}</div>
-                  <div><strong>Caja otros métodos:</strong> {formatearMoneda(estadoCaja.estadoActual.desglose.otros)}</div>
-                </div>
-                <div style={{ marginTop: '0.5rem', fontWeight: 600 }}>
-                  Total: {formatearMoneda(estadoCaja.estadoActual.importe)}
-                </div>
-              </div>
-            )}
-            <div className="form-group">
-              <label className="form-label" htmlFor="modal-cierre-observaciones">
-                Observaciones (opcional)
-              </label>
-              <textarea
-                id="modal-cierre-observaciones"
-                name="modal_cierre_observaciones"
-                className="form-control"
-                rows="3"
-                autoComplete="off"
-                placeholder="Ingresá observaciones sobre el cierre de caja..."
-                value={observacionesCierre}
-                onChange={(e) => setObservacionesCierre(e.target.value)}
-              />
-            </div>
-          </div>
-        </Modal>
-
-        {/* Modal confirmar eliminar venta rápida */}
         <Modal
           isOpen={showDeleteVentaRapidaModal}
           onClose={() => {
@@ -1951,7 +330,8 @@ function VentasRapidas() {
           <p>¿Eliminar este registro de venta rápida?</p>
           {ventaRapidaToDelete && (
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-              {formatearFechaHora(ventaRapidaToDelete.fecha_hora)} — {formatearMoneda(ventaRapidaToDelete.total)}
+              {formatearFechaHora(ventaRapidaToDelete.fecha_hora)} —{' '}
+              {formatearMoneda(ventaRapidaToDelete.total)}
             </p>
           )}
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.75rem' }}>
@@ -1959,23 +339,8 @@ function VentasRapidas() {
           </p>
         </Modal>
       </div>
-
-      {/* Contenido (oculto) que se clona en el modal de vista previa.
-          Ojo: el modal clona el nodo referenciado; por eso el "oculto" va en el wrapper,
-          y el nodo con `ref` no debe tener estilos que lo oculten. */}
-      {/* Ticket: texto plano monoespaciado — los drivers POS suelen ignorar tablas HTML */}
-      <div className="ticket-print-host" aria-hidden="true">
-        <TicketPrintBlock innerRef={ticketPrintRef} plainText={ticketPlain} />
-      </div>
-
-      <ThermalPrintPreviewModal
-        isOpen={thermalPreviewOpen}
-        onClose={clearPrintIntent}
-        sourceRef={ticketPrintRef}
-      />
     </Layout>
   )
 }
 
 export default VentasRapidas
-

@@ -6,7 +6,7 @@ export function LayoutChromeProvider({ children, value }) {
   return <LayoutChromeContext.Provider value={value}>{children}</LayoutChromeContext.Provider>
 }
 
-/** Acciones del layout (p. ej. menú lateral) para páginas con barra superior personalizada. */
+/** Acciones del layout (menú lateral, toolbar del header de módulo, etc.). */
 export function useLayoutChrome() {
   const ctx = useContext(LayoutChromeContext)
   if (!ctx) {

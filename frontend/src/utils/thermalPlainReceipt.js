@@ -538,10 +538,13 @@ export function buildClienteDeudasThermalPlainText({
   formatearFechaHoraTicket,
   cols: colsOverride,
   printConfig,
+  /** Si viene de un pago recién registrado: { montoPagado, deudaRestante } */
+  pagoInfo = null,
 }) {
   const ventas = Array.isArray(ventasConDeuda) ? ventasConDeuda : []
   const { cfg, cols } = resolvePrintConfig(printConfig, colsOverride)
   const totalDeuda = ventas.reduce((sum, v) => sum + (parseFloat(v.monto_deuda) || 0), 0)
+  const esComprobantePago = pagoInfo && Number.isFinite(Number(pagoInfo.montoPagado))
 
   const lines = []
   lines.push('')
@@ -552,7 +555,12 @@ export function buildClienteDeudasThermalPlainText({
     pushDatosComercio(lines, comercio, cols)
   }
 
-  lines.push(...thermalCenterParagraph('Historial de deudas', cols))
+  lines.push(
+    ...thermalCenterParagraph(
+      esComprobantePago ? 'Comprobante de pago' : 'Historial de deudas',
+      cols,
+    ),
+  )
   lines.push('')
   lines.push(thermalDetailLine('Fecha emisión', formatearFechaHoraTicket(new Date().toISOString()), cols))
 
@@ -584,6 +592,18 @@ export function buildClienteDeudasThermalPlainText({
 
   lines.push(thermalDash(cols))
   lines.push(thermalDetailLine('TOTAL DEUDA', formatearMoneda(totalDeuda), cols))
+
+  if (esComprobantePago) {
+    const montoPagado = Number(pagoInfo.montoPagado) || 0
+    const deudaRestante = Math.max(0, Number(pagoInfo.deudaRestante) || 0)
+    lines.push(thermalDetailLine('Monto total pagado', formatearMoneda(montoPagado), cols))
+    if (deudaRestante <= 0.01) {
+      lines.push(...thermalCenterParagraph('Deuda cancelada — Sin deuda', cols))
+    } else {
+      lines.push(thermalDetailLine('Deuda restante', formatearMoneda(deudaRestante), cols))
+    }
+  }
+
   lines.push('')
   lines.push(...thermalCenterParagraph('Conserve este comprobante.', cols))
   return lines.join('\n')

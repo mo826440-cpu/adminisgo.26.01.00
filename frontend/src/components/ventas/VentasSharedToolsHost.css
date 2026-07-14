@@ -1,0 +1,43 @@
+.ventas-shared-tools-host {
+  margin-bottom: 1rem;
+}
+
+.ventas-shared-tools-host__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.ventas-shared-tools-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ventas-shared-tools-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ventas-shared-tools-toolbar__btn i {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.ventas-shared-tools-toolbar__btn.is-active {
+  border-color: var(--primary, #2563eb);
+  color: var(--primary, #2563eb);
+  background: color-mix(in srgb, var(--primary, #2563eb) 12%, transparent);
+}
+
+@media (max-width: 480px) {
+  .ventas-shared-tools-toolbar__label {
+    display: none;
+  }
+}

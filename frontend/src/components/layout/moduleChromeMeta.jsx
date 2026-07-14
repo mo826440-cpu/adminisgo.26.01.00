@@ -26,7 +26,8 @@ export function getModuleChrome(pathname) {
       title: 'Historial de cajas',
       subtitle: 'Aperturas y cierres de caja',
       icon: 'bi-clock-history',
-      toolbarEnd: <Tb to="/ventas-rapidas">← Volver a Ventas rápidas</Tb>,
+      // Toolbar dinámica en HistorialCajas (volver a ventas o ventas rápidas según permiso)
+      toolbarEnd: null,
     }
   }
   if (p.startsWith('/ventas-rapidas/')) {
@@ -55,11 +56,8 @@ export function getModuleChrome(pathname) {
       title: 'Ventas',
       subtitle: 'Listado y gestión de ventas',
       icon: 'bi-graph-up-arrow',
-      toolbarEnd: (
-        <Link to="/ventas/nueva">
-          <Button variant="primary">+ Nueva venta</Button>
-        </Link>
-      ),
+      // Toolbar dinámica: VentasSharedToolsHost (caja + venta rápida + Nueva venta)
+      toolbarEnd: null,
     }
   }
   if (p === '/ventas/nueva') {

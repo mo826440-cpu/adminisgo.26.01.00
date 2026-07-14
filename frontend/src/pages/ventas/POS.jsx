@@ -286,28 +286,74 @@ function POS() {
     }
   }
 
+  /** Resuelve producto para Enter / lector (código exacto, selección o única sugerencia). */
+  const resolverProductoParaCarga = (terminoOverride = null) => {
+    if (
+      showProductoSuggestions &&
+      productoActiveIndex >= 0 &&
+      productoSuggestions[productoActiveIndex]
+    ) {
+      return productoSuggestions[productoActiveIndex]
+    }
+    if (productoSeleccionado) return productoSeleccionado
+
+    const termino = (terminoOverride ?? productoSearch).trim()
+    if (!termino) return null
+
+    const exact = productos.find(
+      (p) =>
+        p.codigo_barras?.toLowerCase() === termino.toLowerCase() ||
+        p.codigo_interno?.toLowerCase() === termino.toLowerCase()
+    )
+    if (exact) return exact
+
+    if (productoSuggestions.length === 1) return productoSuggestions[0]
+    return null
+  }
+
   const handleProductoKeyDown = (e) => {
-    if (productoSuggestions.length === 0) return
-    if (!showProductoSuggestions && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-      setShowProductoSuggestions(true)
-      setProductoActiveIndex(0)
+    if (e.key === 'ArrowDown') {
+      if (productoSuggestions.length === 0) return
+      e.preventDefault()
+      if (!showProductoSuggestions) {
+        setShowProductoSuggestions(true)
+        setProductoActiveIndex(0)
+        return
+      }
+      setProductoActiveIndex((prev) => (prev + 1) % productoSuggestions.length)
       return
     }
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowUp') {
+      if (productoSuggestions.length === 0) return
       e.preventDefault()
-      setProductoActiveIndex((prev) => (prev + 1) % productoSuggestions.length)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setProductoActiveIndex((prev) => (prev - 1 + productoSuggestions.length) % productoSuggestions.length)
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (productoActiveIndex >= 0) {
-        aplicarProductoSeleccionado(productoSuggestions[productoActiveIndex])
-        setShowProductoSuggestions(false)
-      } else if (productoSeleccionado) {
-        cargarAlCarrito(e)
+      if (!showProductoSuggestions) {
+        setShowProductoSuggestions(true)
+        setProductoActiveIndex(0)
+        return
       }
-    } else if (e.key === 'Escape') {
+      setProductoActiveIndex(
+        (prev) => (prev - 1 + productoSuggestions.length) % productoSuggestions.length
+      )
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      // e.target.value refleja lo que ya escribió el lector, aunque React aún no haya re-renderizado
+      const terminoInput = e.target?.value ?? productoSearch
+      const producto = resolverProductoParaCarga(terminoInput)
+      if (!producto) {
+        if (String(terminoInput || '').trim()) {
+          setError('No se encontró un producto para cargar. Seleccioná uno de la lista.')
+        }
+        return
+      }
+      setShowProductoSuggestions(false)
+      setProductoSuggestions([])
+      setProductoActiveIndex(-1)
+      cargarAlCarrito(e, producto)
+      return
+    }
+    if (e.key === 'Escape') {
       setShowProductoSuggestions(false)
     }
   }
@@ -336,11 +382,12 @@ function POS() {
     }
   }
 
-  // Cargar al carrito
-  const cargarAlCarrito = (e) => {
+  // Cargar al carrito (productoOverride: Enter desde campo producto / lector de barras)
+  const cargarAlCarrito = (e, productoOverride = null) => {
     e?.preventDefault()
 
-    if (!productoSeleccionado) {
+    const producto = productoOverride || productoSeleccionado
+    if (!producto) {
       setError('Debes seleccionar un producto')
       return
     }
@@ -351,16 +398,16 @@ function POS() {
       return
     }
 
-    const disponible = getStockDisponible(productoSeleccionado.id)
+    const disponible = getStockDisponible(producto.id)
     if (cantidad > disponible) {
       setError(`Stock insuficiente (disponible: ${disponible})`)
       return
     }
 
-    const precioBase = parseFloat(productoSeleccionado.precio_venta || 0)
+    const precioBase = parseFloat(producto.precio_venta || 0)
     const nuevoItem = recalcCarritoItem({
-      producto_id: productoSeleccionado.id,
-      nombre: productoSeleccionado.nombre,
+      producto_id: producto.id,
+      nombre: producto.nombre,
       cantidad,
       precio_unitario: precioBase,
       descuento: 0,
@@ -372,6 +419,9 @@ function POS() {
     setProductoSeleccionado(null)
     setUnidades('1')
     setStockActual(null)
+    setShowProductoSuggestions(false)
+    setProductoSuggestions([])
+    setProductoActiveIndex(-1)
     setError(null)
 
     if (productoInputRef.current) {

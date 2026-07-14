@@ -12,6 +12,7 @@ export default function ClienteDeudasTicketThermal({
   ventasConDeuda,
   formatearMoneda,
   formatearFechaHoraTicket,
+  pagoInfo = null,
 }) {
   const comercioNombre = safeStr(comercio?.nombre || 'Comercio').toUpperCase()
   const direccion = safeStr(comercio?.direccion || '')
@@ -22,6 +23,9 @@ export default function ClienteDeudasTicketThermal({
 
   const ventas = arr(ventasConDeuda)
   const totalDeuda = ventas.reduce((sum, v) => sum + (parseFloat(v.monto_deuda) || 0), 0)
+  const esComprobantePago = pagoInfo && Number.isFinite(Number(pagoInfo.montoPagado))
+  const montoPagado = esComprobantePago ? Number(pagoInfo.montoPagado) || 0 : 0
+  const deudaRestante = esComprobantePago ? Math.max(0, Number(pagoInfo.deudaRestante) || 0) : 0
 
   return (
     <div className="ticket-print" translate="no">
@@ -43,7 +47,9 @@ export default function ClienteDeudasTicketThermal({
       <table className="ticket-sheet ticket-sheet--header">
         <tbody>
           <tr>
-            <td className="tk-l tk-bold">Historial de deudas</td>
+            <td className="tk-l tk-bold">
+              {esComprobantePago ? 'Comprobante de pago' : 'Historial de deudas'}
+            </td>
             <td className="tk-r">{formatearFechaHoraTicket(new Date().toISOString())}</td>
           </tr>
           <tr>
@@ -95,6 +101,26 @@ export default function ClienteDeudasTicketThermal({
             <td className="tk-l tk-bold">TOTAL DEUDA</td>
             <td className="tk-r tk-bold">{formatearMoneda(totalDeuda)}</td>
           </tr>
+          {esComprobantePago ? (
+            <>
+              <tr className="total-final-row">
+                <td className="tk-l tk-bold">Monto total pagado</td>
+                <td className="tk-r tk-bold">{formatearMoneda(montoPagado)}</td>
+              </tr>
+              {deudaRestante <= 0.01 ? (
+                <tr className="leyenda-fila">
+                  <td className="tk-full tk-bold" colSpan={2}>
+                    Deuda cancelada — Sin deuda
+                  </td>
+                </tr>
+              ) : (
+                <tr className="total-final-row">
+                  <td className="tk-l tk-bold">Deuda restante</td>
+                  <td className="tk-r tk-bold">{formatearMoneda(deudaRestante)}</td>
+                </tr>
+              )}
+            </>
+          ) : null}
         </tbody>
       </table>
 

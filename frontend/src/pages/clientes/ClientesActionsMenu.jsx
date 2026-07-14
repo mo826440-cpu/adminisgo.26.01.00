@@ -9,7 +9,9 @@ function ClientesActionsMenu({
   clienteNombre,
   debe = false,
   reporteLoading = false,
+  ticketLoading = false,
   onRegistrarPago,
+  onImprimirTicketDeudas,
   onExportPdfDeudas,
   onExportPdfTotal,
 }) {
@@ -35,6 +37,8 @@ function ClientesActionsMenu({
     setIsOpen(false)
     if (action === 'pago' && onRegistrarPago) {
       onRegistrarPago()
+    } else if (action === 'ticket-deudas' && onImprimirTicketDeudas) {
+      onImprimirTicketDeudas()
     } else if (action === 'pdf-deudas' && onExportPdfDeudas) {
       onExportPdfDeudas()
     } else if (action === 'pdf-total' && onExportPdfTotal) {
@@ -73,6 +77,15 @@ function ClientesActionsMenu({
               <span>Registrar pago</span>
             </button>
           ) : null}
+          <button
+            type="button"
+            className="actions-menu-item"
+            onClick={(e) => handleAction('ticket-deudas', e)}
+            disabled={ticketLoading || reporteLoading}
+          >
+            <i className="bi bi-printer" aria-hidden />
+            <span>Imprimir ticket de deudas</span>
+          </button>
           <button
             type="button"
             className="actions-menu-item"

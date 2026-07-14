@@ -14,6 +14,8 @@
 
   --pos-alto-botones: 40px;
   --pos-ancho-botones: 100%;
+  /* Alto total de la tabla del carrito (thead + cuerpo + tfoot) */
+  --pos-alto-tabla-carrito: 18rem;
   --pos-espacio-header-contenido: 0.75rem;
   --pos-espacio-entre-secciones: 0.5rem;
   --pos-seccion-espacio-inferior: 1.25rem;
@@ -328,6 +330,19 @@
   margin-bottom: 0;
   padding-bottom: var(--pos-seccion-espacio-inferior);
   -webkit-overflow-scrolling: touch;
+}
+
+/* La tabla del carrito (no el padding del contenedor) ocupa el alto extra */
+.pos-panel--carrito .carrito-table--carrito {
+  min-height: var(--pos-alto-tabla-carrito);
+}
+
+.pos-panel--carrito .carrito-table--carrito tbody .pos-empty-row {
+  height: calc(var(--pos-alto-tabla-carrito) - 5.5rem);
+  min-height: calc(var(--pos-alto-tabla-carrito) - 5.5rem);
+  vertical-align: middle;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .pos-pagos-card .metodos-pago-section__header {

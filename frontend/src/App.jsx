@@ -318,7 +318,7 @@ function App() {
           <Route 
             path="/ventas-rapidas/historial" 
             element={
-              <PermissionRoute modulo="ventas_rapidas">
+              <PermissionRoute modulo={['ventas', 'ventas_rapidas']}>
                 <ErrorBoundary>
                   <HistorialCajas />
                 </ErrorBoundary>

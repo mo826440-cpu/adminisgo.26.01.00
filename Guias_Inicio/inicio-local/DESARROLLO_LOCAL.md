@@ -102,3 +102,8 @@ Si algo tarda demasiado tras ampliar mucho el rango de fechas, es esperable: est
 - **Vercel:** muestra lo que está en **GitHub** después de un **push** (y el deploy que corresponda).
 
 Flujo recomendado: desarrollar y probar con `npm run dev`; cuando el bloque de trabajo esté listo, **commit + push** para actualizar el sitio en internet.
+
+
+1° cd c:\2026\adminisgo.26.01.00\frontend
+
+2° npm run dev

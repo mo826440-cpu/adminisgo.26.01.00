@@ -6,6 +6,7 @@ import { Card, Button, Spinner, Alert, Badge, Modal, Pagination } from '../../co
 import { cancelVenta } from '../../services/ventas'
 import { fetchVentasRegistros, VENTAS_REGISTROS_LIMIT, extraerOpcionesFiltroRegistros, encodeFiltroFechaRango } from '../../services/ventasListado'
 import RegistrosVentasFiltro from '../../components/ventas/RegistrosVentasFiltro'
+import VentasSharedToolsHost from '../../components/ventas/VentasSharedToolsHost'
 import {
   ventaEstaCancelada,
   getVentaEstadoDisplay,
@@ -173,9 +174,12 @@ function VentasList() {
   if (loading && ventas.length === 0) {
     return (
       <Layout>
-        <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Spinner size="lg" />
-          <p style={{ marginTop: '1rem' }}>Cargando ventas...</p>
+        <div className="container">
+          <VentasSharedToolsHost showNuevaVenta />
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <Spinner size="lg" />
+            <p style={{ marginTop: '1rem' }}>Cargando ventas...</p>
+          </div>
         </div>
       </Layout>
     )
@@ -184,6 +188,8 @@ function VentasList() {
   return (
     <Layout>
       <div className="container">
+        <VentasSharedToolsHost showNuevaVenta />
+
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}

@@ -2,8 +2,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
+import { useLayoutChrome } from '../../components/layout/LayoutChromeContext'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
 import { getHistorialCajas, deleteHistorialCaja, updateHistorialCaja } from '../../services/caja'
+import { useAuthContext } from '../../context/AuthContext'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import { getComercio } from '../../services/comercio'
@@ -13,6 +15,25 @@ import ThermalPrintPreviewModal from '../../components/common/ThermalPrintPrevie
 import TicketPrintBlock from '../../components/common/TicketPrintBlock'
 import { buildHistorialCajasThermalPlainText } from '../../utils/thermalPlainReceipt'
 import './HistorialCajas.css'
+
+function HistorialVolverToolbar() {
+  const { setToolbarEndOverride } = useLayoutChrome()
+  const { puedeModulo } = useAuthContext()
+
+  useEffect(() => {
+    const backTo = puedeModulo('ventas_rapidas')
+      ? { to: '/ventas-rapidas', label: '← Volver a Ventas rápidas' }
+      : { to: '/ventas', label: '← Volver a Ventas' }
+    setToolbarEndOverride(
+      <Link to={backTo.to}>
+        <Button variant="outline">{backTo.label}</Button>
+      </Link>,
+    )
+    return () => setToolbarEndOverride(null)
+  }, [puedeModulo, setToolbarEndOverride])
+
+  return null
+}
 
 function HistorialCajas() {
   useTicketPrintFormat()
@@ -236,6 +257,7 @@ function HistorialCajas() {
 
   return (
     <Layout>
+      <HistorialVolverToolbar />
       <div className="container">
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>

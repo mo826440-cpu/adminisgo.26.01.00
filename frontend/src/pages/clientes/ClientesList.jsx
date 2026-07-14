@@ -92,6 +92,8 @@ function ClientesList() {
   const [printCliente, setPrintCliente] = useState(null)
   const [printComercio, setPrintComercio] = useState(null)
   const [printVentasDeuda, setPrintVentasDeuda] = useState([])
+  const [printPagoInfo, setPrintPagoInfo] = useState(null)
+  const [ticketLoadingId, setTicketLoadingId] = useState(null)
 
   const formatearMoneda = (valor) => {
     const num = Number(valor || 0)
@@ -283,15 +285,40 @@ function ClientesList() {
     setPagoError(null)
   }
 
-  const prepararImpresionDeudas = async (cliente) => {
-    const [comercioData, ventasData] = await Promise.all([
-      getComercio(),
-      getVentasConDeudaPorClienteId(cliente.id),
-    ])
-    setPrintCliente(cliente)
-    setPrintComercio(comercioData.data || null)
-    setPrintVentasDeuda(ventasData.data || [])
-    setPrintOpen(true)
+  const prepararImpresionDeudas = async (cliente, options = {}) => {
+    if (!cliente?.id) return
+    setTicketLoadingId(cliente.id)
+    setError(null)
+    try {
+      const [comercioRes, ventasRes] = await Promise.all([
+        getComercio(),
+        getVentasConDeudaPorClienteId(cliente.id),
+      ])
+      if (comercioRes?.error) {
+        setError(comercioRes.error.message || 'No se pudo cargar el comercio.')
+        return
+      }
+      if (ventasRes?.error) {
+        setError(ventasRes.error.message || 'No se pudieron cargar las deudas del cliente.')
+        return
+      }
+      setPrintCliente(cliente)
+      setPrintComercio(comercioRes.data || null)
+      setPrintVentasDeuda(ventasRes.data || [])
+      setPrintPagoInfo(
+        options.pagoInfo && Number.isFinite(Number(options.pagoInfo.montoPagado))
+          ? {
+              montoPagado: Number(options.pagoInfo.montoPagado),
+              deudaRestante: Math.max(0, Number(options.pagoInfo.deudaRestante) || 0),
+            }
+          : null,
+      )
+      setPrintOpen(true)
+    } catch (err) {
+      setError(err?.message || 'No se pudo preparar el ticket de deudas.')
+    } finally {
+      setTicketLoadingId(null)
+    }
   }
 
   const handleRegistrarPago = async () => {
@@ -305,7 +332,7 @@ function ClientesList() {
     }
 
     setPagoSaving(true)
-    const { error: err } = await registrarPagoClienteDistribuido({
+    const { data: pagoData, error: err } = await registrarPagoClienteDistribuido({
       clienteId: pagoCliente.id,
       monto,
       metodo_pago: pagoMetodo,
@@ -322,10 +349,22 @@ function ClientesList() {
     const map = await getMapaDeudaPorClienteIds(ids)
     setMapaDeuda(map)
 
+    const imputado = (pagoData?.imputaciones || []).reduce(
+      (sum, it) => sum + (Number(it.monto) || 0),
+      0,
+    )
+    const montoPagadoEfectivo = imputado > 0.009 ? imputado : monto
+    const deudaRestante = map.get(Number(pagoCliente.id)) || 0
+
     setPagoSaving(false)
     setShowPagoModal(false)
 
-    await prepararImpresionDeudas(pagoCliente)
+    await prepararImpresionDeudas(pagoCliente, {
+      pagoInfo: {
+        montoPagado: montoPagadoEfectivo,
+        deudaRestante,
+      },
+    })
   }
 
   const ticketDeudasPlain = useMemo(() => {
@@ -337,8 +376,9 @@ function ClientesList() {
       formatearMoneda,
       formatearFechaHoraTicket,
       printConfig,
+      pagoInfo: printPagoInfo,
     })
-  }, [printCliente, printComercio, printVentasDeuda, printConfig, timezone])
+  }, [printCliente, printComercio, printVentasDeuda, printPagoInfo, printConfig, timezone])
 
   const deudaTotalPagoCliente = useMemo(() => {
     const cid = Number(pagoCliente?.id)
@@ -510,7 +550,9 @@ function ClientesList() {
                                 clienteNombre={cliente.nombre}
                                 debe={debe}
                                 reporteLoading={reporteLoadingId === cliente.id}
+                                ticketLoading={ticketLoadingId === cliente.id}
                                 onRegistrarPago={() => openPagoModal(cliente)}
+                                onImprimirTicketDeudas={() => prepararImpresionDeudas(cliente)}
                                 onExportPdfDeudas={() => openPdfModal(cliente, 'deudas')}
                                 onExportPdfTotal={() => openPdfModal(cliente, 'total')}
                               />
@@ -770,9 +812,16 @@ function ClientesList() {
 
       <ThermalPrintPreviewModal
         isOpen={printOpen}
-        onClose={() => setPrintOpen(false)}
+        onClose={() => {
+          setPrintOpen(false)
+          setPrintPagoInfo(null)
+        }}
         sourceRef={ticketRef}
-        ariaLabelTicket="Vista previa del ticket de deudas del cliente"
+        ariaLabelTicket={
+          printPagoInfo
+            ? 'Vista previa del comprobante de pago del cliente'
+            : 'Vista previa del ticket de deudas del cliente'
+        }
       />
     </Layout>
   )
