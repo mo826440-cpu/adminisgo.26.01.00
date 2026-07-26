@@ -1,6 +1,5 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatMoneyAR } from '../pages/reportes/reporteVentasUtils'
 
 function slugArchivo(texto) {
   const base = String(texto || 'productos')
@@ -19,6 +18,14 @@ function codigoProducto(p) {
 
 function precioKey(p) {
   return Number(parseFloat(p?.precio_venta ?? 0).toFixed(2))
+}
+
+function formatPrecioSoloNumero(val) {
+  const num = Number(val || 0)
+  return num.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 /** True si todos los productos tienen el mismo precio de venta. */
@@ -44,7 +51,25 @@ export function agruparProductosPorPrecio(productos) {
 }
 
 /**
- * Arma filas para autoTable: precio único → solo nombres; varios precios → bloques por precio.
+ * Filas para tabla unificada: Producto/Variante | Categoría | Código | Precio
+ * @param {Array} productos
+ * @param {string} categoriaNombre
+ */
+export function buildProductosListaPreciosRows(productos, categoriaNombre) {
+  const lista = Array.isArray(productos) ? productos : []
+  const categoria = String(categoriaNombre || '—').trim() || '—'
+  return [...lista]
+    .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'))
+    .map((p) => [
+      String(p.nombre || '—'),
+      categoria,
+      codigoProducto(p),
+      formatPrecioSoloNumero(p.precio_venta),
+    ])
+}
+
+/**
+ * @deprecated Preferí buildProductosListaPreciosRows. Se mantiene por compatibilidad.
  */
 export function buildProductosCategoriaPdfSections(productos) {
   const lista = Array.isArray(productos) ? productos : []
@@ -74,94 +99,99 @@ export function buildProductosCategoriaPdfSections(productos) {
   }
 }
 
+const HEADER_TEAL = [22, 78, 99]
+const ROW_BLUE = [186, 220, 240]
+const ROW_BLUE_ALT = [210, 232, 246]
+
 /**
- * PDF de listado de productos filtrados por categoría.
- * Si todos comparten precio, se imprime una sola vez en la categoría (sin repetir por producto).
+ * PDF lista de precios (tabla única: producto, categoría, código, precio).
  * @param {{ categoriaNombre: string, productos: Array<{ nombre?: string, codigo_barras?: string, codigo_interno?: string, precio_venta?: number }> }} opts
  */
 export function downloadProductosCategoriaPdf({ categoriaNombre, productos }) {
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
   const tituloCategoria = String(categoriaNombre || '').trim()
   if (!tituloCategoria) return
+
+  const margin = 14
+  const lista = Array.isArray(productos) ? productos : []
+  const body = buildProductosListaPreciosRows(lista, tituloCategoria)
+
+  doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  doc.text('LISTA DE PRECIOS', margin, 18)
+
+  autoTable(doc, {
+    startY: 24,
+    head: [['Producto/Variante', 'Categoría', 'Código', 'Precio']],
+    body:
+      body.length > 0
+        ? body
+        : [['—', tituloCategoria, '—', formatPrecioSoloNumero(0)]],
+    theme: 'grid',
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 2.2, bottom: 2.2, left: 2.5, right: 2.5 },
+      lineColor: [255, 255, 255],
+      lineWidth: 0.35,
+      textColor: [0, 0, 0],
+      valign: 'middle',
+      fillColor: ROW_BLUE,
+    },
+    headStyles: {
+      fillColor: HEADER_TEAL,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      halign: 'center',
+      valign: 'middle',
+      lineColor: [255, 255, 255],
+      lineWidth: 0.35,
+    },
+    alternateRowStyles: {
+      fillColor: ROW_BLUE_ALT,
+    },
+    columnStyles: {
+      0: { cellWidth: 'auto', halign: 'left' },
+      1: { cellWidth: 32, halign: 'center' },
+      2: { cellWidth: 38, halign: 'center' },
+      3: { cellWidth: 32, halign: 'right', cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 } },
+    },
+    margin: { left: margin, right: margin, bottom: 20 },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 3) {
+        // El texto lo dibujamos en didDrawCell ($ izq. + monto der.)
+        data.cell.text = ['']
+      }
+    },
+    didDrawCell: (data) => {
+      if (data.section !== 'body' || data.column.index !== 3) return
+      const raw = body[data.row.index]?.[3]
+      if (raw == null) return
+      const { x, y, width, height } = data.cell
+      const padX = 2.5
+      const midY = y + height / 2 + 1
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(0, 0, 0)
+      doc.text('$', x + padX, midY)
+      doc.text(String(raw), x + width - padX, midY, { align: 'right' })
+    },
+  })
+
   const generado = new Date().toLocaleString('es-AR', {
     dateStyle: 'long',
     timeStyle: 'short',
   })
-
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Listado de precios', 14, 16)
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-
-  const lista = Array.isArray(productos) ? productos : []
-  const layout = buildProductosCategoriaPdfSections(lista)
-
-  let startY = 23
-  if (layout.mode === 'uniform') {
-    doc.text(`Categoría: ${tituloCategoria}`, 14, startY)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Precio: ${formatMoneyAR(layout.precioUnico)}`, 14, startY + 6)
-    doc.setFont('helvetica', 'normal')
-    startY += 12
-  } else if (layout.mode === 'grouped') {
-    doc.text(`Categoría: ${tituloCategoria}`, 14, startY)
-    startY += 7
-  } else {
-    doc.text(`Categoría: ${tituloCategoria}`, 14, startY)
-    startY += 7
-  }
-
-  if (layout.mode === 'empty') {
-    autoTable(doc, {
-      startY,
-      head: [['Nombre', 'Código']],
-      body: [['—', 'Sin productos en esta categoría']],
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [22, 78, 99] },
-      margin: { left: 14, right: 14, bottom: 24 },
-    })
-  } else if (layout.mode === 'uniform') {
-    autoTable(doc, {
-      startY,
-      head: [['Producto / variante', 'Código']],
-      body: layout.sections[0].rows,
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [22, 78, 99] },
-      alternateRowStyles: { fillColor: [241, 245, 249] },
-      margin: { left: 14, right: 14, bottom: 24 },
-    })
-  } else {
-    let y = startY
-    layout.sections.forEach((section, idx) => {
-      if (idx > 0) y = (doc.lastAutoTable?.finalY ?? y) + 8
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text(`Precio: ${formatMoneyAR(section.precio)}`, 14, y)
-      doc.setFont('helvetica', 'normal')
-      autoTable(doc, {
-        startY: y + 3,
-        head: [['Producto / variante', 'Código']],
-        body: section.rows,
-        styles: { fontSize: 9, cellPadding: 2 },
-        headStyles: { fillColor: [22, 78, 99] },
-        alternateRowStyles: { fillColor: [241, 245, 249] },
-        margin: { left: 14, right: 14, bottom: 24 },
-      })
-    })
-  }
-
   const pageH = doc.internal.pageSize.getHeight()
-  let yPie = (doc.lastAutoTable?.finalY ?? startY) + 12
-  if (yPie > pageH - 20) {
+  let yPie = (doc.lastAutoTable?.finalY ?? 24) + 10
+  if (yPie > pageH - 16) {
     doc.addPage()
-    yPie = pageH - 18
+    yPie = pageH - 14
   }
-  doc.setFontSize(9)
+  doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(60, 60, 60)
-  doc.text(`Categoría: ${tituloCategoria}`, 14, yPie)
-  doc.text(`Fecha de generación del reporte: ${generado}`, 14, yPie + 5)
+  doc.setTextColor(80, 80, 80)
+  doc.text(`Fecha de generación: ${generado}`, margin, yPie)
   doc.setTextColor(0, 0, 0)
 
   const fechaArchivo = new Date().toISOString().slice(0, 10)
