@@ -345,7 +345,7 @@ function VentasPruebaList() {
             <input
               type="search"
               className="form-control"
-              placeholder="Buscar por cliente, comprobante, código..."
+              placeholder="Buscar por cliente o comprobante..."
               value={busquedaDraft}
               onChange={(e) => setBusquedaDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -476,7 +476,6 @@ function VentasPruebaList() {
                     <tr>
                       <th>Fecha</th>
                       <th>Cliente</th>
-                      <th className="hide-mobile">Comprobante</th>
                       <th>Total</th>
                       <th className="hide-mobile">Cobrado</th>
                       <th className="hide-mobile">Deuda</th>
@@ -497,9 +496,6 @@ function VentasPruebaList() {
                         >
                           <td>{formatearFecha(fechaDisplay)}</td>
                           <td>{venta.clientes?.nombre || 'Cliente genérico'}</td>
-                          <td className="hide-mobile">
-                            {venta.numero_ticket ? `#${venta.numero_ticket}` : `V-${venta.id}`}
-                          </td>
                           <td className="vp-money">{formatearMoneda(venta.total)}</td>
                           <td className="hide-mobile">{formatearMoneda(venta.monto_pagado)}</td>
                           <td className={`hide-mobile${deuda.debt ? ' vp-money--warning' : ''}`}>
