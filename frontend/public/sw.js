@@ -2,7 +2,7 @@
 // IMPORTANTE: Cambiar esta versión cuando quieras forzar una actualización
 // El navegador detectará automáticamente cuando este archivo cambia
 
-const SW_VERSION = '2.1'; // Incrementar este número para forzar actualización
+const SW_VERSION = '2.6'; // Incrementar este número para forzar actualización
 const CACHE_NAME = `adminis-go-${SW_VERSION}`;
 const RUNTIME_CACHE = `adminis-go-runtime-${SW_VERSION}`;
 
@@ -10,8 +10,16 @@ const RUNTIME_CACHE = `adminis-go-runtime-${SW_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/favicon.svg',
+  '/favicon-adminisgo.svg',
+  '/adminisgo-icon.svg',
   '/favicon.ico',
+  '/favicon-16.png',
+  '/favicon-32.png',
+  '/favicon-48.png',
   '/favicon-96x96.png',
+  '/icon-192.png',
+  '/icon-512.png',
   '/apple-touch-icon.png'
 ];
 

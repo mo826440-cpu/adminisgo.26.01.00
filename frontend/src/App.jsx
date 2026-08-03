@@ -35,6 +35,10 @@ import VentaDetalle from './pages/ventas/VentaDetalle'
 import VentasRapidas from './pages/ventas/VentasRapidas'
 import HistorialCajas from './pages/ventas/HistorialCajas'
 import VentaRapidaDetalle from './pages/ventas/VentaRapidaDetalle'
+import VentasPruebaList from './pages/ventas-prueba/VentasPruebaList'
+import VentasPruebaCaja from './pages/ventas-prueba/VentasPruebaCaja'
+import VentaRapidaPrueba from './pages/ventas-prueba/VentaRapidaPrueba'
+import VentaDetalladaPrueba from './pages/ventas-prueba/VentaDetalladaPrueba'
 import Configuracion from './pages/configuracion/Configuracion'
 import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
@@ -304,6 +308,57 @@ function App() {
                 </ErrorBoundary>
               </PermissionRoute>
             } 
+          />
+          {/* Ventas Prueba (rediseño paralelo; reutiliza lógica/servicios de ventas) */}
+          <Route
+            path="/ventas-prueba"
+            element={
+              <PermissionRoute modulo="ventas">
+                <ErrorBoundary>
+                  <VentasPruebaList />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas-prueba/caja"
+            element={
+              <PermissionRoute modulo={['ventas', 'ventas_rapidas']}>
+                <ErrorBoundary>
+                  <VentasPruebaCaja />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas-prueba/rapida"
+            element={
+              <PermissionRoute modulo={['ventas', 'ventas_rapidas']}>
+                <ErrorBoundary>
+                  <VentaRapidaPrueba />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas-prueba/nueva"
+            element={
+              <PermissionRoute modulo="ventas">
+                <ErrorBoundary>
+                  <VentaDetalladaPrueba />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas-prueba/:id/editar"
+            element={
+              <PermissionRoute modulo="ventas">
+                <ErrorBoundary>
+                  <VentaDetalladaPrueba />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
           />
           <Route 
             path="/ventas-rapidas" 

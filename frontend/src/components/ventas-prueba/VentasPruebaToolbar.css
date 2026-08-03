@@ -1,0 +1,43 @@
+.vp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vp-toolbar__btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 10px !important;
+  padding: 0.45rem 0.75rem !important;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.vp-toolbar__btn.is-active {
+  border-color: color-mix(in srgb, #2563eb 55%, var(--border-color)) !important;
+  background: color-mix(in srgb, #2563eb 16%, transparent) !important;
+  color: #93c5fd !important;
+}
+
+.vp-toolbar__btn--primary.is-active,
+.vp-toolbar a .btn-primary.vp-toolbar__btn {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+}
+
+.vp-toolbar__label {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .vp-toolbar__label {
+    display: none;
+  }
+
+  .vp-toolbar__btn {
+    padding: 0.45rem 0.55rem !important;
+  }
+}

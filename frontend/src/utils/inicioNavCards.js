@@ -77,6 +77,13 @@ export function buildInicioNavCards(puedeModulo, isAdmin) {
       icon: 'bi-graph-up-arrow',
       to: '/ventas',
     })
+    push({
+      key: 'ventas_prueba',
+      title: 'Ventas Prueba',
+      subtitle: 'Rediseño visual del módulo',
+      icon: 'bi-stars',
+      to: '/ventas-prueba',
+    })
   }
 
   if (puedeModulo('ventas_rapidas')) {

@@ -1,0 +1,105 @@
+.vp-caja-page {
+  padding-bottom: 1.5rem;
+}
+
+.vp-caja-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.vp-caja-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 10px;
+}
+
+.vp-caja-link {
+  font-size: 0.85rem;
+  color: #60a5fa;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.vp-caja-link:hover {
+  text-decoration: underline;
+}
+
+.vp-caja-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.vp-caja-tipo__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vp-caja-tipo--apertura {
+  color: #4ade80;
+}
+
+.vp-caja-tipo--venta {
+  color: #60a5fa;
+}
+
+.vp-caja-tipo--egreso {
+  color: #fb923c;
+}
+
+.vp-caja-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.vp-caja-row-action:hover {
+  background: color-mix(in srgb, #2563eb 14%, transparent);
+}
+
+.vp-caja-info {
+  margin-top: 1rem;
+}
+
+.vp-caja-info p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+}
+
+.vp-caja-cierre-desglose {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 1rem;
+  font-size: 0.95rem;
+}
+
+.vp-caja-cierre-total {
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .vp-caja-cierre-desglose {
+    grid-template-columns: 1fr;
+  }
+}

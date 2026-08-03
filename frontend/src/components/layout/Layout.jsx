@@ -1,6 +1,6 @@
 // Componente Layout principal
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useMemo, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import ModuleGlassPageHeader from './ModuleGlassPageHeader'
@@ -11,6 +11,7 @@ import './Layout.css'
 import './appModuleGlassPanels.css'
 
 const STORAGE_KEY = 'layoutSidebarOpen'
+const STORAGE_COMPACT_KEY = 'layoutSidebarCompact'
 
 function readInitialSidebarOpen() {
   if (typeof window === 'undefined') return false
@@ -18,6 +19,16 @@ function readInitialSidebarOpen() {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'true') return true
     if (saved === 'false') return false
+  } catch {
+    /* ignore */
+  }
+  return false
+}
+
+function readInitialSidebarCompact() {
+  if (typeof window === 'undefined') return false
+  try {
+    return localStorage.getItem(STORAGE_COMPACT_KEY) === 'true'
   } catch {
     /* ignore */
   }
@@ -34,6 +45,7 @@ function Layout({ children }) {
     [isModuleGlassNav, location.pathname],
   )
   const [sidebarOpen, setSidebarOpen] = useState(readInitialSidebarOpen)
+  const [sidebarCompact, setSidebarCompact] = useState(readInitialSidebarCompact)
   const [toolbarEndOverride, setToolbarEndOverride] = useState(null)
 
   const toggleSidebar = useCallback(() => {
@@ -41,6 +53,18 @@ function Layout({ children }) {
       const next = !prev
       try {
         localStorage.setItem(STORAGE_KEY, String(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }, [])
+
+  const toggleSidebarCompact = useCallback(() => {
+    setSidebarCompact((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(STORAGE_COMPACT_KEY, String(next))
       } catch {
         /* ignore */
       }
@@ -57,10 +81,9 @@ function Layout({ children }) {
     }
   }
 
-  // Limpiar override al cambiar de ruta (evita toolbar de otra página)
-  useEffect(() => {
-    setToolbarEndOverride(null)
-  }, [location.pathname])
+  // No limpiar el override aquí al cambiar de ruta: este effect corre después
+  // del set del hijo (VentasSharedToolsHost / VentasPruebaToolbar) y borraba la toolbar.
+  // Cada página limpia en el cleanup de su propio useEffect al desmontar.
 
   const setToolbarEndOverrideStable = useCallback((node) => {
     setToolbarEndOverride(node)
@@ -80,6 +103,7 @@ function Layout({ children }) {
   const layoutClassName = [
     'layout',
     sidebarOpen ? 'layout--nav-open' : '',
+    sidebarOpen && sidebarCompact ? 'layout--nav-compact' : '',
     isHubFullscreen ? 'layout--hub-fullscreen' : '',
     isModuleGlassNav ? 'layout--module-glass-nav' : '',
   ]
@@ -95,7 +119,12 @@ function Layout({ children }) {
         />
         <div className="layout-body">
           <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={closeSidebar} />
-          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+            isCompact={sidebarCompact}
+            onToggleCompact={toggleSidebarCompact}
+          />
           <main className="layout-main layout-main--cosmic">
             <div className="layout-main-atmosphere" aria-hidden>
               <div className="lh-blob lh-blob--cyan" />
@@ -105,15 +134,14 @@ function Layout({ children }) {
             </div>
             <div className="layout-main__content">
               {moduleChrome ? (
-                <div className="container layout-module-glass-header-wrap">
-                  <ModuleGlassPageHeader
-                    kicker={moduleChrome.kicker}
-                    title={moduleChrome.title}
-                    subtitle={moduleChrome.subtitle}
-                    iconClass={moduleChrome.icon}
-                    toolbarEnd={resolvedToolbarEnd}
-                  />
-                </div>
+                <ModuleGlassPageHeader
+                  key={location.pathname}
+                  kicker={moduleChrome.kicker}
+                  title={moduleChrome.title}
+                  subtitle={moduleChrome.subtitle}
+                  iconClass={moduleChrome.icon}
+                  toolbarEnd={resolvedToolbarEnd}
+                />
               ) : null}
               {children}
             </div>
@@ -131,15 +159,6 @@ function Layout({ children }) {
             >
               <i className="bi bi-list" aria-hidden />
             </button>
-            <Link
-              to="/inicio"
-              className={`layout-nav-chrome__btn layout-nav-chrome__home${isHubFullscreen && location.pathname === '/inicio' ? ' layout-nav-chrome__btn--active' : ''}`}
-              title="Panel de inicio"
-              aria-label="Panel de inicio"
-              aria-current={location.pathname === '/inicio' ? 'page' : undefined}
-            >
-              <i className="bi bi-grid-1x2-fill" aria-hidden />
-            </Link>
           </div>
         ) : null}
       </div>

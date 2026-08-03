@@ -87,6 +87,8 @@ export function getTicketBoldLinePrefixes() {
     'TOTAL DEUDA',
     'TOTAL PAGADO',
     'TOTAL VENTA',
+    'TOTAL DESCUENTO',
+    'TOTAL FINAL VENTA',
     'TOTAL COMPRA',
     'Firma',
     'FIRMA',

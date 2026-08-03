@@ -262,12 +262,21 @@ export function buildVentaThermalPlainText({
 
   const tailPad = rapida ? wQ + wT : wQ + wU + wT
 
+  let totalVentaBruto = 0
+  let totalDescuentoMonto = 0
+
   ;(venta.items || []).forEach((it) => {
-    let nameBase = String(it.productos?.nombre || '-').trim()
-    if ((it.descuento || 0) > 0) nameBase += ` (-${Number(it.descuento)}%)`
+    const nameBase = String(it.productos?.nombre || '-').trim() || '-'
     const wrapLines = nameBase.length ? wrapGreedyChars(nameBase, wP) : ['-']
-    const unitStr = formatearMoneda(it.precio_unitario)
-    const totStr = formatearMoneda(it.subtotal)
+    const qty = Number(it.cantidad) || 0
+    const precioUnit = Number(it.precio_unitario) || 0
+    const brutoLinea = qty * precioUnit
+    const descPct = Number(it.descuento) || 0
+    totalVentaBruto += brutoLinea
+    totalDescuentoMonto += brutoLinea * (descPct / 100)
+
+    const unitStr = formatearMoneda(precioUnit)
+    const totStr = formatearMoneda(brutoLinea)
     const qtyStr = String(it.cantidad ?? '')
     wrapLines.forEach((nameLine, lineIdx) => {
       if (lineIdx === 0) {
@@ -290,7 +299,34 @@ export function buildVentaThermalPlainText({
   }
 
   lines.push(thermalDash(cols))
-  lines.push(thermalDetailLine('TOTAL VENTA', formatearMoneda(venta.total), cols))
+
+  if (rapida) {
+    lines.push(thermalDetailLine('TOTAL VENTA', formatearMoneda(venta.total), cols))
+  } else {
+    if (Number(venta.descuento) > 0.009) {
+      totalDescuentoMonto = Number(venta.descuento)
+    }
+    const totalFinal =
+      Number(venta.total) > 0.009
+        ? Number(venta.total)
+        : Math.max(0, totalVentaBruto - totalDescuentoMonto)
+    const pctDescuento =
+      totalVentaBruto > 0.009 ? (totalDescuentoMonto / totalVentaBruto) * 100 : 0
+    const pctStr = pctDescuento.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+
+    lines.push(thermalDetailLine('TOTAL VENTA', formatearMoneda(totalVentaBruto), cols))
+    lines.push(
+      thermalDetailLine(
+        'TOTAL DESCUENTO',
+        `- ${formatearMoneda(totalDescuentoMonto)} (-${pctStr} %)`,
+        cols
+      )
+    )
+    lines.push(thermalDetailLine('TOTAL FINAL VENTA', formatearMoneda(totalFinal), cols))
+  }
 
   if (cfg.mostrarFormasPago !== false) {
     if ((venta.pagos || []).length > 0) {

@@ -170,13 +170,121 @@ function buildVentasRegistrosQuery(filtroTipo, filtroValor) {
   return applyFiltroToQuery(q, filtroTipo, filtroValor)
 }
 
+/** Escapa caracteres especiales de filtros PostgREST / ilike. */
+function escapeFiltroTexto(valor) {
+  return String(valor || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+    .replace(/,/g, ' ')
+    .replace(/\./g, ' ')
+    .trim()
+}
+
+/**
+ * Aplica varios filtros a la vez (módulo Ventas Prueba y usos futuros).
+ * @param {object} q
+ * @param {{
+ *   fechaDesde?: string,
+ *   fechaHasta?: string,
+ *   clienteId?: string,
+ *   estado?: string,
+ *   metodoPago?: string,
+ *   busqueda?: string,
+ *   clienteIdsBusqueda?: number[],
+ * }} filtros
+ */
+function applyFiltrosCompuestos(q, filtros = {}) {
+  let query = q
+  const fechaDesde = String(filtros.fechaDesde || '').trim()
+  const fechaHasta = String(filtros.fechaHasta || fechaDesde || '').trim()
+  if (fechaDesde && fechaHasta) {
+    const inicio = ymdToDayBounds(fechaDesde, false)
+    const fin = ymdToDayBounds(fechaHasta, true)
+    if (inicio && fin) {
+      query = query.gte('fecha_hora', inicio.toISOString()).lte('fecha_hora', fin.toISOString())
+    }
+  }
+
+  const clienteId = String(filtros.clienteId || '').trim()
+  if (clienteId === '__generico__') {
+    query = query.is('cliente_id', null)
+  } else if (clienteId) {
+    const id = Number(clienteId)
+    if (Number.isFinite(id) && id > 0) {
+      query = query.eq('cliente_id', id)
+    }
+  }
+
+  const metodoPago = String(filtros.metodoPago || '').trim()
+  if (metodoPago) {
+    query = query.ilike('metodo_pago', `%${metodoPago}%`)
+  }
+
+  const estado = String(filtros.estado || '').trim().toLowerCase()
+  if (estado === 'cancelado' || estado === 'cancelada') {
+    query = query.eq('estado', VENTA_ESTADO_CANCELADA)
+  } else if (estado === 'pagado') {
+    query = query.lte('monto_deuda', 0.009).neq('estado', VENTA_ESTADO_CANCELADA)
+  } else if (estado === 'pendiente' || estado === 'debe') {
+    query = query.gt('monto_deuda', 0.009).neq('estado', VENTA_ESTADO_CANCELADA)
+  }
+
+  const busqueda = escapeFiltroTexto(filtros.busqueda)
+  if (busqueda) {
+    const parts = [`numero_ticket.ilike.%${busqueda}%`]
+    if (/^\d+$/.test(busqueda)) {
+      parts.push(`id.eq.${busqueda}`)
+    }
+    const ids = Array.isArray(filtros.clienteIdsBusqueda)
+      ? filtros.clienteIdsBusqueda.filter((id) => Number.isFinite(Number(id)))
+      : []
+    if (ids.length > 0) {
+      parts.push(`cliente_id.in.(${ids.join(',')})`)
+    }
+    const gen = busqueda.toLowerCase()
+    if (gen.includes('generic') || gen.includes('genéric') || gen.includes('consumidor')) {
+      parts.push('cliente_id.is.null')
+    }
+    query = query.or(parts.join(','))
+  }
+
+  return query
+}
+
+async function resolverClienteIdsPorBusqueda(busqueda) {
+  const q = escapeFiltroTexto(busqueda)
+  if (!q || q.length < 2) return []
+  try {
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('id')
+      .ilike('nombre', `%${q}%`)
+      .eq('activo', true)
+      .limit(200)
+    if (error) throw error
+    return (data || []).map((c) => c.id).filter((id) => id != null)
+  } catch (err) {
+    console.error('Error al buscar clientes para filtro de ventas:', err)
+    return []
+  }
+}
+
 /**
  * @param {{
  *   page?: number,
  *   pageSize?: number,
  *   limit?: number,
  *   filtroTipo?: '' | 'fecha' | 'cliente' | 'metodo_pago' | 'estado',
- *   filtroValor?: string
+ *   filtroValor?: string,
+ *   filtros?: {
+ *     fechaDesde?: string,
+ *     fechaHasta?: string,
+ *     clienteId?: string,
+ *     estado?: string,
+ *     metodoPago?: string,
+ *     busqueda?: string,
+ *   }
  * }} [opts]
  */
 export async function fetchVentasRegistros(opts = {}) {
@@ -184,15 +292,27 @@ export async function fetchVentasRegistros(opts = {}) {
   const page = Math.max(1, Number(opts.page) || 1)
   const filtroTipo = opts.filtroTipo ?? ''
   const filtroValor = opts.filtroValor ?? ''
+  const filtros = opts.filtros && typeof opts.filtros === 'object' ? opts.filtros : null
 
   try {
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
 
-    const { data, error, count } = await buildVentasRegistrosQuery(filtroTipo, filtroValor).range(
-      from,
-      to,
-    )
+    let query
+    if (filtros) {
+      const busqueda = String(filtros.busqueda || '').trim()
+      const clienteIdsBusqueda = busqueda ? await resolverClienteIdsPorBusqueda(busqueda) : []
+      query = supabase
+        .from('ventas')
+        .select(VENTAS_REGISTROS_SELECT, { count: 'exact' })
+        .is('deleted_at', null)
+        .order('fecha_hora', { ascending: false })
+      query = applyFiltrosCompuestos(query, { ...filtros, clienteIdsBusqueda })
+    } else {
+      query = buildVentasRegistrosQuery(filtroTipo, filtroValor)
+    }
+
+    const { data, error, count } = await query.range(from, to)
     if (error) throw error
 
     const hydrated = await hydrateVentasRowsWithClienteUsuarioNombre(data || [])

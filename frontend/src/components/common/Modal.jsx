@@ -1,5 +1,6 @@
 // Componente Modal reutilizable
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from './index'
 import './Modal.css'
 
@@ -44,7 +45,7 @@ function Modal({
     }
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className={`modal modal-${variant}`}>
         <div className="modal-header">
@@ -69,9 +70,9 @@ function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
 export default Modal
-
