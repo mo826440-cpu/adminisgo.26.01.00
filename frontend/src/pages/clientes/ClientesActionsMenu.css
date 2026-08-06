@@ -7,15 +7,16 @@
   padding: 0.35rem 0.45rem;
 }
 
-.clientes-td-acciones .actions-menu-dropdown {
-  right: 0;
-  left: auto;
-  min-width: 210px;
+.clientes-actions-dropdown {
+  min-width: 220px;
 }
 
-@media (max-width: 768px) {
-  .clientes-td-acciones .actions-menu-dropdown {
-    right: auto;
-    left: 0;
-  }
+.clientes-actions-dropdown .actions-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.clientes-actions-dropdown .actions-menu-item:disabled:hover {
+  background: none;
+  color: var(--text-primary);
 }

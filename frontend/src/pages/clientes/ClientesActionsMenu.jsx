@@ -1,8 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/common'
 import '../ventas/ActionsMenu.css'
 import './ClientesActionsMenu.css'
+
+const MENU_GAP = 4
+const ITEM_HEIGHT = 48
 
 function ClientesActionsMenu({
   clienteId,
@@ -16,12 +20,52 @@ function ClientesActionsMenu({
   onExportPdfTotal,
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef(null)
+  const [menuStyle, setMenuStyle] = useState(null)
+  const buttonRef = useRef(null)
+  const dropdownRef = useRef(null)
   const navigate = useNavigate()
+
+  const menuItemCount = (debe ? 1 : 0) + 4
+
+  const updateMenuPosition = useCallback(() => {
+    const btn = buttonRef.current
+    if (!btn) return
+
+    const rect = btn.getBoundingClientRect()
+    const measuredH = dropdownRef.current?.offsetHeight
+    const menuH = measuredH > 0 ? measuredH : menuItemCount * ITEM_HEIGHT
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUp = spaceBelow < menuH + MENU_GAP && rect.top > spaceBelow
+
+    if (openUp) {
+      setMenuStyle({
+        position: 'fixed',
+        right: Math.max(8, window.innerWidth - rect.right),
+        bottom: window.innerHeight - rect.top + MENU_GAP,
+        top: 'auto',
+        left: 'auto',
+        marginTop: 0,
+        zIndex: 6000,
+      })
+      return
+    }
+
+    setMenuStyle({
+      position: 'fixed',
+      top: rect.bottom + MENU_GAP,
+      right: Math.max(8, window.innerWidth - rect.right),
+      left: 'auto',
+      bottom: 'auto',
+      marginTop: 0,
+      zIndex: 6000,
+    })
+  }, [menuItemCount])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      const inButton = buttonRef.current?.contains(event.target)
+      const inDropdown = dropdownRef.current?.contains(event.target)
+      if (!inButton && !inDropdown) {
         setIsOpen(false)
       }
     }
@@ -30,6 +74,18 @@ function ClientesActionsMenu({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    updateMenuPosition()
+    const onScrollOrResize = () => updateMenuPosition()
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
+  }, [isOpen, updateMenuPosition])
 
   const handleAction = (action, e) => {
     e.preventDefault()
@@ -48,69 +104,80 @@ function ClientesActionsMenu({
     }
   }
 
-  return (
-    <div className="actions-menu-wrapper clientes-actions-menu" ref={menuRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setIsOpen(!isOpen)
-        }}
-        className="actions-menu-button"
-        title="Acciones"
-        aria-label={`Acciones de ${clienteNombre}`}
-        aria-expanded={isOpen}
+  const dropdown =
+    isOpen && menuStyle ? (
+      <div
+        ref={dropdownRef}
+        className="actions-menu-dropdown clientes-actions-dropdown"
+        style={menuStyle}
+        role="menu"
       >
-        <i className="bi bi-three-dots-vertical" aria-hidden />
-      </Button>
-      {isOpen && (
-        <div className="actions-menu-dropdown">
-          {debe ? (
-            <button
-              type="button"
-              className="actions-menu-item"
-              onClick={(e) => handleAction('pago', e)}
-            >
-              <i className="bi bi-cash-coin" aria-hidden />
-              <span>Registrar pago</span>
-            </button>
-          ) : null}
+        {debe ? (
           <button
             type="button"
             className="actions-menu-item"
-            onClick={(e) => handleAction('ticket-deudas', e)}
-            disabled={ticketLoading || reporteLoading}
+            onClick={(e) => handleAction('pago', e)}
           >
-            <i className="bi bi-printer" aria-hidden />
-            <span>Imprimir ticket de deudas</span>
+            <i className="bi bi-cash-coin" aria-hidden />
+            <span>Registrar pago</span>
           </button>
-          <button
-            type="button"
-            className="actions-menu-item"
-            onClick={(e) => handleAction('pdf-deudas', e)}
-            disabled={reporteLoading}
-          >
-            <i className="bi bi-file-earmark-pdf" aria-hidden />
-            <span>PDF ventas con deuda</span>
-          </button>
-          <button
-            type="button"
-            className="actions-menu-item"
-            onClick={(e) => handleAction('pdf-total', e)}
-            disabled={reporteLoading}
-          >
-            <i className="bi bi-file-earmark-pdf" aria-hidden />
-            <span>PDF historial total</span>
-          </button>
-          <button type="button" className="actions-menu-item" onClick={(e) => handleAction('editar', e)}>
-            <i className="bi bi-pencil" aria-hidden />
-            <span>Editar</span>
-          </button>
-        </div>
-      )}
-    </div>
+        ) : null}
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('ticket-deudas', e)}
+          disabled={ticketLoading || reporteLoading}
+        >
+          <i className="bi bi-printer" aria-hidden />
+          <span>Imprimir ticket de deudas</span>
+        </button>
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('pdf-deudas', e)}
+          disabled={reporteLoading}
+        >
+          <i className="bi bi-file-earmark-pdf" aria-hidden />
+          <span>PDF ventas con deuda</span>
+        </button>
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('pdf-total', e)}
+          disabled={reporteLoading}
+        >
+          <i className="bi bi-file-earmark-pdf" aria-hidden />
+          <span>PDF historial total</span>
+        </button>
+        <button type="button" className="actions-menu-item" onClick={(e) => handleAction('editar', e)}>
+          <i className="bi bi-pencil" aria-hidden />
+          <span>Editar</span>
+        </button>
+      </div>
+    ) : null
+
+  return (
+    <>
+      <div className="actions-menu-wrapper clientes-actions-menu" ref={buttonRef}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsOpen((prev) => !prev)
+          }}
+          className="actions-menu-button"
+          title="Acciones"
+          aria-label={`Acciones de ${clienteNombre}`}
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+        >
+          <i className="bi bi-three-dots-vertical" aria-hidden />
+        </Button>
+      </div>
+      {typeof document !== 'undefined' && dropdown ? createPortal(dropdown, document.body) : null}
+    </>
   )
 }
 
