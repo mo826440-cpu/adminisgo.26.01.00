@@ -1,4 +1,4 @@
-/* Tokens y utilidades del módulo Ventas Prueba (aislado del módulo original) */
+/* Tokens y utilidades del módulo Ventas */
 .vp-module {
   --vp-bg: transparent;
   --vp-surface: color-mix(in srgb, var(--bg-secondary) 88%, #0b1220);

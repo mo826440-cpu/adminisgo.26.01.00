@@ -182,7 +182,7 @@ function escapeFiltroTexto(valor) {
 }
 
 /**
- * Aplica varios filtros a la vez (módulo Ventas Prueba y usos futuros).
+ * Aplica varios filtros a la vez (módulo Ventas y usos futuros).
  * @param {object} q
  * @param {{
  *   fechaDesde?: string,

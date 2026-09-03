@@ -57,6 +57,16 @@
   color: var(--color-danger);
 }
 
+.actions-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actions-menu-item:disabled:hover {
+  background: none;
+  color: var(--text-primary);
+}
+
 .actions-menu-item i {
   font-size: 1rem;
   width: 20px;

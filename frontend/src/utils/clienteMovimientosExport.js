@@ -143,3 +143,80 @@ export function downloadClienteMovimientosPdf(clienteNombre, ventasRaw, options 
     `movimientos_${tipoSlug}_${slugArchivo(clienteNombre)}_${new Date().toISOString().slice(0, 10)}.pdf`
   )
 }
+
+function formatMontoOGuion(valor) {
+  const n = Number(valor) || 0
+  if (Math.abs(n) <= 0.009) return '—'
+  return formatMoneyAR(n)
+}
+
+/**
+ * PDF de estado de cuenta (libro de movimientos de la cuenta corriente).
+ * @param {string} clienteNombre
+ * @param {Array<Record<string, unknown>>} movimientos
+ * @param {{
+ *  periodoLabel?: string,
+ *  totalCredito?: number,
+ *  totalCobrado?: number,
+ *  saldoPendiente?: number,
+ * }} [options]
+ */
+export function downloadClienteEstadoCuentaPdf(clienteNombre, movimientos, options = {}) {
+  const lista = Array.isArray(movimientos) ? movimientos : []
+  const periodoLabel = options.periodoLabel || 'Período: todo el historial'
+  const totalCredito = Number(options.totalCredito) || 0
+  const totalCobrado = Number(options.totalCobrado) || 0
+  const saldoPendiente = Number(options.saldoPendiente) || 0
+
+  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Estado de cuenta corriente', 14, 16)
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Cliente: ${String(clienteNombre || '—')}`, 14, 23)
+  doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, 14, 28)
+  doc.text(periodoLabel, 14, 33)
+
+  const body =
+    lista.length === 0
+      ? [['—', 'Sin movimientos en el criterio seleccionado', '', '', '', '']]
+      : lista.map((m) => [
+          m.esSaldoAnterior ? String(m.fechaLabel || 'Mes anterior') : formatFechaCorta(m.fecha),
+          `${m.anulado ? '[ANULADO] ' : ''}${String(m.detalle || '—')}`,
+          formatMontoOGuion(m.cargo),
+          formatMontoOGuion(m.pago),
+          formatMontoOGuion(m.resto),
+          formatMoneyAR(m.saldo),
+        ])
+
+  autoTable(doc, {
+    startY: 38,
+    head: [['Fecha', 'Detalle de la operación', 'Cargo / Venta', 'Pago / Cobro', 'Resto venta', 'Saldo pendiente']],
+    body,
+    styles: { fontSize: 7, cellPadding: 1.2 },
+    headStyles: { fillColor: [22, 78, 99] },
+    alternateRowStyles: { fillColor: [241, 245, 249] },
+    columnStyles: {
+      2: { halign: 'right' },
+      3: { halign: 'right' },
+      4: { halign: 'right' },
+      5: { halign: 'right' },
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  const finalY = (doc.lastAutoTable?.finalY ?? 38) + 8
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Total vendido a crédito: ${formatMoneyAR(totalCredito)}`, 14, finalY)
+  doc.text(`Total cobrado: ${formatMoneyAR(totalCobrado)}`, 14, finalY + 5)
+  doc.text(`Saldo pendiente: ${formatMoneyAR(saldoPendiente)}`, 14, finalY + 10)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text(`${lista.length} movimiento(s) incluido(s)`, 14, finalY + 16)
+
+  doc.save(
+    `estado_cuenta_${slugArchivo(clienteNombre)}_${new Date().toISOString().slice(0, 10)}.pdf`
+  )
+}

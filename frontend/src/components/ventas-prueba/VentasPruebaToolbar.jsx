@@ -1,15 +1,15 @@
-import { useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../common'
 import { useLayoutChrome } from '../layout/LayoutChromeContext'
 import { useAuthContext } from '../../context/AuthContext'
+import ConsultaProductoStockModal from './ConsultaProductoStockModal'
 import './VentasPruebaToolbar.css'
 
-const BASE = '/ventas-prueba'
+const BASE = '/ventas'
 
 /**
- * Toolbar del módulo Ventas Prueba (navegación a pantallas dedicadas).
- * No modifica VentasSharedToolsHost del módulo original.
+ * Toolbar del módulo Ventas (navegación a pantallas dedicadas).
  */
 function VentasPruebaToolbar({
   showNuevaVenta = true,
@@ -19,6 +19,7 @@ function VentasPruebaToolbar({
   const { setToolbarEndOverride } = useLayoutChrome()
   const { puedeModulo, puedeModuloVentasORapidas } = useAuthContext()
   const location = useLocation()
+  const [consultaOpen, setConsultaOpen] = useState(false)
   const puedeHerramientas = !!puedeModuloVentasORapidas?.()
   const puedeVentas = puedeModulo('ventas')
   const puedeClientes = puedeModulo('clientes')
@@ -27,7 +28,20 @@ function VentasPruebaToolbar({
   const isCaja = path === `${BASE}/caja` || path.startsWith(`${BASE}/caja/`)
   const isRapida = path === `${BASE}/rapida` || path.startsWith(`${BASE}/rapida/`)
   const isDetallada =
-    path === `${BASE}/nueva` || /\/ventas-prueba\/[^/]+\/editar$/.test(path)
+    path === `${BASE}/nueva` || new RegExp(`^${BASE}/[^/]+/editar$`).test(path)
+
+  useEffect(() => {
+    const puedeMostrar = puedeHerramientas || puedeVentas
+    if (!puedeMostrar) return undefined
+
+    const handler = (e) => {
+      if (e.key !== 'F4') return
+      e.preventDefault()
+      setConsultaOpen(true)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [puedeHerramientas, puedeVentas])
 
   useLayoutEffect(() => {
     const puedeMostrar = puedeHerramientas || puedeVentas
@@ -84,6 +98,17 @@ function VentasPruebaToolbar({
           </Link>
         ) : null}
 
+        <Button
+          type="button"
+          variant="outline"
+          className={`vp-toolbar__btn${consultaOpen ? ' is-active' : ''}`}
+          title="Consultar stock y precio (F4)"
+          onClick={() => setConsultaOpen(true)}
+        >
+          <i className="bi bi-upc-scan" aria-hidden />
+          <span className="vp-toolbar__label">Consultar</span>
+        </Button>
+
         {extraEnd}
       </div>
     )
@@ -100,10 +125,13 @@ function VentasPruebaToolbar({
     isCaja,
     isRapida,
     isDetallada,
+    consultaOpen,
     setToolbarEndOverride,
   ])
 
-  return null
+  return (
+    <ConsultaProductoStockModal isOpen={consultaOpen} onClose={() => setConsultaOpen(false)} />
+  )
 }
 
 export default VentasPruebaToolbar

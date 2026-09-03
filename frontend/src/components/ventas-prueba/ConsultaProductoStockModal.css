@@ -1,0 +1,164 @@
+.consulta-stock__field {
+  position: relative;
+}
+
+.consulta-stock__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.consulta-stock__row .form-group {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.consulta-stock__row .btn {
+  flex-shrink: 0;
+}
+
+.consulta-stock__suggestions {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0.3rem 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 96%, #0b1220);
+  box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.65);
+}
+
+.consulta-stock__suggestions li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.consulta-stock__suggestions li strong {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.consulta-stock__suggestions li span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.consulta-stock__suggestions li.is-active,
+.consulta-stock__suggestions li:hover {
+  background: color-mix(in srgb, #2563eb 18%, transparent);
+}
+
+.consulta-stock__hint {
+  margin: 0.4rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.consulta-stock__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.consulta-stock__result {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.consulta-stock__nombre {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.consulta-stock__codigo {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.consulta-stock__kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.consulta-stock__kpi {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.consulta-stock__kpi span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.consulta-stock__kpi strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.consulta-stock__kpi--precio strong {
+  color: #38bdf8;
+}
+
+.consulta-stock__kpi--stock strong {
+  color: #34d399;
+}
+
+.consulta-stock__kpi--stock-bajo {
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+.consulta-stock__kpi--stock-bajo strong {
+  color: #fb7185;
+}
+
+@media (max-width: 520px) {
+  .consulta-stock__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .consulta-stock__kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-theme='light'] .consulta-stock__result {
+  background: rgba(248, 250, 252, 0.95);
+}
+
+[data-theme='light'] .consulta-stock__suggestions {
+  background: #fff;
+  box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.35);
+}
+
+[data-theme='light'] .consulta-stock__kpi--precio strong {
+  color: #0369a1;
+}
+
+[data-theme='light'] .consulta-stock__kpi--stock strong {
+  color: #047857;
+}

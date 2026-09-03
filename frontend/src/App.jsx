@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { DateTimeProvider } from './context/DateTimeContext'
 import { TicketPrintProvider } from './context/TicketPrintContext'
@@ -23,14 +23,13 @@ import ProductosList from './pages/productos/ProductosList'
 import ProductoForm from './pages/productos/ProductoForm'
 import ClientesList from './pages/clientes/ClientesList'
 import ClienteForm from './pages/clientes/ClienteForm'
+import ClienteCuentaCorriente from './pages/clientes/ClienteCuentaCorriente'
 import CategoriasList from './pages/categorias/CategoriasList'
 import CategoriaForm from './pages/categorias/CategoriaForm'
 import MarcasList from './pages/marcas/MarcasList'
 import MarcaForm from './pages/marcas/MarcaForm'
 import ProveedoresList from './pages/proveedores/ProveedoresList'
 import ProveedorForm from './pages/proveedores/ProveedorForm'
-import VentasList from './pages/ventas/VentasList'
-import POS from './pages/ventas/POS'
 import VentaDetalle from './pages/ventas/VentaDetalle'
 import VentasRapidas from './pages/ventas/VentasRapidas'
 import HistorialCajas from './pages/ventas/HistorialCajas'
@@ -54,6 +53,12 @@ import ServiciosTest from './pages/test/ServiciosTest'
 import TestServicios from './pages/test/TestServicios'
 import TestFirmaCanvas from './pages/test/TestFirmaCanvas'
 import './App.css'
+
+function RedirectVentasPrueba() {
+  const params = useParams()
+  const rest = params['*']
+  return <Navigate to={rest ? `/ventas/${rest}` : '/ventas'} replace />
+}
 
 function App() {
   return (
@@ -183,6 +188,14 @@ function App() {
               </PermissionRoute>
             } 
           />
+          <Route
+            path="/clientes/:clienteId/cuenta-corriente"
+            element={
+              <PermissionRoute modulo="clientes">
+                <ClienteCuentaCorriente />
+              </PermissionRoute>
+            }
+          />
           <Route 
             path="/clientes/:id" 
             element={
@@ -269,49 +282,8 @@ function App() {
               </PermissionRoute>
             } 
           />
-          <Route 
-            path="/ventas" 
-            element={
-              <PermissionRoute modulo="ventas">
-                <ErrorBoundary>
-                  <VentasList />
-                </ErrorBoundary>
-              </PermissionRoute>
-            } 
-          />
-          <Route 
-            path="/ventas/nueva" 
-            element={
-              <PermissionRoute modulo="ventas">
-                <ErrorBoundary>
-                  <POS />
-                </ErrorBoundary>
-              </PermissionRoute>
-            } 
-          />
-          <Route 
-            path="/ventas/:id" 
-            element={
-              <PermissionRoute modulo="ventas">
-                <ErrorBoundary>
-                  <VentaDetalle />
-                </ErrorBoundary>
-              </PermissionRoute>
-            } 
-          />
-          <Route 
-            path="/ventas/:id/editar" 
-            element={
-              <PermissionRoute modulo="ventas">
-                <ErrorBoundary>
-                  <POS />
-                </ErrorBoundary>
-              </PermissionRoute>
-            } 
-          />
-          {/* Ventas Prueba (rediseño paralelo; reutiliza lógica/servicios de ventas) */}
           <Route
-            path="/ventas-prueba"
+            path="/ventas"
             element={
               <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
@@ -321,7 +293,17 @@ function App() {
             }
           />
           <Route
-            path="/ventas-prueba/caja"
+            path="/ventas/nueva"
+            element={
+              <PermissionRoute modulo="ventas">
+                <ErrorBoundary>
+                  <VentaDetalladaPrueba />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/ventas/caja"
             element={
               <PermissionRoute modulo={['ventas', 'ventas_rapidas']}>
                 <ErrorBoundary>
@@ -331,7 +313,7 @@ function App() {
             }
           />
           <Route
-            path="/ventas-prueba/rapida"
+            path="/ventas/rapida"
             element={
               <PermissionRoute modulo={['ventas', 'ventas_rapidas']}>
                 <ErrorBoundary>
@@ -341,7 +323,7 @@ function App() {
             }
           />
           <Route
-            path="/ventas-prueba/nueva"
+            path="/ventas/:id/editar"
             element={
               <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
@@ -351,15 +333,17 @@ function App() {
             }
           />
           <Route
-            path="/ventas-prueba/:id/editar"
+            path="/ventas/:id"
             element={
               <PermissionRoute modulo="ventas">
                 <ErrorBoundary>
-                  <VentaDetalladaPrueba />
+                  <VentaDetalle />
                 </ErrorBoundary>
               </PermissionRoute>
             }
           />
+          <Route path="/ventas-prueba" element={<Navigate to="/ventas" replace />} />
+          <Route path="/ventas-prueba/*" element={<RedirectVentasPrueba />} />
           <Route 
             path="/ventas-rapidas" 
             element={

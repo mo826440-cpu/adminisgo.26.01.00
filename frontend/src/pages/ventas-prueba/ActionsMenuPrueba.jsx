@@ -1,17 +1,60 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/common'
 import { VENTAS_PRUEBA_BASE } from '../../components/ventas-prueba/VentasPruebaToolbar'
 import '../ventas/ActionsMenu.css'
 
+const MENU_GAP = 4
+const ITEM_HEIGHT = 48
+
 function ActionsMenuPrueba({ ventaId, cancelada = false, onCancel }) {
   const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef(null)
+  const [menuStyle, setMenuStyle] = useState(null)
+  const buttonRef = useRef(null)
+  const dropdownRef = useRef(null)
   const navigate = useNavigate()
+  const menuItemCount = cancelada ? 3 : 4
+
+  const updateMenuPosition = useCallback(() => {
+    const btn = buttonRef.current
+    if (!btn) return
+
+    const rect = btn.getBoundingClientRect()
+    const measuredH = dropdownRef.current?.offsetHeight
+    const menuH = measuredH > 0 ? measuredH : menuItemCount * ITEM_HEIGHT
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUp = spaceBelow < menuH + MENU_GAP && rect.top > spaceBelow
+
+    if (openUp) {
+      setMenuStyle({
+        position: 'fixed',
+        right: Math.max(8, window.innerWidth - rect.right),
+        bottom: window.innerHeight - rect.top + MENU_GAP,
+        top: 'auto',
+        left: 'auto',
+        marginTop: 0,
+        zIndex: 6000,
+      })
+      return
+    }
+
+    setMenuStyle({
+      position: 'fixed',
+      top: rect.bottom + MENU_GAP,
+      right: Math.max(8, window.innerWidth - rect.right),
+      left: 'auto',
+      bottom: 'auto',
+      marginTop: 0,
+      zIndex: 6000,
+    })
+  }, [menuItemCount])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      const inButton = buttonRef.current?.contains(event.target)
+      const inDropdown = dropdownRef.current?.contains(event.target)
+      if (!inButton && !inDropdown) {
         setIsOpen(false)
       }
     }
@@ -19,8 +62,21 @@ function ActionsMenuPrueba({ ventaId, cancelada = false, onCancel }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen) return undefined
+    updateMenuPosition()
+    const onScrollOrResize = () => updateMenuPosition()
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
+  }, [isOpen, updateMenuPosition])
+
   const handleAction = (action, e) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsOpen(false)
     switch (action) {
       case 'ver':
@@ -40,60 +96,62 @@ function ActionsMenuPrueba({ ventaId, cancelada = false, onCancel }) {
     }
   }
 
+  const dropdown =
+    isOpen && menuStyle ? (
+      <div ref={dropdownRef} className="actions-menu-dropdown" style={menuStyle} role="menu">
+        <button type="button" className="actions-menu-item" onClick={(e) => handleAction('ver', e)}>
+          <i className="bi bi-eye" aria-hidden />
+          <span>Ver detalle</span>
+        </button>
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('editar', e)}
+          disabled={cancelada}
+          title={cancelada ? 'No se puede editar una venta cancelada' : undefined}
+        >
+          <i className="bi bi-pencil-square" aria-hidden />
+          <span>Editar venta</span>
+        </button>
+        <button type="button" className="actions-menu-item" onClick={(e) => handleAction('imprimir', e)}>
+          <i className="bi bi-printer" aria-hidden />
+          <span>Imprimir</span>
+        </button>
+        {!cancelada ? (
+          <button
+            type="button"
+            className="actions-menu-item actions-menu-item-danger"
+            onClick={(e) => handleAction('cancelar', e)}
+          >
+            <i className="bi bi-x-circle" aria-hidden />
+            <span>Cancelar venta</span>
+          </button>
+        ) : null}
+      </div>
+    ) : null
+
   return (
-    <div className="ventas-acciones-inline">
-      <Link
-        to={`/ventas/${ventaId}`}
-        className="ventas-accion-btn ventas-accion-btn--ver"
-        title="Ver detalle"
-        aria-label="Ver detalle"
-      >
-        <i className="bi bi-eye" />
-      </Link>
-      <Link
-        to={`${VENTAS_PRUEBA_BASE}/${ventaId}/editar`}
-        className={`ventas-accion-btn ventas-accion-btn--editar${cancelada ? ' ventas-accion-btn--disabled' : ''}`}
-        title={cancelada ? 'No se puede editar una venta cancelada' : 'Editar venta'}
-        aria-label="Editar venta"
-        onClick={(e) => {
-          if (cancelada) e.preventDefault()
-        }}
-      >
-        <i className="bi bi-pencil-square" />
-      </Link>
-      <div className="actions-menu-wrapper" ref={menuRef}>
+    <>
+      <div className="actions-menu-wrapper" ref={buttonRef}>
         <Button
           variant="ghost"
           size="sm"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            setIsOpen(!isOpen)
+            setIsOpen((prev) => !prev)
           }}
           className="actions-menu-button"
-          title="Más acciones"
+          title="Acciones"
+          aria-label="Acciones de la venta"
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
         >
-          <i className="bi bi-three-dots-vertical" />
+          <i className="bi bi-three-dots-vertical" aria-hidden />
         </Button>
-        {isOpen ? (
-          <div className="actions-menu-dropdown">
-            <button className="actions-menu-item" onClick={(e) => handleAction('imprimir', e)}>
-              <i className="bi bi-printer" />
-              <span>Imprimir</span>
-            </button>
-            {!cancelada ? (
-              <button
-                className="actions-menu-item actions-menu-item-danger"
-                onClick={(e) => handleAction('cancelar', e)}
-              >
-                <i className="bi bi-x-circle" />
-                <span>Cancelar venta</span>
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </div>
-    </div>
+      {typeof document !== 'undefined' && dropdown ? createPortal(dropdown, document.body) : null}
+    </>
   )
 }
 

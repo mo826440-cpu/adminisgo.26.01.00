@@ -1154,3 +1154,77 @@ export const registrarPagoClienteDistribuido = async (params) => {
     return { data: null, error }
   }
 }
+
+/**
+ * Ventas, ítems y pagos de un cliente para armar la cuenta corriente.
+ * RLS de ventas / venta_pagos / venta_items limita al comercio del usuario.
+ * @param {number|string} clienteId
+ */
+export const getCuentaCorrientePorClienteId = async (clienteId) => {
+  const empty = { ventas: [], itemsByVentaId: new Map(), pagosByVentaId: new Map() }
+  try {
+    if (clienteId == null || clienteId === '') return { data: empty, error: null }
+
+    const ventas = await fetchAllQueryPages(
+      () =>
+        supabase
+          .from('ventas')
+          .select(
+            'id, fecha_hora, total, monto_pagado, monto_deuda, numero_ticket, facturacion, observaciones, metodo_pago, estado, deleted_at'
+          )
+          .eq('cliente_id', clienteId)
+          .is('deleted_at', null)
+          .order('fecha_hora', { ascending: true }),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
+    )
+
+    const itemsByVentaId = new Map()
+    const pagosByVentaId = new Map()
+    const ids = (ventas || []).map((v) => v.id).filter((id) => id != null)
+    if (ids.length === 0) {
+      return { data: { ventas: ventas || [], itemsByVentaId, pagosByVentaId }, error: null }
+    }
+
+    const idChunks = chunkIds(ids, 200)
+    for (const part of idChunks) {
+      const items = await fetchAllQueryPages(
+        () =>
+          supabase
+            .from('venta_items')
+            .select('venta_id, productos:producto_id(nombre)')
+            .in('venta_id', part),
+        SUPABASE_PAGE_SIZE,
+        { interPageDelayMs: 0 }
+      )
+      for (const it of items || []) {
+        const key = Number(it.venta_id)
+        if (!key) continue
+        if (!itemsByVentaId.has(key)) itemsByVentaId.set(key, [])
+        itemsByVentaId.get(key).push(it)
+      }
+
+      const pagos = await fetchAllQueryPages(
+        () =>
+          supabase
+            .from('venta_pagos')
+            .select('id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones')
+            .in('venta_id', part)
+            .order('fecha_pago', { ascending: true }),
+        SUPABASE_PAGE_SIZE,
+        { interPageDelayMs: 0 }
+      )
+      for (const p of pagos || []) {
+        const key = Number(p.venta_id)
+        if (!key) continue
+        if (!pagosByVentaId.has(key)) pagosByVentaId.set(key, [])
+        pagosByVentaId.get(key).push(p)
+      }
+    }
+
+    return { data: { ventas: ventas || [], itemsByVentaId, pagosByVentaId }, error: null }
+  } catch (error) {
+    console.error('Error al obtener cuenta corriente del cliente:', error)
+    return { data: null, error }
+  }
+}

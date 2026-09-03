@@ -1,5 +1,5 @@
 // Página de lista de clientes — tabla refactorizada (estado de deuda, tooltips, exportación)
-import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Pagination, Modal } from '../../components/common'
@@ -27,8 +27,7 @@ import '../../styles/ticketThermalPrint.css'
 import './ClientesList.css'
 import './ClientesActionsMenu.css'
 import ClientesActionsMenu from './ClientesActionsMenu'
-import ClienteVentasActionsMenu from './ClienteVentasActionsMenu'
-import { getVentaEstadoDisplay, ventaEstaCancelada } from '../../utils/ventaEstado'
+import { readClientesListState, writeClientesListState } from './clientesListState'
 import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
@@ -36,20 +35,6 @@ const ITEMS_PER_PAGE = 100
 function datoOGuion(val) {
   const s = val != null && String(val).trim() !== '' ? String(val).trim() : null
   return s || '—'
-}
-
-function getVentaEstadoSublistLabel(venta) {
-  const key = getVentaEstadoDisplay(venta)
-  if (key === 'cancelado') return 'CANCELADA'
-  if (key === 'pendiente') return 'PENDIENTE'
-  return 'PAGADO'
-}
-
-function getVentaEstadoSublistClass(venta) {
-  const key = getVentaEstadoDisplay(venta)
-  if (key === 'cancelado') return 'clientes-venta-badge--cancelada'
-  if (key === 'pendiente') return 'clientes-venta-badge--pendiente'
-  return 'clientes-venta-badge--pagado'
 }
 
 function ClientesList() {
@@ -63,9 +48,9 @@ function ClientesList() {
   const [loading, setLoading] = useState(true)
   const [loadingDeudas, setLoadingDeudas] = useState(false)
   const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(() => readClientesListState()?.searchTerm || '')
   const [successMessage, setSuccessMessage] = useState(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => readClientesListState()?.currentPage || 1)
   const [reporteLoadingId, setReporteLoadingId] = useState(null)
   const [pdfModal, setPdfModal] = useState(null)
   const [pdfModoFecha, setPdfModoFecha] = useState('todo')
@@ -73,9 +58,6 @@ function ClientesList() {
   const [pdfFechaHasta, setPdfFechaHasta] = useState('')
   const [pdfGenerando, setPdfGenerando] = useState(false)
   const [pdfError, setPdfError] = useState(null)
-  const [expandedClienteIds, setExpandedClienteIds] = useState(() => new Set())
-  const [ventasPorCliente, setVentasPorCliente] = useState(() => new Map())
-  const [ventasLoadingIds, setVentasLoadingIds] = useState(() => new Set())
 
   // Pago cliente (distribuido FIFO)
   const [showPagoModal, setShowPagoModal] = useState(false)
@@ -126,6 +108,32 @@ function ClientesList() {
     }, 0)
     return () => window.clearTimeout(t)
   }, [loadClientes])
+
+  useEffect(() => {
+    const restore = location.state?.restoreList
+    if (!restore) return undefined
+    const t = window.setTimeout(() => {
+      if (typeof restore.searchTerm === 'string') setSearchTerm(restore.searchTerm)
+      if (Number(restore.currentPage) > 0) setCurrentPage(Number(restore.currentPage))
+      writeClientesListState({
+        searchTerm: typeof restore.searchTerm === 'string' ? restore.searchTerm : searchTerm,
+        currentPage: Number(restore.currentPage) > 0 ? Number(restore.currentPage) : currentPage,
+      })
+      navigate(location.pathname, {
+        replace: true,
+        state: location.state?.success
+          ? { success: location.state.success, message: location.state.message }
+          : {},
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+    // Solo al entrar con restoreList
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.restoreList])
+
+  useEffect(() => {
+    writeClientesListState({ searchTerm, currentPage })
+  }, [searchTerm, currentPage])
 
   useEffect(() => {
     if (!location.state?.success) return undefined
@@ -186,40 +194,10 @@ function ClientesList() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const toggleExpandVentas = async (clienteId) => {
-    const id = Number(clienteId)
-    if (expandedClienteIds.has(id)) {
-      setExpandedClienteIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-      return
-    }
-
-    setExpandedClienteIds((prev) => new Set(prev).add(id))
-
-    if (ventasPorCliente.has(id)) return
-
-    setVentasLoadingIds((prev) => new Set(prev).add(id))
-    const { data, error: err } = await getVentasMovimientosPorClienteId(id)
-    setVentasLoadingIds((prev) => {
-      const next = new Set(prev)
-      next.delete(id)
-      return next
-    })
-
-    if (err) {
-      setError(err.message || 'No se pudieron cargar las ventas del cliente.')
-      setExpandedClienteIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-      return
-    }
-
-    setVentasPorCliente((prev) => new Map(prev).set(id, data || []))
+  const abrirCuentaCorriente = (cliente) => {
+    const listState = { searchTerm, currentPage }
+    writeClientesListState(listState)
+    navigate(`/clientes/${cliente.id}/cuenta-corriente`, { state: { listState } })
   }
 
   const openPdfModal = (cliente, tipo) => {
@@ -466,7 +444,7 @@ function ClientesList() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <th className="clientes-th-expand" aria-label="Expandir ventas" />
+                      <th className="clientes-th-expand" aria-label="Ver cuenta corriente" />
                       <th>Nombre</th>
                       <th className="clientes-th-estado">Estado</th>
                       <th className="clientes-th-acciones">Acciones</th>
@@ -475,9 +453,6 @@ function ClientesList() {
                   <tbody>
                     {paginatedClientes.map((cliente) => {
                       const clienteId = Number(cliente.id)
-                      const isExpanded = expandedClienteIds.has(clienteId)
-                      const ventasCliente = ventasPorCliente.get(clienteId) || []
-                      const ventasLoading = ventasLoadingIds.has(clienteId)
                       const saldoDeuda = mapaDeuda.get(clienteId) || 0
                       const debe = saldoDeuda > 0.009
                       const tooltipNombre = (
@@ -507,110 +482,48 @@ function ClientesList() {
                         </>
                       )
                       return (
-                        <Fragment key={cliente.id}>
-                          <tr className={isExpanded ? 'cliente-row--expanded' : ''}>
-                            <td className="clientes-td-expand">
-                              <button
-                                type="button"
-                                className="clientes-expand-btn"
-                                onClick={() => toggleExpandVentas(cliente.id)}
-                                aria-expanded={isExpanded}
-                                aria-label={
-                                  isExpanded
-                                    ? `Ocultar ventas de ${cliente.nombre}`
-                                    : `Ver ventas de ${cliente.nombre}`
-                                }
-                                title={isExpanded ? 'Ocultar ventas' : 'Ver ventas'}
-                              >
-                                <i
-                                  className={`bi bi-chevron-${isExpanded ? 'down' : 'right'}`}
-                                  aria-hidden
-                                />
-                              </button>
-                            </td>
-                            <td className="clientes-td-nombre">
-                              <GlassTooltip content={tooltipNombre}>
-                                <span className="clientes-table__nombre-text">{cliente.nombre}</span>
+                        <tr key={cliente.id}>
+                          <td className="clientes-td-expand">
+                            <button
+                              type="button"
+                              className="clientes-expand-btn"
+                              onClick={() => abrirCuentaCorriente(cliente)}
+                              aria-label={`Ver cuenta corriente de ${cliente.nombre}`}
+                              title="Ver cuenta corriente"
+                            >
+                              <i className="bi bi-chevron-right" aria-hidden />
+                            </button>
+                          </td>
+                          <td className="clientes-td-nombre">
+                            <GlassTooltip content={tooltipNombre}>
+                              <span className="clientes-table__nombre-text">{cliente.nombre}</span>
+                            </GlassTooltip>
+                          </td>
+                          <td className="clientes-td-estado">
+                            {debe ? (
+                              <GlassTooltip content={tooltipDeuda}>
+                                <span className="clientes-badge clientes-badge--debe" tabIndex={0}>
+                                  DEBE
+                                </span>
                               </GlassTooltip>
-                            </td>
-                            <td className="clientes-td-estado">
-                              {debe ? (
-                                <GlassTooltip content={tooltipDeuda}>
-                                  <span className="clientes-badge clientes-badge--debe" tabIndex={0}>
-                                    DEBE
-                                  </span>
-                                </GlassTooltip>
-                              ) : (
-                                <span className="clientes-badge clientes-badge--al-dia">AL DÍA</span>
-                              )}
-                            </td>
-                            <td className="clientes-td-acciones">
-                              <ClientesActionsMenu
-                                clienteId={cliente.id}
-                                clienteNombre={cliente.nombre}
-                                debe={debe}
-                                reporteLoading={reporteLoadingId === cliente.id}
-                                ticketLoading={ticketLoadingId === cliente.id}
-                                onRegistrarPago={() => openPagoModal(cliente)}
-                                onImprimirTicketDeudas={() => prepararImpresionDeudas(cliente)}
-                                onExportPdfDeudas={() => openPdfModal(cliente, 'deudas')}
-                                onExportPdfTotal={() => openPdfModal(cliente, 'total')}
-                              />
-                            </td>
-                          </tr>
-                          {isExpanded ? (
-                            <tr className="cliente-ventas-row">
-                              <td colSpan={4}>
-                                <div className="cliente-ventas-panel">
-                                  {ventasLoading ? (
-                                    <div className="cliente-ventas-loading">
-                                      <Spinner size="sm" />
-                                      <span>Cargando ventas…</span>
-                                    </div>
-                                  ) : ventasCliente.length === 0 ? (
-                                    <p className="cliente-ventas-empty">
-                                      No hay ventas registradas para este cliente.
-                                    </p>
-                                  ) : (
-                                    <div className="cliente-ventas-scroll">
-                                      <table className="table cliente-ventas-table">
-                                        <thead>
-                                          <tr>
-                                            <th className="cliente-ventas-th-total">Precio total</th>
-                                            <th className="cliente-ventas-th-estado">Estado</th>
-                                            <th className="cliente-ventas-th-acciones">Acciones</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {ventasCliente.map((venta) => (
-                                            <tr key={venta.id}>
-                                              <td className="cliente-ventas-td-total">
-                                                {formatMoneyAR(venta.total)}
-                                              </td>
-                                              <td className="cliente-ventas-td-estado">
-                                                <span
-                                                  className={`clientes-venta-badge ${getVentaEstadoSublistClass(venta)}`}
-                                                >
-                                                  {getVentaEstadoSublistLabel(venta)}
-                                                </span>
-                                              </td>
-                                              <td className="cliente-ventas-td-acciones">
-                                                <ClienteVentasActionsMenu
-                                                  ventaId={venta.id}
-                                                  cancelada={ventaEstaCancelada(venta)}
-                                                />
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ) : null}
-                        </Fragment>
+                            ) : (
+                              <span className="clientes-badge clientes-badge--al-dia">AL DÍA</span>
+                            )}
+                          </td>
+                          <td className="clientes-td-acciones">
+                            <ClientesActionsMenu
+                              clienteId={cliente.id}
+                              clienteNombre={cliente.nombre}
+                              debe={debe}
+                              reporteLoading={reporteLoadingId === cliente.id}
+                              ticketLoading={ticketLoadingId === cliente.id}
+                              onRegistrarPago={() => openPagoModal(cliente)}
+                              onImprimirTicketDeudas={() => prepararImpresionDeudas(cliente)}
+                              onExportPdfDeudas={() => openPdfModal(cliente, 'deudas')}
+                              onExportPdfTotal={() => openPdfModal(cliente, 'total')}
+                            />
+                          </td>
+                        </tr>
                       )
                     })}
                   </tbody>

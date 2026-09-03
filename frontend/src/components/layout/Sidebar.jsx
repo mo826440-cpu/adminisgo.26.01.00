@@ -15,7 +15,6 @@ const MENU_ORDER = [
   'referencias',
   'compras',
   'ventas',
-  'ventas_prueba',
   'ventas_rapidas',
   'reportes',
   'otros_costos',

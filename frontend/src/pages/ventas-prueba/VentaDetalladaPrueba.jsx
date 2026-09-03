@@ -1,6 +1,6 @@
 // Página de Punto de Venta (POS) - Formulario de Registro de Venta
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Button, Alert, Spinner, Modal } from '../../components/common'
 import { getProductos, getProductoPreferible } from '../../services/productos'
@@ -18,8 +18,12 @@ import './VentaDetalladaPrueba.css'
 
 function VentaDetalladaPrueba() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams()
   const isEditing = !!id
+  const clientePreseleccionadoId = location.state?.clienteId
+  const returnTo = location.state?.returnTo
+  const listState = location.state?.listState
   const { timezone } = useDateTime()
   const { usuario, user } = useAuthContext()
   const productoInputRef = useRef(null)
@@ -178,7 +182,14 @@ function VentaDetalladaPrueba() {
           getClientePreferible(),
           getProductoPreferible(),
         ])
-        if (prefCliente) {
+        const listaClientes = clientesData.data || []
+        const pre = clientePreseleccionadoId != null
+          ? listaClientes.find((c) => Number(c.id) === Number(clientePreseleccionadoId))
+          : null
+        if (pre) {
+          setClienteSeleccionado({ id: pre.id, nombre: pre.nombre })
+          setClienteSearch(pre.nombre || '')
+        } else if (prefCliente) {
           setClienteSeleccionado({ id: prefCliente.id, nombre: prefCliente.nombre })
           setClienteSearch(prefCliente.nombre || '')
         }
@@ -617,18 +628,26 @@ function VentaDetalladaPrueba() {
     }
   }
 
+  const destinoTrasSalir = returnTo || VENTAS_PRUEBA_BASE
+  const stateTrasVolver = returnTo
+    ? { listState: listState || null, success: true, message: isEditing ? 'Venta actualizada correctamente' : 'Venta registrada correctamente' }
+    : {
+        success: true,
+        message: isEditing ? 'Venta actualizada correctamente' : 'Venta registrada correctamente',
+      }
+
   // Cancelar venta
   const handleCancelarVenta = () => {
     if (carrito.length > 0 || metodosPago.length > 0) {
       setShowCancelModal(true)
     } else {
-      navigate(VENTAS_PRUEBA_BASE)
+      navigate(destinoTrasSalir, returnTo ? { state: { listState: listState || null } } : undefined)
     }
   }
 
   const confirmarCancelar = () => {
     setShowCancelModal(false)
-    navigate(VENTAS_PRUEBA_BASE)
+    navigate(destinoTrasSalir, returnTo ? { state: { listState: listState || null } } : undefined)
   }
 
   const limpiarFormularioPos = () => {
@@ -647,12 +666,7 @@ function VentaDetalladaPrueba() {
   const finalizarSinImprimir = () => {
     setShowPrintOfferModal(false)
     limpiarFormularioPos()
-    navigate(VENTAS_PRUEBA_BASE, {
-      state: {
-        success: true,
-        message: isEditing ? 'Venta actualizada correctamente' : 'Venta registrada correctamente',
-      },
-    })
+    navigate(destinoTrasSalir, { state: stateTrasVolver })
   }
 
   const finalizarConImpresion = () => {
@@ -662,9 +676,7 @@ function VentaDetalladaPrueba() {
     if (ventaId) {
       navigate(`/ventas/${ventaId}`, { state: { print: true } })
     } else {
-      navigate(VENTAS_PRUEBA_BASE, {
-        state: { success: true, message: 'Venta registrada correctamente' },
-      })
+      navigate(destinoTrasSalir, { state: stateTrasVolver })
     }
   }
 

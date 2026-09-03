@@ -19,53 +19,6 @@ export function getModuleChrome(pathname) {
   const p = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
   if (p === '/inicio' || p.startsWith('/inicio/')) return null
 
-  // —— Ventas Prueba (rediseño paralelo; no altera /ventas) ——
-  if (p === '/ventas-prueba/caja') {
-    return {
-      kicker: K,
-      title: 'Gestión de Caja',
-      subtitle: 'Controlá las operaciones de tu caja en tiempo real.',
-      icon: 'bi-cash-stack',
-      toolbarEnd: null,
-    }
-  }
-  if (p === '/ventas-prueba/rapida') {
-    return {
-      kicker: K,
-      title: 'Ventas rápidas (F2)',
-      subtitle: 'Registro rápido sin detalle de productos.',
-      icon: 'bi-lightning-charge',
-      toolbarEnd: null,
-    }
-  }
-  if (p === '/ventas-prueba/nueva') {
-    return {
-      kicker: K,
-      title: 'Venta detallada',
-      subtitle: 'Agregá productos, revisá el carrito y finalizá la venta.',
-      icon: 'bi-cart3',
-      toolbarEnd: null,
-    }
-  }
-  if (/\/ventas-prueba\/[^/]+\/editar$/.test(p)) {
-    return {
-      kicker: K,
-      title: 'Editar venta detallada',
-      subtitle: 'Modificá ítems y pagos de la venta',
-      icon: 'bi-pencil-square',
-      toolbarEnd: null,
-    }
-  }
-  if (p === '/ventas-prueba') {
-    return {
-      kicker: K,
-      title: 'Ventas',
-      subtitle: 'Listado de ventas realizadas en tu negocio.',
-      icon: 'bi-graph-up-arrow',
-      toolbarEnd: null,
-    }
-  }
-
   // —— Ventas rápidas (orden: más específico primero) ——
   if (p === '/ventas-rapidas/historial') {
     return {
@@ -97,35 +50,52 @@ export function getModuleChrome(pathname) {
   }
 
   // —— Ventas (orden: exactas y rutas fijas antes que :id) ——
-  if (p === '/ventas') {
+  if (p === '/ventas/caja') {
     return {
       kicker: K,
-      title: 'Ventas',
-      subtitle: 'Listado y gestión de ventas',
-      icon: 'bi-graph-up-arrow',
-      // Toolbar dinámica: VentasSharedToolsHost (caja + venta rápida + Nueva venta)
+      title: 'Gestión de Caja',
+      subtitle: 'Controlá las operaciones de tu caja en tiempo real.',
+      icon: 'bi-cash-stack',
+      toolbarEnd: null,
+    }
+  }
+  if (p === '/ventas/rapida') {
+    return {
+      kicker: K,
+      title: 'Ventas rápidas (F2)',
+      subtitle: 'Registro rápido sin detalle de productos.',
+      icon: 'bi-lightning-charge',
       toolbarEnd: null,
     }
   }
   if (p === '/ventas/nueva') {
     return {
       kicker: K,
-      title: 'Registrar venta',
-      subtitle: 'Cargá ítems, cliente y pagos',
-      icon: 'bi-shop-window',
+      title: 'Venta detallada',
+      subtitle: 'Agregá productos, revisá el carrito y finalizá la venta.',
+      icon: 'bi-cart3',
       toolbarEnd: null,
     }
   }
   if (/\/ventas\/[^/]+\/editar$/.test(p)) {
     return {
       kicker: K,
-      title: 'Editar venta',
+      title: 'Editar venta detallada',
       subtitle: 'Modificá ítems y pagos de la venta',
       icon: 'bi-pencil-square',
       toolbarEnd: null,
     }
   }
-  if (/^\/ventas\/(?!nueva$)[^/]+$/.test(p)) {
+  if (p === '/ventas') {
+    return {
+      kicker: K,
+      title: 'Ventas',
+      subtitle: 'Listado de ventas realizadas en tu negocio.',
+      icon: 'bi-graph-up-arrow',
+      toolbarEnd: null,
+    }
+  }
+  if (/^\/ventas\/(?!nueva$|caja$|rapida$)[^/]+$/.test(p)) {
     return {
       kicker: K,
       title: 'Detalle de venta',
@@ -169,6 +139,15 @@ export function getModuleChrome(pathname) {
   }
 
   // —— Clientes ——
+  if (/^\/clientes\/[^/]+\/cuenta-corriente$/.test(p)) {
+    return {
+      kicker: K,
+      title: 'Cuenta corriente',
+      subtitle: 'Ventas a crédito, cobros y saldo del cliente',
+      icon: 'bi-journal-text',
+      toolbarEnd: null,
+    }
+  }
   if (p === '/clientes/nuevo') {
     return {
       kicker: K,

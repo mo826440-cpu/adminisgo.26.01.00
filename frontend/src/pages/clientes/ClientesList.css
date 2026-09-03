@@ -210,6 +210,12 @@
   box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
 }
 
+.clientes-badge--a-favor {
+  color: #022c22;
+  background: linear-gradient(135deg, #6ee7b7 0%, #059669 100%);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
 .clientes-badge--debe {
   color: #fff1f2;
   background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);

@@ -80,6 +80,49 @@ export const getProductoPorCodigoBarras = async (codigoBarras) => {
   }
 }
 
+const CONSULTA_STOCK_SELECT = `
+  id,
+  nombre,
+  codigo_barras,
+  codigo_interno,
+  precio_venta,
+  stock_actual,
+  stock_minimo,
+  unidad_medida
+`
+
+/**
+ * Consulta rápida de stock y precio por código de barras o código interno.
+ */
+export const consultarProductoStockPrecio = async (codigo) => {
+  const valor = String(codigo || '').trim()
+  if (!valor) return { data: null, error: null }
+  try {
+    const byBarcode = await supabase
+      .from('productos')
+      .select(CONSULTA_STOCK_SELECT)
+      .eq('codigo_barras', valor)
+      .eq('activo', true)
+      .limit(1)
+      .maybeSingle()
+    if (byBarcode.error) throw byBarcode.error
+    if (byBarcode.data) return { data: byBarcode.data, error: null }
+
+    const byInterno = await supabase
+      .from('productos')
+      .select(CONSULTA_STOCK_SELECT)
+      .eq('codigo_interno', valor)
+      .eq('activo', true)
+      .limit(1)
+      .maybeSingle()
+    if (byInterno.error) throw byInterno.error
+    return { data: byInterno.data || null, error: null }
+  } catch (error) {
+    console.error('Error al consultar stock y precio del producto:', error)
+    return { data: null, error }
+  }
+}
+
 /**
  * Verificar si existe un código de barras
  */
