@@ -2,6 +2,41 @@
 import { supabase } from './supabase'
 
 /**
+ * Sin filas en compra_pagos los triggers no actualizan monto_pagado/monto_deuda
+ * (migración 013). Recalcula siempre a partir de los pagos reales.
+ */
+async function sincronizarMontosCompra(compraId, totalOverride = null) {
+  let total = totalOverride
+  if (total == null) {
+    const { data: compra, error: errorCompra } = await supabase
+      .from('compras')
+      .select('total')
+      .eq('id', compraId)
+      .single()
+    if (errorCompra) throw errorCompra
+    total = compra?.total
+  }
+
+  const { data: pagos, error: errorPagos } = await supabase
+    .from('compra_pagos')
+    .select('monto_pagado')
+    .eq('compra_id', compraId)
+
+  if (errorPagos) throw errorPagos
+
+  const pagado = (pagos || []).reduce((sum, p) => sum + (parseFloat(p.monto_pagado) || 0), 0)
+  const t = parseFloat(total) || 0
+  const montos = {
+    monto_pagado: pagado,
+    monto_deuda: Math.max(0, t - pagado),
+  }
+
+  const { error: errorUpdate } = await supabase.from('compras').update(montos).eq('id', compraId)
+  if (errorUpdate) throw errorUpdate
+  return montos
+}
+
+/**
  * Crear una nueva orden de compra
  * Esta función crea la compra y los items asociados
  */
@@ -29,6 +64,7 @@ export const createCompra = async (compraData) => {
     
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
     const numeroOrden = `ORD-${dateStr}-${timeStr}-${random}`
+    const total = parseFloat(compraData.total) || 0
 
     // Preparar datos de la compra
     const compra = {
@@ -40,10 +76,12 @@ export const createCompra = async (compraData) => {
       subtotal: compraData.subtotal || 0,
       descuento: compraData.descuento || 0,
       impuestos: compraData.impuestos || 0,
-      total: compraData.total || 0,
+      total,
       estado: compraData.estado || 'pendiente',
       observaciones: compraData.observaciones || null,
-      factura_url: compraData.factura_url || null
+      factura_url: compraData.factura_url || null,
+      monto_pagado: 0,
+      monto_deuda: Math.max(0, total),
     }
 
     // Crear la compra
@@ -102,7 +140,13 @@ export const createCompra = async (compraData) => {
       }
     }
 
-    return { data: compraCreada, error: null }
+    // Asegura montos correctos también cuando no hay filas de pago (deuda = total).
+    const montos = await sincronizarMontosCompra(compraCreada.id, total)
+
+    return {
+      data: { ...compraCreada, ...montos },
+      error: null,
+    }
   } catch (error) {
     console.error('Error al crear compra:', error)
     return { data: null, error }
@@ -327,6 +371,9 @@ export const updateCompra = async (id, compraData) => {
       }
     }
 
+    // Recalcular siempre: sin pagos los triggers dejan monto_deuda en 0 por default.
+    await sincronizarMontosCompra(id, compraUpdate.total)
+
     return { data: { id }, error: null }
   } catch (error) {
     console.error('Error al actualizar compra:', error)
@@ -522,13 +569,21 @@ export const deleteCompra = async (id) => {
 
 const DEUDA_EPS = 0.009
 
-function deudaDeCompra(compra) {
+/**
+ * Deuda efectiva: total − pagado.
+ * No confiar solo en monto_deuda persistido (default 0 si no hubo compra_pagos).
+ */
+export function deudaEfectivaCompra(compra) {
   if (String(compra?.estado || '').toLowerCase() === 'cancelada') return 0
   const total = parseFloat(compra?.total || 0)
   const pagado = parseFloat(compra?.monto_pagado || 0)
-  const deuda =
-    compra?.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
-  return Number.isFinite(deuda) && deuda > DEUDA_EPS ? deuda : 0
+  const deuda = Math.max(0, total - pagado)
+  return Number.isFinite(deuda) ? deuda : 0
+}
+
+function deudaDeCompra(compra) {
+  const deuda = deudaEfectivaCompra(compra)
+  return deuda > DEUDA_EPS ? deuda : 0
 }
 
 /**

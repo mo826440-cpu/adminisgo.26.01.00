@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Button, Spinner, Alert, Pagination, Modal } from '../../components/common'
-import { getCompras, cancelarCompra } from '../../services/compras'
+import { getCompras, cancelarCompra, deudaEfectivaCompra } from '../../services/compras'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate } from '../../utils/dateFormat'
 import ComprasActionsMenu from './ComprasActionsMenu'
@@ -35,11 +35,7 @@ function compraEstaCancelada(compra) {
 
 function getCompraEstadoKey(compra) {
   if (compraEstaCancelada(compra)) return 'cancelado'
-  const total = parseFloat(compra.total || 0)
-  const pagado = parseFloat(compra.monto_pagado || 0)
-  const deuda =
-    compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
-  if (deuda > 0.01) return 'pendiente'
+  if (deudaEfectivaCompra(compra) > 0.01) return 'pendiente'
   return 'pagado'
 }
 
@@ -211,10 +207,7 @@ function ComprasList() {
 
   const formatearDeuda = (compra) => {
     if (compraEstaCancelada(compra)) return { text: '-', debt: false }
-    const total = parseFloat(compra.total || 0)
-    const pagado = parseFloat(compra.monto_pagado || 0)
-    const deuda =
-      compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
+    const deuda = deudaEfectivaCompra(compra)
     if (deuda > 0.01) return { text: formatearMoneda(deuda), debt: true }
     return { text: formatearMoneda(0), debt: false }
   }
