@@ -6,6 +6,7 @@ import '../ventas/ActionsMenu.css'
 function CategoriasActionsMenu({
   categoriaId,
   productosCount = 0,
+  selectedProductosCount = 0,
   onVerDetalles,
   onExportarPdf,
 }) {
@@ -78,9 +79,17 @@ function CategoriasActionsMenu({
             className="actions-menu-item"
             onClick={(e) => handleAction('pdf', e)}
             disabled={productosCount === 0}
+            title={
+              selectedProductosCount > 0
+                ? `PDF con ${selectedProductosCount} producto${selectedProductosCount === 1 ? '' : 's'} seleccionado${selectedProductosCount === 1 ? '' : 's'}`
+                : 'PDF con todos los productos de la categoría'
+            }
           >
             <i className="bi bi-file-earmark-pdf" aria-hidden />
-            <span>Lista de precios PDF</span>
+            <span>
+              Lista de precios PDF
+              {selectedProductosCount > 0 ? ` (${selectedProductosCount})` : ''}
+            </span>
           </button>
         </div>
       )}

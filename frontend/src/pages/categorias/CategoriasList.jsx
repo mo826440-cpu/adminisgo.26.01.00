@@ -316,10 +316,14 @@ function CategoriasList() {
 
   const handleExportarPdf = (categoria) => {
     const items = getProductosCategoria(categoria.id)
-    if (items.length === 0) return
+    const seleccionados = items.filter((p) => selectedProductIds.has(p.id))
+    // Si hay productos marcados en la categoría, el PDF incluye solo esos;
+    // si no hay selección, se exporta el listado completo (comportamiento anterior).
+    const productosPdf = seleccionados.length > 0 ? seleccionados : items
+    if (productosPdf.length === 0) return
     downloadProductosCategoriaPdf({
       categoriaNombre: categoria.nombre,
-      productos: items.map((p) => ({
+      productos: productosPdf.map((p) => ({
         nombre: p.nombre,
         codigo_barras: p.codigo_barras,
         codigo_interno: p.codigo_interno,
@@ -515,6 +519,7 @@ function CategoriasList() {
                               <CategoriasActionsMenu
                                 categoriaId={categoria.id}
                                 productosCount={count}
+                                selectedProductosCount={selectedCount}
                                 onVerDetalles={() => setDetalleCategoria(categoria)}
                                 onExportarPdf={() => handleExportarPdf(categoria)}
                               />
