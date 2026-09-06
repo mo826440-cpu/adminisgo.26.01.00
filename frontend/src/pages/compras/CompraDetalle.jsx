@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Spinner, Alert, Badge, Modal } from '../../components/common'
-import { getCompraById, deleteCompra, recibirCompra } from '../../services/compras'
+import { getCompraById, cancelarCompra, recibirCompra } from '../../services/compras'
 import { getComercio } from '../../services/comercio'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
@@ -26,8 +26,8 @@ function CompraDetalle() {
   const [comercio, setComercio] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [canceling, setCanceling] = useState(false)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [receiving, setReceiving] = useState(false)
   const [cantidadesRecibidas, setCantidadesRecibidas] = useState({})
@@ -160,23 +160,23 @@ function CompraDetalle() {
     }
   }
 
-  // Eliminar compra
-  const handleDelete = async () => {
-    setDeleting(true)
+  // Cancelar compra
+  const handleCancel = async () => {
+    setCanceling(true)
     setError(null)
-    const { error: err } = await deleteCompra(id)
-    
+    const { error: err } = await cancelarCompra(id)
+
     if (err) {
       setError(err.message)
-      setDeleting(false)
+      setCanceling(false)
       return
     }
-    
+
     navigate('/compras', {
       state: {
         success: true,
-        message: 'Compra eliminada correctamente'
-      }
+        message: 'Compra cancelada correctamente',
+      },
     })
   }
 
@@ -275,6 +275,8 @@ function CompraDetalle() {
     )
   }
 
+  const estaCancelada = String(compra.estado || '').toLowerCase() === 'cancelada'
+
   return (
     <Layout>
       <div className="container">
@@ -293,25 +295,34 @@ function CompraDetalle() {
             <Link to="/compras">
               <Button variant="outline">← Volver a Compras</Button>
             </Link>
-            {compra.estado === 'pendiente' && (
-              <>
-                <Link to={`/compras/${id}/editar`}>
-                  <Button variant="primary">Editar</Button>
-                </Link>
-                <Button 
-                  variant="success" 
-                  onClick={() => setShowReceiveModal(true)}
-                >
-                  Recibir Compra
-                </Button>
-              </>
-            )}
-            <Button 
-              variant="danger" 
-              onClick={() => setShowDeleteModal(true)}
+            <Button
+              variant="outline"
+              onClick={() => setThermalPreviewOpen(true)}
+              title="Imprimir"
             >
-              Eliminar
+              <i className="bi bi-printer" aria-hidden /> Imprimir
             </Button>
+            {!estaCancelada && (
+              <Link to={`/compras/${id}/editar`}>
+                <Button variant="primary">Editar</Button>
+              </Link>
+            )}
+            {compra.estado === 'pendiente' && (
+              <Button
+                variant="success"
+                onClick={() => setShowReceiveModal(true)}
+              >
+                Recibir Compra
+              </Button>
+            )}
+            {!estaCancelada && (
+              <Button
+                variant="danger"
+                onClick={() => setShowCancelModal(true)}
+              >
+                Cancelar compra
+              </Button>
+            )}
         </div>
 
         {error && (
@@ -422,34 +433,38 @@ function CompraDetalle() {
           )}
         </Card>
 
-        {/* Modal de Eliminar */}
+        {/* Modal de Cancelar */}
         <Modal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          title="Eliminar Compra"
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          title="Cancelar compra"
+          variant="danger"
           footer={
             <>
               <Button
                 variant="outline"
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
+                onClick={() => setShowCancelModal(false)}
+                disabled={canceling}
               >
-                Cancelar
+                Volver
               </Button>
               <Button
                 variant="danger"
-                onClick={handleDelete}
-                loading={deleting}
-                disabled={deleting}
+                onClick={handleCancel}
+                loading={canceling}
+                disabled={canceling}
               >
-                Eliminar
+                Confirmar cancelación
               </Button>
             </>
           }
         >
-          <p>¿Estás seguro de que deseas eliminar esta orden de compra?</p>
-          <p style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-            Esta acción no se puede deshacer.
+          <p>
+            ¿Seguro que querés cancelar esta orden de compra? Quedará visible como{' '}
+            <strong>Cancelada</strong>.
+            {compra.estado === 'recibida'
+              ? ' Se revertirá el stock que se había sumado al recibirla.'
+              : ''}
           </p>
         </Modal>
 

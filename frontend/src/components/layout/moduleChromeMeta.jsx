@@ -287,9 +287,26 @@ export function getModuleChrome(pathname) {
       subtitle: 'Órdenes y proveedores',
       icon: 'bi-cart3',
       toolbarEnd: (
-        <Link to="/compras/nueva">
-          <Button variant="primary">+ Nueva orden</Button>
-        </Link>
+        <div className="vp-toolbar">
+          <Link to="/ventas">
+            <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Ventas">
+              <i className="bi bi-graph-up" aria-hidden />
+              <span className="vp-toolbar__label">Ventas</span>
+            </Button>
+          </Link>
+          <Link to="/proveedores">
+            <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Proveedores">
+              <i className="bi bi-truck" aria-hidden />
+              <span className="vp-toolbar__label">Proveedores</span>
+            </Button>
+          </Link>
+          <Link to="/compras/nueva">
+            <Button variant="primary" className="vp-toolbar__btn vp-toolbar__btn--primary">
+              <i className="bi bi-plus-lg" aria-hidden />
+              <span className="vp-toolbar__label">Nueva orden</span>
+            </Button>
+          </Link>
+        </div>
       ),
     }
   }
@@ -297,7 +314,7 @@ export function getModuleChrome(pathname) {
     return {
       kicker: K,
       title: 'Nueva orden de compra',
-      subtitle: 'Registrá la compra a proveedor',
+      subtitle: 'Proveedor, productos, carrito y pago',
       icon: 'bi-cart3',
       toolbarEnd: <Tb to="/compras">← Volver al listado</Tb>,
     }
@@ -306,7 +323,7 @@ export function getModuleChrome(pathname) {
     return {
       kicker: K,
       title: 'Editar orden de compra',
-      subtitle: 'Modificá ítems y totales',
+      subtitle: 'Modificá productos y pagos',
       icon: 'bi-pencil-square',
       toolbarEnd: <Tb to="/compras">← Volver al listado</Tb>,
     }
@@ -315,7 +332,7 @@ export function getModuleChrome(pathname) {
     return {
       kicker: K,
       title: 'Detalle de orden de compra',
-      subtitle: 'Estado y líneas de la orden',
+      subtitle: 'Estado, impresión y cancelación',
       icon: 'bi-file-earmark-text',
       toolbarEnd: <Tb to="/compras">← Volver a Compras</Tb>,
     }

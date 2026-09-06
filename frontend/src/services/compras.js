@@ -246,6 +246,9 @@ export const updateCompra = async (id, compraData) => {
       .single()
 
     if (errorCompraActual || !compraActual) throw errorCompraActual || new Error('Compra no encontrada')
+    if (String(compraActual.estado || '').toLowerCase() === 'cancelada') {
+      throw new Error('No se puede editar una compra cancelada')
+    }
 
     const compraUpdate = {
       proveedor_id: compraData.proveedor_id,
@@ -354,6 +357,9 @@ export const recibirCompra = async (id, itemsRecibidos) => {
     if (compra.estado === 'recibida') {
       throw new Error('La compra ya fue recibida')
     }
+    if (compra.estado === 'cancelada') {
+      throw new Error('No se puede recibir una compra cancelada')
+    }
 
     // Obtener items actuales
     const { data: itemsActuales, error: errorItems } = await supabase
@@ -412,6 +418,86 @@ export const recibirCompra = async (id, itemsRecibidos) => {
   } catch (error) {
     console.error('Error al recibir compra:', error)
     return { data: null, error }
+  }
+}
+
+/**
+ * Cancelar una compra (permanece visible con estado cancelada).
+ * Si estaba recibida, revierte el stock sumado al recibir.
+ */
+export const cancelarCompra = async (id) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuario no autenticado')
+
+    const { data: compra, error: errorCompra } = await supabase
+      .from('compras')
+      .select('id, estado')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
+
+    if (errorCompra) throw errorCompra
+    if (!compra) throw new Error('Compra no encontrada')
+    if (compra.estado === 'cancelada') {
+      throw new Error('La compra ya está cancelada')
+    }
+
+    const estabaRecibida = compra.estado === 'recibida'
+
+    if (estabaRecibida) {
+      const { data: items, error: errorItems } = await supabase
+        .from('compra_items')
+        .select('producto_id, cantidad_recibida')
+        .eq('compra_id', id)
+
+      if (errorItems) throw errorItems
+
+      for (const item of items || []) {
+        const cantidad = parseFloat(item.cantidad_recibida || 0)
+        if (!item.producto_id || !(cantidad > 0)) continue
+
+        const { data: producto, error: errorProducto } = await supabase
+          .from('productos')
+          .select('stock_actual')
+          .eq('id', item.producto_id)
+          .single()
+
+        if (errorProducto || !producto) {
+          console.error('Error al obtener producto para revertir stock:', errorProducto)
+          continue
+        }
+
+        const nuevoStock = Math.max(0, (producto.stock_actual || 0) - cantidad)
+        const { error: errorStock } = await supabase
+          .from('productos')
+          .update({ stock_actual: nuevoStock })
+          .eq('id', item.producto_id)
+
+        if (errorStock) {
+          console.error('Error al revertir stock:', errorStock)
+        }
+      }
+    }
+
+    const { error: errorUpdate } = await supabase
+      .from('compras')
+      .update({
+        estado: 'cancelada',
+        usuario_id: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (errorUpdate) throw errorUpdate
+
+    return { data: { id }, error: null }
+  } catch (error) {
+    console.error('Error al cancelar compra:', error)
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error(error.message || 'Error al cancelar compra'),
+    }
   }
 }
 

@@ -1,69 +1,93 @@
 // Página de lista de compras
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from '../../components/layout'
-import { Card, Button, Spinner, Alert, Badge, Pagination, Modal } from '../../components/common'
-import { getCompras, deleteCompra } from '../../services/compras'
+import { Button, Spinner, Alert, Pagination, Modal } from '../../components/common'
+import { getCompras, cancelarCompra } from '../../services/compras'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDate } from '../../utils/dateFormat'
+import ComprasActionsMenu from './ComprasActionsMenu'
+import '../../components/ventas-prueba/ventasPrueba.css'
+import '../../components/ventas-prueba/VentasPruebaToolbar.css'
 import './ComprasList.css'
-import '../../styles/registros-seccion.css'
 
-const ITEMS_PER_PAGE = 100
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+
+function getDefaultFechaDesde() {
+  const ahora = new Date()
+  const desde = new Date(ahora)
+  desde.setDate(desde.getDate() - 90)
+  return desde.toISOString().split('T')[0]
+}
+
+function getDefaultFechaHasta() {
+  return new Date().toISOString().split('T')[0]
+}
+
+function formatearMoneda(valor) {
+  const num = Number(valor || 0)
+  return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function compraEstaCancelada(compra) {
+  return String(compra?.estado || '').toLowerCase() === 'cancelada'
+}
+
+function getCompraEstadoKey(compra) {
+  if (compraEstaCancelada(compra)) return 'cancelado'
+  const total = parseFloat(compra.total || 0)
+  const pagado = parseFloat(compra.monto_pagado || 0)
+  const deuda =
+    compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
+  if (deuda > 0.01) return 'pendiente'
+  return 'pagado'
+}
+
+function labelEstadoCompra(estadoKey) {
+  if (estadoKey === 'pagado') return 'PAGADO'
+  if (estadoKey === 'pendiente') return 'CON DEUDA'
+  if (estadoKey === 'cancelado') return 'CANCELADA'
+  return String(estadoKey || '').toUpperCase()
+}
+
+function badgeClassEstado(estadoKey) {
+  if (estadoKey === 'pagado') return 'vp-badge vp-badge--pagado'
+  if (estadoKey === 'pendiente') return 'vp-badge vp-badge--deuda'
+  return 'vp-badge vp-badge--cancelada'
+}
 
 function ComprasList() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { timezone, dateFormat } = useDateTime()
+
   const [compras, setCompras] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [compraToDelete, setCompraToDelete] = useState(null)
-  const [deleting, setDeleting] = useState(false)
-  const [showActions, setShowActions] = useState(false)
-  
-  // Estado para el texto del botón de filtros
-  const [textoBotonFiltros, setTextoBotonFiltros] = useState('Mostrar filtros')
-  
-  // Sincronizar texto con showActions
-  useEffect(() => {
-    setTextoBotonFiltros(showActions ? 'Ocultar filtros' : 'Mostrar filtros')
-  }, [showActions])
-  
-  // Estados de filtros (por defecto: últimos 90 días, igual que ventas)
-  const getDefaultFechaDesde = () => {
-    const ahora = new Date()
-    const desde = new Date(ahora)
-    desde.setDate(desde.getDate() - 90)
-    return desde.toISOString().split('T')[0]
-  }
-  const getDefaultFechaHasta = () => {
-    const ahora = new Date()
-    return ahora.toISOString().split('T')[0]
-  }
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde())
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta())
+  const [pageSize, setPageSize] = useState(50)
+
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(getDefaultFechaDesde)
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(getDefaultFechaHasta)
   const [filtroBusqueda, setFiltroBusqueda] = useState('')
-  const [tipoFiltroBusqueda, setTipoFiltroBusqueda] = useState('proveedor') // proveedor, numero_orden
-  const [filtroEstadoPago, setFiltroEstadoPago] = useState('todas') // todas, pagadas, con_deuda
-  const [filtroEstado, setFiltroEstado] = useState('todas') // todas, pendiente, recibida, cancelada (RECIBO)
+  const [filtroEstado, setFiltroEstado] = useState('') // '', pagado, pendiente, cancelada
+
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [compraToCancel, setCompraToCancel] = useState(null)
+  const [canceling, setCanceling] = useState(false)
 
   useEffect(() => {
     loadCompras()
-    
+
     if (location.state?.success) {
       setSuccessMessage(location.state.message || 'Operación realizada correctamente')
       navigate(location.pathname, { replace: true, state: {} })
-      const timer = setTimeout(() => {
-        setSuccessMessage(null)
-      }, 5000)
+      const timer = setTimeout(() => setSuccessMessage(null), 5000)
       return () => clearTimeout(timer)
     }
   }, [location.state, navigate, location.pathname])
 
-  // Atajo teclado: F2 -> nueva compra
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'F2') {
@@ -77,433 +101,283 @@ function ComprasList() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, tipoFiltroBusqueda, filtroEstadoPago, filtroEstado])
+  }, [filtroFechaDesde, filtroFechaHasta, filtroBusqueda, filtroEstado, pageSize])
 
-  // Función para limpiar todos los filtros y volver a valores por defecto
   const limpiarFiltros = () => {
     setFiltroFechaDesde(getDefaultFechaDesde())
     setFiltroFechaHasta(getDefaultFechaHasta())
     setFiltroBusqueda('')
-    setTipoFiltroBusqueda('proveedor')
-    setFiltroEstadoPago('todas')
-    setFiltroEstado('todas')
+    setFiltroEstado('')
   }
 
   const loadCompras = async () => {
     setLoading(true)
     setError(null)
     const { data, error: err } = await getCompras()
-    
+
     if (err) {
       setError(err.message)
       setLoading(false)
       return
     }
-    
+
     setCompras(data || [])
     setLoading(false)
   }
 
-  // Filtrar compras por rango de fechas
-  const filtrarPorFecha = useCallback((compras) => {
-    if (!filtroFechaDesde || !filtroFechaHasta) return compras
-    
-    const fechaDesde = new Date(filtroFechaDesde)
-    fechaDesde.setHours(0, 0, 0, 0) // Inicio del día
-    const fechaHasta = new Date(filtroFechaHasta)
-    fechaHasta.setHours(23, 59, 59, 999) // Fin del día
-    
-    return compras.filter(compra => {
-      const fechaCompra = new Date(compra.fecha_orden)
-      return fechaCompra >= fechaDesde && fechaCompra <= fechaHasta
-    })
-  }, [filtroFechaDesde, filtroFechaHasta])
-
-  // Filtrar compras por búsqueda
-  const filtrarPorBusqueda = useCallback((compras) => {
-    if (!filtroBusqueda.trim()) return compras
-    
-    const termino = filtroBusqueda.toLowerCase()
-    
-    return compras.filter(compra => {
-      switch (tipoFiltroBusqueda) {
-        case 'proveedor':
-          return compra.proveedores?.nombre_razon_social?.toLowerCase().includes(termino)
-        case 'numero_orden':
-          return compra.numero_orden?.toLowerCase().includes(termino)
-        default:
-          return true
-      }
-    })
-  }, [filtroBusqueda, tipoFiltroBusqueda])
-
-  // Filtrar compras por estado de pago (pagado / debe)
-  const filtrarPorEstadoPago = useCallback((compras) => {
-    if (filtroEstadoPago === 'todas') return compras
-    
-    return compras.filter(compra => {
-      const montoPagado = parseFloat(compra.monto_pagado || 0)
-      const total = parseFloat(compra.total || 0)
-      const tieneDeuda = total - montoPagado > 0.01
-      if (filtroEstadoPago === 'pagadas') return !tieneDeuda
-      if (filtroEstadoPago === 'con_deuda') return tieneDeuda
-      return true
-    })
-  }, [filtroEstadoPago])
-
-  // Filtrar compras por estado de recibo (recibida / pendiente)
-  const filtrarPorEstado = useCallback((compras) => {
-    if (filtroEstado === 'todas') return compras
-    return compras.filter(compra => compra.estado === filtroEstado)
-  }, [filtroEstado])
-
-  // Aplicar todos los filtros
-  const filteredCompras = filtrarPorEstado(
-    filtrarPorEstadoPago(
-      filtrarPorBusqueda(
-        filtrarPorFecha(compras)
-      )
-    )
+  const filtrarPorFecha = useCallback(
+    (lista) => {
+      if (!filtroFechaDesde || !filtroFechaHasta) return lista
+      const fechaDesde = new Date(filtroFechaDesde)
+      fechaDesde.setHours(0, 0, 0, 0)
+      const fechaHasta = new Date(filtroFechaHasta)
+      fechaHasta.setHours(23, 59, 59, 999)
+      return lista.filter((compra) => {
+        const fechaCompra = new Date(compra.fecha_orden)
+        return fechaCompra >= fechaDesde && fechaCompra <= fechaHasta
+      })
+    },
+    [filtroFechaDesde, filtroFechaHasta],
   )
 
-  // Calcular indicadores (similares a ventas: totales, pagadas, con deuda)
-  const indicadores = {
-    totales: filteredCompras.length,
-    pagadas: filteredCompras.filter(c => {
-      const montoPagado = parseFloat(c.monto_pagado || 0)
-      const total = parseFloat(c.total || 0)
-      return total - montoPagado <= 0.01
-    }).length,
-    conDeuda: filteredCompras.filter(c => {
-      const montoPagado = parseFloat(c.monto_pagado || 0)
-      const total = parseFloat(c.total || 0)
-      return total - montoPagado > 0.01
-    }).length
-  }
+  const filtrarPorBusqueda = useCallback(
+    (lista) => {
+      if (!filtroBusqueda.trim()) return lista
+      const termino = filtroBusqueda.toLowerCase()
+      return lista.filter((compra) => {
+        const proveedor = compra.proveedores?.nombre_razon_social?.toLowerCase() || ''
+        const numero = compra.numero_orden?.toLowerCase() || ''
+        return proveedor.includes(termino) || numero.includes(termino)
+      })
+    },
+    [filtroBusqueda],
+  )
 
-  // Calcular paginación
+  const filtrarPorEstado = useCallback(
+    (lista) => {
+      if (!filtroEstado) return lista
+      return lista.filter((compra) => {
+        const key = getCompraEstadoKey(compra)
+        if (filtroEstado === 'cancelada') return key === 'cancelado'
+        if (filtroEstado === 'pagado') return key === 'pagado'
+        if (filtroEstado === 'pendiente') return key === 'pendiente'
+        return true
+      })
+    },
+    [filtroEstado],
+  )
+
+  const filteredCompras = useMemo(
+    () => filtrarPorEstado(filtrarPorBusqueda(filtrarPorFecha(compras))),
+    [compras, filtrarPorFecha, filtrarPorBusqueda, filtrarPorEstado],
+  )
+
+  const filtrosAplicados = Boolean(
+    filtroBusqueda.trim() ||
+      filtroEstado ||
+      filtroFechaDesde !== getDefaultFechaDesde() ||
+      filtroFechaHasta !== getDefaultFechaHasta(),
+  )
+
   const totalItems = filteredCompras.length
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedCompras = filteredCompras.slice(startIndex, endIndex)
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const endIndex = Math.min(currentPage * pageSize, totalItems)
+  const paginatedCompras = filteredCompras.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  )
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleDelete = async () => {
-    if (!compraToDelete) return
-    setDeleting(true)
-    const { error: err } = await deleteCompra(compraToDelete)
+  const handleCancel = async () => {
+    if (!compraToCancel) return
+    setCanceling(true)
+    const { error: err } = await cancelarCompra(compraToCancel)
     if (err) {
-      setError(err.message || 'Error al eliminar la compra')
-      setDeleting(false)
+      setError(err.message || 'Error al cancelar la compra')
+      setCanceling(false)
       return
     }
-    setDeleting(false)
-    setShowDeleteModal(false)
-    setCompraToDelete(null)
+    setCanceling(false)
+    setShowCancelModal(false)
+    setCompraToCancel(null)
+    setSuccessMessage('Compra cancelada correctamente')
     await loadCompras()
   }
 
-  // Obtener configuración de fecha/hora
-  const { timezone, dateFormat } = useDateTime()
-  
-  // Formatear fecha usando la configuración del usuario (solo fecha, sin hora)
   const formatearFecha = (fecha) => {
-    // Extraer solo la parte de fecha del formato
-    const formatoSoloFecha = dateFormat.split(' ')[0] // Tomar solo la parte de fecha (antes del espacio)
+    const formatoSoloFecha = dateFormat.split(' ')[0]
     return formatDate(fecha, formatoSoloFecha, timezone)
   }
 
-  // Formatear moneda
-  const formatearMoneda = (valor) => {
-    const num = Number(valor || 0)
-    return `$${num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
-
-  // Obtener variante de badge según estado
-  const obtenerVariantEstado = (estado) => {
-    switch (estado) {
-      case 'recibida':
-        return 'success'
-      case 'pendiente':
-        return 'warning'
-      case 'cancelada':
-        return 'danger'
-      default:
-        return 'info'
-    }
-  }
-
-  // Obtener texto del estado
-  const obtenerTextoEstado = (estado) => {
-    switch (estado) {
-      case 'recibida':
-        return 'Recibida'
-      case 'pendiente':
-        return 'Pendiente'
-      case 'cancelada':
-        return 'Cancelada'
-      default:
-        return estado
-    }
-  }
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Spinner size="lg" />
-          <p style={{ marginTop: '1rem' }}>Cargando compras...</p>
-        </div>
-      </Layout>
-    )
+  const formatearDeuda = (compra) => {
+    if (compraEstaCancelada(compra)) return { text: '-', debt: false }
+    const total = parseFloat(compra.total || 0)
+    const pagado = parseFloat(compra.monto_pagado || 0)
+    const deuda =
+      compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
+    if (deuda > 0.01) return { text: formatearMoneda(deuda), debt: true }
+    return { text: formatearMoneda(0), debt: false }
   }
 
   return (
     <Layout>
-      <div className="container">
-        {/* Indicadores */}
-        <div className="compras-indicadores">
-          <div className="indicadores-header">
-            <div>
-              <div className="section-label">SECCIÓN</div>
-              <h3>INDICADORES</h3>
-            </div>
+      <div className="container vp-module cp-list-page">
+        <div className="cp-list-toolbar">
+          <div>
+            <div className="section-label">SECCIÓN</div>
+            <h3 className="cp-list-toolbar__title">REGISTROS DE COMPRAS</h3>
           </div>
-          <div className="indicadores-grid">
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº COMPRAS TOTALES</div>
-              <div className="indicador-valor">{indicadores.totales}</div>
-            </Card>
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº COMPRAS PAGAS</div>
-              <div className="indicador-valor">{indicadores.pagadas}</div>
-            </Card>
-            <Card className="indicador-card indicador-verde">
-              <div className="indicador-label">Nº COMPRAS CON DEUDA</div>
-              <div className="indicador-valor">{indicadores.conDeuda}</div>
-            </Card>
-          </div>
-        </div>
-
-        {/* Acciones y Filtros */}
-        <div className="compras-acciones">
-          <div className="acciones-header">
-            <div>
-              <div className="section-label">SECCIÓN</div>
-              <h3>ACCIONES</h3>
-            </div>
-          </div>
-          <div className="acciones-buttons">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowActions(prev => !prev)}
-            >
-              {textoBotonFiltros}
+          <Link to="/compras/nueva">
+            <Button variant="primary" className="vp-btn-primary" size="sm">
+              Nueva orden (F2)
             </Button>
-            <Link to="/compras/nueva">
-              <Button variant="primary" size="sm">
-                Nueva orden de compra (F2)
-              </Button>
-            </Link>
-          </div>
-          {showActions && (
-            <div className="acciones-content">
-              <div className="filtros-header-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={limpiarFiltros}
-                >
-                  🗑️ Limpiar Filtros
-                </Button>
-              </div>
-              <div className="filtro-fecha-registros">
-                <label>FILTRO DE REGISTROS POR FECHA:</label>
-                <div className="filtro-fecha-rango">
-                  <div className="filtro-fecha-item">
-                    <label htmlFor="fecha-desde">Desde:</label>
-                    <input
-                      type="date"
-                      id="fecha-desde"
-                      value={filtroFechaDesde}
-                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="filtro-fecha-item">
-                    <label htmlFor="fecha-hasta">Hasta:</label>
-                    <input
-                      type="date"
-                      id="fecha-hasta"
-                      value={filtroFechaHasta}
-                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                      className="form-control"
-                      min={filtroFechaDesde}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="filtros-adicionales">
-                <div className="filtro-busqueda">
-                  <label>FILTRO DE REGISTROS POR:</label>
-                  <div className="filtro-tipo">
-                    <select 
-                      value={tipoFiltroBusqueda} 
-                      onChange={(e) => setTipoFiltroBusqueda(e.target.value)}
-                      className="form-control"
-                    >
-                      <option value="proveedor">NOMBRE PROVEEDOR</option>
-                      <option value="numero_orden">NÚMERO ORDEN</option>
-                    </select>
-                  </div>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Buscar..."
-                    value={filtroBusqueda}
-                    onChange={(e) => setFiltroBusqueda(e.target.value)}
-                  />
-                </div>
-                
-                <div className="filtro-estado-pago">
-                  <label>FILTRO DE REGISTROS POR:</label>
-                  <select 
-                    value={filtroEstadoPago} 
-                    onChange={(e) => setFiltroEstadoPago(e.target.value)}
-                    className="form-control"
-                  >
-                    <option value="todas">TODAS LAS COMPRAS</option>
-                    <option value="pagadas">COMPRAS PAGAS</option>
-                    <option value="con_deuda">COMPRAS QUE FALTAN PAGAR</option>
-                  </select>
-                </div>
-                
-                <div className="filtro-estado">
-                  <label>FILTRO POR RECIBO:</label>
-                  <select 
-                    value={filtroEstado} 
-                    onChange={(e) => setFiltroEstado(e.target.value)}
-                    className="form-control"
-                  >
-                    <option value="todas">TODOS</option>
-                    <option value="pendiente">PENDIENTE</option>
-                    <option value="recibida">RECIBIDA</option>
-                    <option value="cancelada">CANCELADA</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
+          </Link>
         </div>
 
-        {error && (
+        {error ? (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)}>
             {error}
           </Alert>
-        )}
+        ) : null}
 
-        {successMessage && (
+        {successMessage ? (
           <Alert variant="success" dismissible onDismiss={() => setSuccessMessage(null)}>
             {successMessage}
           </Alert>
-        )}
+        ) : null}
 
-        {/* Tabla de Registros */}
-        <Card className="registros-panel">
-          <div className="section-label">SECCIÓN</div>
-          <h3 className="registros-seccion-titulo">REGISTROS DE COMPRAS</h3>
-          {paginatedCompras.length === 0 ? (
-            <div className="empty-state">
+        <div className="vp-panel vp-list-filters">
+          <div className="vp-list-filters__search">
+            <i className="bi bi-search" aria-hidden />
+            <input
+              type="search"
+              className="form-control"
+              placeholder="Buscar por proveedor o nº de orden..."
+              value={filtroBusqueda}
+              onChange={(e) => setFiltroBusqueda(e.target.value)}
+            />
+          </div>
+
+          <div className="vp-list-filters__fields cp-list-filters__fields">
+            <label className="vp-filter-field">
+              <span>Desde</span>
+              <input
+                type="date"
+                className="form-control"
+                value={filtroFechaDesde}
+                onChange={(e) => setFiltroFechaDesde(e.target.value)}
+              />
+            </label>
+            <label className="vp-filter-field">
+              <span>Hasta</span>
+              <input
+                type="date"
+                className="form-control"
+                value={filtroFechaHasta}
+                onChange={(e) => setFiltroFechaHasta(e.target.value)}
+                min={filtroFechaDesde}
+              />
+            </label>
+            <label className="vp-filter-field">
+              <span>Estado</span>
+              <select
+                className="form-control"
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="pagado">Pagado</option>
+                <option value="pendiente">Con deuda</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="vp-list-filters__actions">
+            <Button type="button" variant="ghost" onClick={limpiarFiltros} disabled={loading}>
+              Limpiar
+            </Button>
+          </div>
+        </div>
+
+        {filtrosAplicados ? (
+          <p className="vp-list-filtros-activos" role="status">
+            Filtros aplicados
+            {filtroBusqueda.trim() ? ` · búsqueda “${filtroBusqueda.trim()}”` : ''}
+            {filtroEstado ? ' · estado' : ''}.
+          </p>
+        ) : null}
+
+        <div className="vp-panel vp-list-table-panel">
+          {loading && compras.length === 0 ? (
+            <div className="vp-empty">
+              <Spinner />
+              <p>Cargando compras…</p>
+            </div>
+          ) : paginatedCompras.length === 0 ? (
+            <div className="vp-empty">
+              <p>
+                {compras.length === 0
+                  ? 'No hay compras registradas aún.'
+                  : 'No se encontraron compras con los filtros aplicados.'}
+              </p>
               {compras.length === 0 ? (
-                <>
-                  <p>No hay compras registradas aún.</p>
-                  <Link to="/compras/nueva">
-                    <Button variant="primary">Crear primera compra</Button>
-                  </Link>
-                </>
+                <Link to="/compras/nueva">
+                  <Button variant="primary" className="vp-btn-primary">
+                    Crear primera compra
+                  </Button>
+                </Link>
               ) : (
-                <p>No se encontraron compras que coincidan con los filtros aplicados</p>
+                <Button type="button" variant="outline" onClick={limpiarFiltros}>
+                  Limpiar filtros
+                </Button>
               )}
             </div>
           ) : (
             <>
-              <div className="table-container">
-                <table className="table table-sticky-header">
+              <div className="vp-table-wrap">
+                <table className="vp-table">
                   <thead>
                     <tr>
-                      <th>FECHA</th>
-                      <th className="hide-mobile">FACTURACIÓN / Nº ORDEN</th>
-                      <th>PROVEEDOR</th>
-                      <th className="hide-mobile">UNIDADES</th>
-                      <th className="hide-mobile">$TOTAL</th>
-                      <th className="hide-mobile">$PAGADO</th>
-                      <th className="hide-mobile">$DEUDA</th>
-                      <th>ESTADO</th>
-                      <th>RECIBO</th>
-                      <th>ACCIONES</th>
+                      <th>Fecha</th>
+                      <th>Proveedor</th>
+                      <th>Total</th>
+                      <th className="hide-mobile">Pagado</th>
+                      <th className="hide-mobile">Deuda</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedCompras.map((compra) => {
-                      const montoPagado = parseFloat(compra.monto_pagado || 0)
-                      const total = parseFloat(compra.total || 0)
-                      const deuda = compra.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - montoPagado)
-                      const estadoPago = total <= 0 || montoPagado >= total ? 'pagado' : 'debe'
+                      const estadoKey = getCompraEstadoKey(compra)
+                      const deuda = formatearDeuda(compra)
                       return (
-                        <tr key={compra.id}>
+                        <tr
+                          key={compra.id}
+                          className={compraEstaCancelada(compra) ? 'vp-row--cancelada' : ''}
+                        >
                           <td>{formatearFecha(compra.fecha_orden)}</td>
-                          <td className="hide-mobile">{compra.numero_orden || '-'}</td>
-                          <td>{compra.proveedores?.nombre_razon_social || '-'}</td>
-                          <td className="hide-mobile">{compra.unidades_totales ?? 0}</td>
-                          <td className="hide-mobile">{formatearMoneda(compra.total)}</td>
+                          <td>{compra.proveedores?.nombre_razon_social || '—'}</td>
+                          <td className="vp-money">{formatearMoneda(compra.total)}</td>
                           <td className="hide-mobile">{formatearMoneda(compra.monto_pagado)}</td>
-                          <td className="hide-mobile">{formatearMoneda(deuda)}</td>
-                          <td>
-                            <Badge variant={estadoPago === 'pagado' ? 'success' : 'warning'}>
-                              {estadoPago === 'pagado' ? 'Pagado' : 'Debe'}
-                            </Badge>
+                          <td className={`hide-mobile${deuda.debt ? ' vp-money--warning' : ''}`}>
+                            {deuda.text}
                           </td>
                           <td>
-                            <Badge variant={obtenerVariantEstado(compra.estado)}>
-                              {obtenerTextoEstado(compra.estado)}
-                            </Badge>
+                            <span className={badgeClassEstado(estadoKey)}>
+                              {labelEstadoCompra(estadoKey)}
+                            </span>
                           </td>
                           <td>
-                            <div className="table-actions">
-                              <Link to={`/compras/${compra.id}`}>
-                                <Button variant="ghost" size="sm" title="Ver detalle">
-                                  <i className="bi bi-eye" />
-                                </Button>
-                              </Link>
-                              <Link to={`/compras/${compra.id}/editar`}>
-                                <Button variant="ghost" size="sm" title="Editar">
-                                  <i className="bi bi-pencil" />
-                                </Button>
-                              </Link>
-                              <Link to={`/compras/${compra.id}`} state={{ print: true }}>
-                                <Button variant="ghost" size="sm" title="Imprimir">
-                                  <i className="bi bi-printer" />
-                                </Button>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Eliminar"
-                                onClick={() => {
-                                  setCompraToDelete(compra.id)
-                                  setShowDeleteModal(true)
-                                }}
-                              >
-                                <i className="bi bi-trash" />
-                              </Button>
-                            </div>
+                            <ComprasActionsMenu
+                              compraId={compra.id}
+                              cancelada={compraEstaCancelada(compra)}
+                              onCancel={(compraId) => {
+                                setCompraToCancel(compraId)
+                                setShowCancelModal(true)
+                              }}
+                            />
                           </td>
                         </tr>
                       )
@@ -511,32 +385,57 @@ function ComprasList() {
                   </tbody>
                 </table>
               </div>
-              
-              {totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              )}
-              
-              {totalItems > 0 && (
-                <div className="table-info" style={{ marginTop: '1rem' }}>
-                  Mostrando {startIndex + 1}-{Math.min(endIndex, totalItems)} de {totalItems} compras
+
+              <div className="vp-list-footer">
+                <div className="vp-list-footer__info">
+                  {totalItems > 0
+                    ? `Mostrando ${startIndex} a ${endIndex} de ${totalItems} registros`
+                    : 'Sin registros'}
                 </div>
-              )}
+
+                {totalPages > 1 ? (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                      setCurrentPage(page)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                  />
+                ) : (
+                  <div />
+                )}
+
+                <label className="vp-list-footer__pagesize">
+                  <span>Registros por página:</span>
+                  <select
+                    className="form-control"
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </>
           )}
-        </Card>
+        </div>
       </div>
 
       <Modal
-        isOpen={showDeleteModal}
+        isOpen={showCancelModal}
         onClose={() => {
-          setShowDeleteModal(false)
-          setCompraToDelete(null)
+          setShowCancelModal(false)
+          setCompraToCancel(null)
         }}
-        title="Eliminar compra"
+        title="Cancelar compra"
         variant="danger"
         closeOnOverlayClick={false}
         footer={
@@ -544,29 +443,27 @@ function ComprasList() {
             <Button
               variant="outline"
               onClick={() => {
-                setShowDeleteModal(false)
-                setCompraToDelete(null)
+                setShowCancelModal(false)
+                setCompraToCancel(null)
               }}
-              disabled={deleting}
+              disabled={canceling}
             >
-              Cancelar
+              Volver
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleDelete}
-              loading={deleting}
-              disabled={deleting}
-            >
-              Eliminar
+            <Button variant="primary" onClick={handleCancel} loading={canceling} disabled={canceling}>
+              Confirmar cancelación
             </Button>
           </>
         }
       >
-        <p>¿Seguro que querés eliminar esta compra? Esta acción no se puede deshacer.</p>
+        <p>
+          ¿Seguro que querés cancelar esta compra? Quedará visible como <strong>Cancelada</strong>
+          {'. '}
+          Si ya había sido recibida, se revertirá el stock.
+        </p>
       </Modal>
     </Layout>
   )
 }
 
 export default ComprasList
-

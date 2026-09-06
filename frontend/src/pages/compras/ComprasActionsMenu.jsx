@@ -1,0 +1,157 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '../../components/common'
+import '../ventas/ActionsMenu.css'
+
+const MENU_GAP = 4
+const ITEM_HEIGHT = 48
+
+function ComprasActionsMenu({ compraId, cancelada = false, onCancel }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [menuStyle, setMenuStyle] = useState(null)
+  const buttonRef = useRef(null)
+  const dropdownRef = useRef(null)
+  const navigate = useNavigate()
+  const menuItemCount = cancelada ? 3 : 4
+
+  const updateMenuPosition = useCallback(() => {
+    const btn = buttonRef.current
+    if (!btn) return
+
+    const rect = btn.getBoundingClientRect()
+    const measuredH = dropdownRef.current?.offsetHeight
+    const menuH = measuredH > 0 ? measuredH : menuItemCount * ITEM_HEIGHT
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUp = spaceBelow < menuH + MENU_GAP && rect.top > spaceBelow
+
+    if (openUp) {
+      setMenuStyle({
+        position: 'fixed',
+        right: Math.max(8, window.innerWidth - rect.right),
+        bottom: window.innerHeight - rect.top + MENU_GAP,
+        top: 'auto',
+        left: 'auto',
+        marginTop: 0,
+        zIndex: 6000,
+      })
+      return
+    }
+
+    setMenuStyle({
+      position: 'fixed',
+      top: rect.bottom + MENU_GAP,
+      right: Math.max(8, window.innerWidth - rect.right),
+      left: 'auto',
+      bottom: 'auto',
+      marginTop: 0,
+      zIndex: 6000,
+    })
+  }, [menuItemCount])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const inButton = buttonRef.current?.contains(event.target)
+      const inDropdown = dropdownRef.current?.contains(event.target)
+      if (!inButton && !inDropdown) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    updateMenuPosition()
+    const onScrollOrResize = () => updateMenuPosition()
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
+  }, [isOpen, updateMenuPosition])
+
+  const handleAction = (action, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsOpen(false)
+    switch (action) {
+      case 'ver':
+        navigate(`/compras/${compraId}`)
+        break
+      case 'editar':
+        if (!cancelada) navigate(`/compras/${compraId}/editar`)
+        break
+      case 'imprimir':
+        navigate(`/compras/${compraId}`, { state: { print: true } })
+        break
+      case 'cancelar':
+        if (!cancelada && onCancel) onCancel(compraId)
+        break
+      default:
+        break
+    }
+  }
+
+  const dropdown =
+    isOpen && menuStyle ? (
+      <div ref={dropdownRef} className="actions-menu-dropdown" style={menuStyle} role="menu">
+        <button type="button" className="actions-menu-item" onClick={(e) => handleAction('ver', e)}>
+          <i className="bi bi-eye" aria-hidden />
+          <span>Ver detalle</span>
+        </button>
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('editar', e)}
+          disabled={cancelada}
+          title={cancelada ? 'No se puede editar una compra cancelada' : undefined}
+        >
+          <i className="bi bi-pencil-square" aria-hidden />
+          <span>Editar compra</span>
+        </button>
+        <button type="button" className="actions-menu-item" onClick={(e) => handleAction('imprimir', e)}>
+          <i className="bi bi-printer" aria-hidden />
+          <span>Imprimir</span>
+        </button>
+        {!cancelada ? (
+          <button
+            type="button"
+            className="actions-menu-item actions-menu-item-danger"
+            onClick={(e) => handleAction('cancelar', e)}
+          >
+            <i className="bi bi-x-circle" aria-hidden />
+            <span>Cancelar compra</span>
+          </button>
+        ) : null}
+      </div>
+    ) : null
+
+  return (
+    <>
+      <div className="actions-menu-wrapper" ref={buttonRef}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsOpen((prev) => !prev)
+          }}
+          className="actions-menu-button"
+          title="Acciones"
+          aria-label="Acciones de la compra"
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+        >
+          <i className="bi bi-three-dots-vertical" aria-hidden />
+        </Button>
+      </div>
+      {typeof document !== 'undefined' && dropdown ? createPortal(dropdown, document.body) : null}
+    </>
+  )
+}
+
+export default ComprasActionsMenu

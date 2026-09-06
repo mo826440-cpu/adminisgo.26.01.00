@@ -1,363 +1,159 @@
-/* Estilos para la lista de compras */
-/* Basado en VentasList.css, adaptado para compras */
-
-/* Indicadores */
-.compras-indicadores {
-  margin-bottom: 1rem; /* separa indicadores del resto */
+/* Listado de compras — alineado al estilo de ventas (vp-*) */
+.cp-list-page {
+  padding-bottom: 1.5rem;
 }
 
-.indicadores-header {
-  display: flex; /* alinea titulo y filtro en fila */
-  justify-content: space-between; /* separa extremos */
-  align-items: center; /* centra verticalmente */
-  margin-bottom: 1rem; /* espacio inferior */
-  flex-wrap: wrap; /* permite salto en pantallas chicas */
-  gap: 1rem; /* separacion entre items */
-}
-
-.indicadores-header h3 {
-  margin: 0; /* elimina margen por defecto */
-  font-size: 1.1rem; /* titulo compacto */
-  font-weight: 600; /* peso medio */
-}
-
-.indicadores-grid {
-  display: grid; /* layout en grilla */
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* columnas responsivas */
-  gap: 1rem; /* separacion entre cards */
-}
-
-.indicador-card {
-  padding: 0.5rem 1rem; /* espacio interno */
-  text-align: center; /* centra texto */
-}
-
-.indicador-card.indicador-verde {
-  background-color: #28a745; /* fondo verde */
-  color: white; /* texto blanco */
-}
-
-.indicador-label {
-  font-size: 0.75rem; /* etiqueta chica */
-  font-weight: 600; /* peso medio */
-  margin-bottom: 0.5rem; /* espacio inferior */
-  opacity: 0.9; /* leve transparencia */
-}
-
-.indicador-valor {
-  font-size: 1.75rem; /* numero destacado */
-  font-weight: 700; /* negrita */
-}
-
-/* Acciones */
-.compras-acciones {
-  margin-bottom: 2rem; /* separa acciones de la tabla */
-}
-
-.acciones-header {
-  display: flex; /* fila */
-  align-items: center; /* centra vertical */
-  justify-content: flex-start; /* titulo al inicio */
-  gap: 1rem; /* espacio entre grupos */
-  margin-bottom: 0.5rem; /* espacio inferior */
-}
-
-.acciones-buttons {
-  display: flex; /* botones en fila */
-  flex-direction: column; /* botones apilados verticalmente */
-  gap: 0.75rem; /* separacion botones */
-  margin-bottom: 1rem; /* espacio inferior */
-}
-
-.acciones-buttons button,
-.acciones-buttons a {
-  width: 30%; /* ambos botones con mismo ancho */
-}
-
-/* Asegurar que el botón dentro del Link también ocupe el 100% */
-.acciones-buttons a .btn {
-  width: 100%;
-  display: block; /* cambiar de inline-block a block para que respete el width */
-}
-
-.compras-acciones h3 {
-  margin: 0; /* elimina margen */
-  font-size: 1.1rem; /* titulo compacto */
-  font-weight: 600; /* peso medio */
-}
-
-.acciones-content {
-  display: flex; /* contenedor flexible */
-  flex-direction: column; /* columna */
-  gap: 1.5rem; /* separacion entre bloques */
-}
-
-.filtros-header-actions {
+.cp-list-toolbar {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.filtro-fecha-registros {
-  display: flex; /* columna para label+inputs */
-  flex-direction: column; /* apila */
-  gap: 0.5rem; /* separacion */
+.cp-list-toolbar__title {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-.filtro-fecha-registros label {
-  font-weight: 600; /* peso medio */
-  font-size: 0.875rem; /* tamaño label */
+.cp-list-filters__fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.filtro-fecha-rango {
-  display: grid; /* layout en grilla */
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* columnas responsivas */
-  gap: 1rem; /* separacion entre inputs */
+.cp-list-page .vp-list-filters {
+  margin-bottom: 1rem;
 }
 
-.filtro-fecha-item {
-  display: flex; /* columna */
-  flex-direction: column; /* apila label e input */
-  gap: 0.5rem; /* separacion */
+.cp-list-page .vp-list-table-panel .vp-table-wrap {
+  max-height: min(68vh, calc(100dvh - 16rem));
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-primary) 22%, #0d1118);
+  -webkit-overflow-scrolling: touch;
 }
 
-.filtro-fecha-item label {
-  font-weight: 500; /* peso medio */
-  font-size: 0.875rem; /* tamaño label */
-  color: var(--text-secondary); /* color texto secundario */
+.cp-list-page .vp-list-table-panel .vp-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 720px;
+  margin: 0;
 }
 
-.filtros-adicionales {
-  display: grid; /* grid para filtros */
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* columnas responsivas */
-  gap: 1.5rem; /* separacion */
+.cp-list-page .vp-list-table-panel .vp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg-secondary, #161b24);
+  color: var(--text-secondary, #a1a1aa);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 35%, transparent);
 }
 
-.filtro-busqueda,
-.filtro-estado {
-  display: flex; /* columna */
-  flex-direction: column; /* apila */
-  gap: 0.5rem; /* separacion */
+.cp-list-page .vp-list-table-panel .vp-table tbody tr:hover td {
+  background: color-mix(in srgb, #2563eb 10%, #12161d);
 }
 
-.filtro-busqueda label,
-.filtro-estado label {
-  font-weight: 600; /* peso medio */
-  font-size: 0.875rem; /* tamaño label */
+.cp-list-page .vp-row--cancelada td {
+  opacity: 0.62;
 }
 
-.filtro-tipo {
-  margin-bottom: 0.5rem; /* separa select del input */
-}
-
-/* Tabla */
-.table-container {
-  overflow-x: auto; /* scroll horizontal */
-  overflow-y: auto; /* scroll vertical */
-  max-height: 1200px; /* alto maximo visible */
-  position: relative; /* base para sticky */
-}
-
-.registros-panel {
-  resize: vertical; /* permite estirar con mouse */
-  overflow: hidden; /* oculta overflow del panel */
-  min-height: 500px; /* alto minimo */
-  max-height: 1800px; /* limite maximo */
-  display: flex;
-  /*flex-direction: column;*/ /*este comando permite que el panel se agrande automaticamente*/
-}
-
-.registros-panel .card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 1rem;
-}
-
-.table.table-sticky-header {
-  border-collapse: separate !important; /* necesario para sticky */
-  border-spacing: 0 !important; /* sin espacios */
-  width: 100%; /* ocupa todo */
-  overflow: visible !important; /* evita corte */
-}
-
-.table.table-sticky-header thead th {
-  position: -webkit-sticky !important; /* soporte safari */
-  position: sticky !important; /* sticky header */
-  top: 0 !important; /* pegado arriba */
-  z-index: 10 !important; /* sobre filas */
-  background: var(--bg-secondary) !important; /* fondo fijo */
-  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* sombra sutil */
-}
-
-.table {
-  width: 100%; /* ancho total */
-  border-collapse: collapse; /* colapsa bordes */
-  background: white; /* fondo blanco */
-}
-
-.table thead {
-  background-color: var(--bg-tertiary); /* fondo header */
-}
-
-.table th {
-  padding: 1rem; /* espacio interno */
-  text-align: left; /* alineacion */
-  font-weight: 600; /* peso medio */
-  color: var(--text-primary); /* color texto */
-  border-bottom: 2px solid var(--border-color); /* separador */
-}
-
-.table td {
-  padding: 1rem; /* espacio interno */
-  border-bottom: 1px solid var(--border-color); /* separador */
-  color: var(--text-primary); /* color texto */
-}
-
-.table tbody tr:hover {
-  background-color: var(--bg-secondary); /* hover fila */
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none; /* sin borde final */
-}
-
-.table-actions {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
+.cp-list-page .vp-list-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.75rem;
   align-items: center;
-  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
 }
 
-.table-actions .btn,
-.table-actions a {
-  flex-shrink: 0;
+.cp-list-page .vp-list-footer__info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.cp-list-page .vp-list-footer__pagesize {
   display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
-.table-info {
-  color: var(--text-secondary); /* texto secundario */
-  font-size: var(--font-size-small); /* tamaño chico */
-  text-align: right; /* alineacion derecha */
+.cp-list-page .vp-list-footer__pagesize .form-control {
+  width: auto;
+  min-width: 4.5rem;
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
 }
 
-.empty-state {
-  padding: 3rem; /* espacio interno */
-  text-align: center; /* centra texto */
+.cp-list-page .vp-list-filtros-activos {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
 }
 
-.empty-state p {
-  font-size: 1.1rem; /* texto destacado */
-  color: var(--text-secondary); /* color secundario */
-  margin-bottom: 1rem; /* separacion */
+.cp-list-page .vp-list-footer .pagination {
+  padding: 0;
 }
 
-/* Responsive */
+.cp-list-page .vp-list-footer .pagination-page {
+  background: color-mix(in srgb, var(--bg-primary) 35%, #12161d);
+  color: #e5e7eb;
+  border-color: color-mix(in srgb, var(--border-color) 85%, transparent);
+}
+
+.cp-list-page .vp-list-footer .pagination-page:hover:not(:disabled):not(.active) {
+  background: color-mix(in srgb, #2563eb 18%, #12161d);
+  color: #fff;
+}
+
+.cp-list-page .vp-list-footer .pagination-page.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.cp-list-page .vp-list-footer .pagination > .btn {
+  background: color-mix(in srgb, var(--bg-primary) 35%, #12161d);
+  color: #e5e7eb;
+}
+
+@media (max-width: 1100px) {
+  .cp-list-page .vp-list-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-list-filters__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cp-list-page .vp-list-filters__actions {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 768px) {
-  .compras-indicadores {
-    margin-bottom: 1.5rem;
-  }
-  
-  .indicadores-header {
+  .cp-list-toolbar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
-  
-  .indicadores-header h3 {
-    font-size: 1rem;
+
+  .cp-list-page .vp-list-footer {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
-  
-  .indicadores-grid {
-    grid-template-columns: repeat(3, 1fr); /* tres columnas compactas */
-    gap: 0.5rem;
+
+  .cp-list-page .vp-list-footer__pagesize {
+    justify-content: flex-start;
   }
-  
-  .indicador-card {
-    padding: 0.5rem 0.25rem;
-  }
-  
-  .indicador-label {
-    font-size: 0.65rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .indicador-valor {
-    font-size: 1.1rem;
-  }
-  
-  .compras-acciones {
-    margin-bottom: 1.5rem;
-  }
-  
-  .acciones-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .acciones-buttons {
-    width: 100%;
-  }
-  
-  .acciones-buttons button,
-  .acciones-buttons a {
-    width: 100%;
-  }
-  
-  .filtro-fecha-rango {
-    grid-template-columns: 1fr; /* una columna en móvil */
-  }
-  
-  .filtros-adicionales {
-    grid-template-columns: 1fr; /* una columna */
-    gap: 1rem;
-  }
-  
-  .filtro-fecha-registros {
-    width: 100%;
-  }
-  
-  .registros-panel .card-body {
-    padding: 0.75rem;
-  }
-  
-  .table-container {
-    -webkit-overflow-scrolling: touch;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    flex: 1;
-    overflow-x: auto;
-    overflow-y: auto;
-    min-height: 0; /* permite que el flex funcione */
-  }
-  
-  .table {
-    font-size: 0.8rem; /* texto mas chico */
-    min-width: 400px; /* reducido porque ocultamos columnas */
-  }
-  
-  .table th,
-  .table td {
-    padding: 0.4rem 0.5rem; /* padding más reducido */
-  }
-  
-  /* Ocultar columnas en móvil usando la clase hide-mobile */
-  .table th.hide-mobile,
-  .table td.hide-mobile {
-    display: none;
-  }
-  
-  .table-actions {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: center;
-  }
-  
-  .registros-panel {
-    min-height: 400px;
-    max-height: 500px;
+
+  .cp-list-filters__fields {
+    grid-template-columns: 1fr;
   }
 }
