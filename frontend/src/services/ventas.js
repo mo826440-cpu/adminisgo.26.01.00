@@ -2,6 +2,12 @@
 import { supabase } from './supabase'
 import { validarLimiteVentas } from './planes'
 import { VENTA_ESTADO_CANCELADA, ventaAfectaCalculos } from '../utils/ventaEstado'
+import {
+  armarMapaSaldoPorCliente,
+  calcularDeudaVenta,
+  CC_EPS,
+  esPagoReal,
+} from '../utils/clienteCuentaCorriente'
 
 export { VENTA_ESTADO_CANCELADA, ventaAfectaCalculos }
 export {
@@ -235,7 +241,7 @@ export const createVenta = async (ventaData) => {
     const numeroTicket = `TICKET-${dateStr}-${timeStr}-${random}`
 
     const facturacion = ventaData.facturacion?.trim() || null
-    const metodosPagoArr = Array.isArray(ventaData.pagos) ? ventaData.pagos : []
+    const metodosPagoArr = pagosRealesParaPersistir(ventaData.pagos)
     const metodosUnicos = [...new Set(metodosPagoArr.map(p => String(p.metodo_pago || '').trim()).filter(Boolean))]
 
     // Preparar datos de la venta
@@ -249,7 +255,7 @@ export const createVenta = async (ventaData) => {
       descuento: ventaData.descuento || 0,
       impuestos: ventaData.impuestos || 0,
       total: ventaData.total || 0,
-      metodo_pago: metodosUnicos.length > 0 ? metodosUnicos.join(', ') : (ventaData.metodo_pago || 'efectivo'),
+      metodo_pago: metodosUnicos.length > 0 ? metodosUnicos.join(', ') : 'pendiente',
       estado: 'completada',
       observaciones: ventaData.observaciones || null
     }
@@ -587,6 +593,37 @@ function chunkIds(arr, size) {
   return out
 }
 
+/** No persistir «pendiente» en venta_pagos: el trigger lo contaría como cobro y dejaría monto_deuda en 0. */
+function pagosRealesParaPersistir(pagos) {
+  if (!Array.isArray(pagos)) return []
+  return pagos.filter(esPagoReal)
+}
+
+async function fetchPagosByVentaIds(ventaIds) {
+  const pagosByVentaId = new Map()
+  const ids = (ventaIds || []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+  if (ids.length === 0) return pagosByVentaId
+  const idChunks = chunkIds(ids, 200)
+  for (const part of idChunks) {
+    const pagos = await fetchAllQueryPages(
+      () =>
+        supabase
+          .from('venta_pagos')
+          .select('id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones')
+          .in('venta_id', part),
+      SUPABASE_PAGE_SIZE,
+      { interPageDelayMs: 0 }
+    )
+    for (const p of pagos || []) {
+      const key = Number(p.venta_id)
+      if (!key) continue
+      if (!pagosByVentaId.has(key)) pagosByVentaId.set(key, [])
+      pagosByVentaId.get(key).push(p)
+    }
+  }
+  return pagosByVentaId
+}
+
 /**
  * Rango YMD por defecto alineado a `VentasList` (filtro inicial ~3 meses).
  * Documentado para el equipo: no cambiar sin revisar la pantalla y la carga en Supabase.
@@ -771,7 +808,7 @@ export const updateVenta = async (id, ventaData) => {
     if (errorItemsActuales) throw errorItemsActuales
 
     const facturacion = ventaData.facturacion?.trim() || null
-    const metodosPagoArr = Array.isArray(ventaData.pagos) ? ventaData.pagos : []
+    const metodosPagoArr = pagosRealesParaPersistir(ventaData.pagos)
     const metodosUnicos = [...new Set(metodosPagoArr.map(p => String(p.metodo_pago || '').trim()).filter(Boolean))]
 
     const ventaUpdate = {
@@ -783,7 +820,7 @@ export const updateVenta = async (id, ventaData) => {
       descuento: ventaData.descuento || 0,
       impuestos: ventaData.impuestos || 0,
       total: ventaData.total || 0,
-      metodo_pago: metodosUnicos.length > 0 ? metodosUnicos.join(', ') : (ventaData.metodo_pago || 'efectivo'),
+      metodo_pago: metodosUnicos.length > 0 ? metodosUnicos.join(', ') : 'pendiente',
       observaciones: ventaData.observaciones || null,
       updated_at: new Date().toISOString()
     }
@@ -854,6 +891,18 @@ export const updateVenta = async (id, ventaData) => {
         .insert(pagosRows)
 
       if (errorPagos) throw errorPagos
+    } else {
+      // Si no había filas, el DELETE no dispara el trigger de montos (migración 011).
+      const t = parseFloat(ventaData.total) || 0
+      const { error: errorMontos } = await supabase
+        .from('ventas')
+        .update({
+          monto_pagado: 0,
+          monto_deuda: Math.max(0, t),
+        })
+        .eq('id', id)
+
+      if (errorMontos) throw errorMontos
     }
 
     return { data: { id }, error: null }
@@ -994,7 +1043,8 @@ export const getVentaById = async (id) => {
 }
 
 /**
- * Suma `monto_deuda` por cliente (ventas no eliminadas, con cliente asignado).
+ * Saldo de cuenta por cliente, con la misma regla que la cuenta corriente
+ * (ignora cobros «pendiente» y no confía solo en `ventas.monto_deuda`).
  * @param {Array<number|string>} clienteIds
  * @returns {Promise<Map<number, number>>}
  */
@@ -1008,13 +1058,14 @@ export const getMapaDeudaPorClienteIds = async (clienteIds) => {
   ]
   if (unique.length === 0) return map
   try {
+    const ventas = []
     const idChunks = chunkIds(unique, 200)
     for (const part of idChunks) {
       const rows = await fetchAllQueryPages(
         () =>
           supabase
             .from('ventas')
-            .select('cliente_id, monto_deuda')
+            .select('id, cliente_id, fecha_hora, total, estado, deleted_at')
             .in('cliente_id', part)
             .is('deleted_at', null)
             .neq('estado', VENTA_ESTADO_CANCELADA)
@@ -1022,12 +1073,12 @@ export const getMapaDeudaPorClienteIds = async (clienteIds) => {
         SUPABASE_PAGE_SIZE,
         { interPageDelayMs: 0 }
       )
-      for (const r of rows || []) {
-        const cid = Number(r.cliente_id)
-        if (!cid) continue
-        const d = parseFloat(r.monto_deuda) || 0
-        map.set(cid, (map.get(cid) || 0) + d)
-      }
+      if (Array.isArray(rows)) ventas.push(...rows)
+    }
+    const pagosByVentaId = await fetchPagosByVentaIds(ventas.map((v) => v.id))
+    const saldos = armarMapaSaldoPorCliente(ventas, pagosByVentaId)
+    for (const [cid, saldo] of saldos) {
+      if (Number(saldo) > CC_EPS) map.set(cid, Number(saldo) || 0)
     }
     return map
   } catch (error) {
@@ -1075,15 +1126,22 @@ export const getVentasConDeudaPorClienteId = async (clienteId) => {
       () =>
         supabase
           .from('ventas')
-          .select('id, fecha_hora, total, monto_pagado, monto_deuda, numero_ticket, facturacion')
+          .select('id, fecha_hora, total, monto_pagado, monto_deuda, numero_ticket, facturacion, estado, deleted_at')
           .eq('cliente_id', clienteId)
           .is('deleted_at', null)
-          .gt('monto_deuda', 0.009)
           .order('fecha_hora', { ascending: true }),
       SUPABASE_PAGE_SIZE,
       { interPageDelayMs: 0 }
     )
-    return { data: rows || [], error: null }
+    const ventas = rows || []
+    const pagosByVentaId = await fetchPagosByVentaIds(ventas.map((v) => v.id))
+    const conDeuda = []
+    for (const v of ventas) {
+      const deuda = calcularDeudaVenta(v, pagosByVentaId.get(Number(v.id)) || [])
+      if (deuda <= CC_EPS) continue
+      conDeuda.push({ ...v, monto_deuda: deuda })
+    }
+    return { data: conDeuda, error: null }
   } catch (error) {
     console.error('Error al obtener ventas con deuda por cliente:', error)
     return { data: null, error }

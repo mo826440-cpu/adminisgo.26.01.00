@@ -1,4 +1,4 @@
-import { ventaEstaCancelada } from './ventaEstado'
+import { ventaAfectaCalculos, ventaEstaCancelada } from './ventaEstado'
 
 export const CC_EPS = 0.009
 /** Pagos cuya fecha está cerca de la venta se consideran cobro en el momento (misma fila). */
@@ -50,10 +50,19 @@ export function getEstadoCuentaLabel(estado) {
   return 'AL DÍA'
 }
 
-function esPagoReal(pago) {
+/** Cobro que reduce deuda: no cuenta el método «pendiente» (solo marca a crédito). */
+export function esPagoReal(pago) {
   const metodo = String(pago?.metodo_pago || '').toLowerCase()
   if (metodo === 'pendiente') return false
   return (parseFloat(pago?.monto_pagado) || 0) > CC_EPS
+}
+
+/** Deuda restante de una venta, misma regla que la cuenta corriente. */
+export function calcularDeudaVenta(venta, pagos) {
+  if (!ventaAfectaCalculos(venta)) return 0
+  const total = parseFloat(venta.total) || 0
+  const pagado = (pagos || []).filter(esPagoReal).reduce((s, p) => s + (parseFloat(p.monto_pagado) || 0), 0)
+  return Math.max(0, total - pagado)
 }
 
 function pagoEnElMomento(ventaFechaIso, pagoFechaIso) {
@@ -234,6 +243,29 @@ export function getSaldoActual(movimientos) {
     if (!movimientos[i].anulado) return Number(movimientos[i].saldo) || 0
   }
   return 0
+}
+
+/**
+ * Saldo de cuenta por cliente (positivo = DEBE).
+ * Usa el libro de movimientos para coincidir con la pantalla de cuenta corriente.
+ */
+export function armarMapaSaldoPorCliente(ventas, pagosByVentaId) {
+  const byCliente = new Map()
+  for (const venta of ventas || []) {
+    const cid = Number(venta?.cliente_id)
+    if (!cid) continue
+    if (!byCliente.has(cid)) byCliente.set(cid, [])
+    byCliente.get(cid).push(venta)
+  }
+  const map = new Map()
+  for (const [cid, ventasCli] of byCliente) {
+    const movimientos = buildCuentaCorrienteMovimientos({
+      ventas: ventasCli,
+      pagosByVentaId,
+    })
+    map.set(cid, getSaldoActual(movimientos))
+  }
+  return map
 }
 
 export function ymdInTimeZone(date, timeZone) {

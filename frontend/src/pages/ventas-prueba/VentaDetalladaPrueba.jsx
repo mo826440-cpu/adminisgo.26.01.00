@@ -594,11 +594,13 @@ function VentaDetalladaPrueba() {
         total: totalFinal,
         metodo_pago: metodosPago.map(mp => mp.metodo).join(', '),
         // Los pagos reales se guardan en venta_pagos (migración 011)
-        pagos: metodosPago.map(({ _autoMonto, monto_deuda, metodo, monto_pagado, fecha_pago }) => ({
-          metodo_pago: metodo,
-          monto_pagado,
-          fecha_pago: fecha_pago ? new Date(fecha_pago).toISOString() : new Date().toISOString()
-        })),
+        pagos: metodosPago
+          .filter((mp) => mp.metodo && mp.metodo !== 'pendiente' && (Number(mp.monto_pagado) || 0) > 0)
+          .map(({ metodo, monto_pagado, fecha_pago }) => ({
+            metodo_pago: metodo,
+            monto_pagado,
+            fecha_pago: fecha_pago ? new Date(fecha_pago).toISOString() : new Date().toISOString()
+          })),
         observaciones: null,
         items: carrito.map(item => ({
           producto_id: item.producto_id,
