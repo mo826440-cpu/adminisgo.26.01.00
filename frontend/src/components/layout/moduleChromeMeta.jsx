@@ -272,9 +272,20 @@ export function getModuleChrome(pathname) {
       subtitle: 'Proveedores y contactos',
       icon: 'bi-truck',
       toolbarEnd: (
-        <Link to="/proveedores/nuevo">
-          <Button variant="primary">+ Nuevo proveedor</Button>
-        </Link>
+        <div className="vp-toolbar">
+          <Link to="/compras">
+            <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Compras">
+              <i className="bi bi-cart3" aria-hidden />
+              <span className="vp-toolbar__label">Compras</span>
+            </Button>
+          </Link>
+          <Link to="/proveedores/nuevo">
+            <Button variant="primary" className="vp-toolbar__btn vp-toolbar__btn--primary">
+              <i className="bi bi-plus-lg" aria-hidden />
+              <span className="vp-toolbar__label">Nuevo proveedor</span>
+            </Button>
+          </Link>
+        </div>
       ),
     }
   }

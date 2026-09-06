@@ -520,3 +520,69 @@ export const deleteCompra = async (id) => {
   }
 }
 
+const DEUDA_EPS = 0.009
+
+function deudaDeCompra(compra) {
+  if (String(compra?.estado || '').toLowerCase() === 'cancelada') return 0
+  const total = parseFloat(compra?.total || 0)
+  const pagado = parseFloat(compra?.monto_pagado || 0)
+  const deuda =
+    compra?.monto_deuda != null ? parseFloat(compra.monto_deuda) : Math.max(0, total - pagado)
+  return Number.isFinite(deuda) && deuda > DEUDA_EPS ? deuda : 0
+}
+
+/**
+ * Mapa proveedor_id → suma de deudas pendientes (compras no canceladas).
+ * @param {Array<number|string>} proveedorIds
+ * @returns {Promise<Map<number, number>>}
+ */
+export const getMapaDeudaPorProveedorIds = async (proveedorIds) => {
+  const map = new Map()
+  if (!proveedorIds?.length) return map
+
+  const unique = [
+    ...new Set(
+      proveedorIds.map((id) => Number(id)).filter((id) => !Number.isNaN(id) && id > 0),
+    ),
+  ]
+  if (unique.length === 0) return map
+
+  try {
+    const chunkSize = 200
+    for (let i = 0; i < unique.length; i += chunkSize) {
+      const part = unique.slice(i, i + chunkSize)
+      let from = 0
+      const pageSize = 1000
+      let hasMore = true
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('compras')
+          .select('proveedor_id, total, monto_pagado, monto_deuda, estado')
+          .in('proveedor_id', part)
+          .is('deleted_at', null)
+          .neq('estado', 'cancelada')
+          .range(from, from + pageSize - 1)
+
+        if (error) throw error
+
+        const rows = data || []
+        for (const compra of rows) {
+          const pid = Number(compra.proveedor_id)
+          if (!pid) continue
+          const deuda = deudaDeCompra(compra)
+          if (deuda <= 0) continue
+          map.set(pid, (map.get(pid) || 0) + deuda)
+        }
+
+        hasMore = rows.length >= pageSize
+        from += pageSize
+      }
+    }
+    return map
+  } catch (error) {
+    console.error('Error al armar mapa de deuda por proveedor:', error)
+    return map
+  }
+}
+
