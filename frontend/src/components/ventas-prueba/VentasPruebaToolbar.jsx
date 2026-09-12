@@ -24,6 +24,7 @@ function VentasPruebaToolbar({
   const puedeVentas = puedeModulo('ventas')
   const puedeClientes = puedeModulo('clientes')
   const puedeProductos = puedeModulo('productos')
+  const puedeCategorias = puedeModulo('categorias')
   const puedeCompras = puedeModulo('compras')
 
   const path = location.pathname
@@ -68,6 +69,15 @@ function VentasPruebaToolbar({
             <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Productos">
               <i className="bi bi-box-seam" aria-hidden />
               <span className="vp-toolbar__label">Productos</span>
+            </Button>
+          </Link>
+        ) : null}
+
+        {puedeCategorias ? (
+          <Link to="/categorias">
+            <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Categorías">
+              <i className="bi bi-folder" aria-hidden />
+              <span className="vp-toolbar__label">Categorías</span>
             </Button>
           </Link>
         ) : null}
@@ -140,6 +150,7 @@ function VentasPruebaToolbar({
     puedeVentas,
     puedeClientes,
     puedeProductos,
+    puedeCategorias,
     puedeCompras,
     showNuevaVenta,
     showClientes,
