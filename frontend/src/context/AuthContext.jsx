@@ -135,6 +135,10 @@ export const AuthProvider = ({ children }) => {
   const firstNavigatePath = useCallback(
     (excludePathname) => {
       const ex = excludePathname || ''
+      // Ventas es la pantalla inicial del sistema para quienes tengan acceso.
+      if (ex !== '/ventas' && puedeModulo('ventas')) {
+        return '/ventas'
+      }
       const puedeIrInicio =
         isAdmin ||
         (permisosMap &&
