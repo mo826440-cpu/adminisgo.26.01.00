@@ -104,8 +104,11 @@ Si algo tarda demasiado tras ampliar mucho el rango de fechas, es esperable: est
 Flujo recomendado: desarrollar y probar con `npm run dev`; cuando el bloque de trabajo esté listo, **commit + push** para actualizar el sitio en internet.
 
 
-1° cd c:\2026\adminisgo.26.01.00\frontend
+1°
+cd c:\2026\adminisgo.26.01.00\frontend
 
-2° npm run dev
+2° 
+npm run dev
 
-3° http://localhost:5173
+3° 
+http://localhost:5173

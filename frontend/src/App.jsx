@@ -41,6 +41,7 @@ import VentaDetalladaPrueba from './pages/ventas-prueba/VentaDetalladaPrueba'
 import Configuracion from './pages/configuracion/Configuracion'
 import CambiarPlan from './pages/configuracion/CambiarPlan'
 import EnDesarrollo from './pages/EnDesarrollo'
+import MantenimientoPage from './pages/mantenimiento/MantenimientoPage'
 import ReportesPage from './pages/reportes/ReportesPage'
 import OtrosCostosPage from './pages/otrosCostos/OtrosCostosPage'
 import UsuariosList from './pages/usuarios/UsuariosList'
@@ -495,7 +496,9 @@ function App() {
             path="/mantenimiento" 
             element={
               <PermissionRoute modulo="mantenimiento">
-                <EnDesarrollo modulo="Módulo de Mantenimiento" />
+                <ErrorBoundary>
+                  <MantenimientoPage />
+                </ErrorBoundary>
               </PermissionRoute>
             } 
           />
