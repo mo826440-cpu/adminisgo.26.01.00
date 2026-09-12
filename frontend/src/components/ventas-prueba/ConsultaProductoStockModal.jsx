@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Input, Modal, Spinner } from '../common'
-import { consultarProductoStockPrecio, getProductos } from '../../services/productos'
+import { consultarProductoStockPrecio, getProductos, updateProducto } from '../../services/productos'
 import { formatMoneyAR } from '../../pages/reportes/reporteVentasUtils'
 import './ConsultaProductoStockModal.css'
+
+function parsePrecioInput(valor) {
+  const normalizado = String(valor ?? '').trim().replace(/\s/g, '').replace(',', '.')
+  if (!normalizado) return NaN
+  const numero = Number(normalizado)
+  return Number.isFinite(numero) ? numero : NaN
+}
 
 function filtrarProductos(productos, termino) {
   const lower = String(termino || '').trim().toLowerCase()
@@ -29,7 +36,7 @@ function buscarExactoPorCodigo(productos, termino) {
   )
 }
 
-function ConsultaProductoStockModal({ isOpen, onClose }) {
+function ConsultaProductoStockModal({ isOpen, onClose, onPrecioActualizado }) {
   const inputRef = useRef(null)
   const listRef = useRef(null)
   const reqIdRef = useRef(0)
@@ -41,12 +48,20 @@ function ConsultaProductoStockModal({ isOpen, onClose }) {
   const [buscando, setBuscando] = useState(false)
   const [error, setError] = useState(null)
   const [producto, setProducto] = useState(null)
+  const [editandoPrecio, setEditandoPrecio] = useState(false)
+  const [precioDraft, setPrecioDraft] = useState('')
+  const [guardandoPrecio, setGuardandoPrecio] = useState(false)
+  const [mensajeExito, setMensajeExito] = useState(null)
 
   useEffect(() => {
     if (!isOpen) return undefined
     setTermino('')
     setError(null)
     setProducto(null)
+    setEditandoPrecio(false)
+    setPrecioDraft('')
+    setGuardandoPrecio(false)
+    setMensajeExito(null)
     setSugerencias([])
     setShowSugerencias(false)
     setActiveIndex(-1)
@@ -113,6 +128,9 @@ function ConsultaProductoStockModal({ isOpen, onClose }) {
 
   const aplicarProducto = (item, textoCampo = null) => {
     setProducto(item)
+    setEditandoPrecio(false)
+    setPrecioDraft('')
+    setMensajeExito(null)
     setTermino(textoCampo ?? item.nombre ?? '')
     setSugerencias([])
     setShowSugerencias(false)
@@ -201,6 +219,56 @@ function ConsultaProductoStockModal({ isOpen, onClose }) {
     e.preventDefault()
     e.stopPropagation()
     void consultar(inputRef.current?.value ?? termino)
+  }
+
+  const comenzarEdicionPrecio = () => {
+    setPrecioDraft(String(Number(producto?.precio_venta ?? 0)))
+    setEditandoPrecio(true)
+    setError(null)
+    setMensajeExito(null)
+  }
+
+  const guardarPrecio = async () => {
+    if (!producto || guardandoPrecio) return
+    const nuevoPrecio = parsePrecioInput(precioDraft)
+    if (!Number.isFinite(nuevoPrecio) || nuevoPrecio < 0) {
+      setError('Ingresá un precio válido mayor o igual a 0.')
+      return
+    }
+
+    setGuardandoPrecio(true)
+    setError(null)
+    setMensajeExito(null)
+    const { data, error: err } = await updateProducto(producto.id, { precio_venta: nuevoPrecio })
+    setGuardandoPrecio(false)
+
+    if (err) {
+      setError(err.message || 'No se pudo actualizar el precio.')
+      return
+    }
+
+    const precioActualizado = data?.precio_venta ?? nuevoPrecio
+    setProducto((actual) => (actual ? { ...actual, precio_venta: precioActualizado } : actual))
+    setCatalogo((actual) =>
+      actual.map((item) => (item.id === producto.id ? { ...item, precio_venta: precioActualizado } : item)),
+    )
+    onPrecioActualizado?.(producto.id, precioActualizado)
+    setEditandoPrecio(false)
+    setPrecioDraft('')
+    setMensajeExito(`Precio de "${producto.nombre}" actualizado correctamente.`)
+  }
+
+  const handlePrecioKeyDown = (e) => {
+    e.stopPropagation()
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      void guardarPrecio()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setEditandoPrecio(false)
+      setPrecioDraft('')
+      setError(null)
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -315,6 +383,11 @@ function ConsultaProductoStockModal({ isOpen, onClose }) {
             {error}
           </Alert>
         ) : null}
+        {mensajeExito ? (
+          <Alert variant="success" dismissible onDismiss={() => setMensajeExito(null)}>
+            {mensajeExito}
+          </Alert>
+        ) : null}
 
         {buscando && !producto ? (
           <div className="consulta-stock__loading">
@@ -343,6 +416,48 @@ function ConsultaProductoStockModal({ isOpen, onClose }) {
                 </strong>
               </article>
             </div>
+            {editandoPrecio ? (
+              <div className="consulta-stock__precio-editor">
+                <Input
+                  id="consulta-producto-nuevo-precio"
+                  label="Nuevo precio"
+                  type="text"
+                  inputMode="decimal"
+                  value={precioDraft}
+                  onChange={(e) => setPrecioDraft(e.target.value)}
+                  onKeyDown={handlePrecioKeyDown}
+                  autoFocus
+                  disabled={guardandoPrecio}
+                  placeholder="0,00"
+                />
+                <div className="consulta-stock__precio-actions">
+                  <Button type="button" variant="primary" onClick={() => void guardarPrecio()} disabled={guardandoPrecio}>
+                    {guardandoPrecio ? 'Guardando…' : 'Guardar precio'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditandoPrecio(false)
+                      setPrecioDraft('')
+                      setError(null)
+                    }}
+                    disabled={guardandoPrecio}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="consulta-stock__cambiar-precio"
+                onClick={comenzarEdicionPrecio}
+              >
+                Cambiar precio
+              </Button>
+            )}
           </div>
         ) : null}
       </form>

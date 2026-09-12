@@ -1,5 +1,5 @@
 // Página de Punto de Venta (POS) - Formulario de Registro de Venta
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Button, Alert, Spinner, Modal } from '../../components/common'
@@ -54,6 +54,17 @@ function VentaDetalladaPrueba() {
   const [productoSuggestions, setProductoSuggestions] = useState([])
   const [showProductoSuggestions, setShowProductoSuggestions] = useState(false)
   const [productoActiveIndex, setProductoActiveIndex] = useState(-1)
+
+  const handleProductoPrecioActualizado = useCallback((productoId, precioVenta) => {
+    setProductos((actuales) =>
+      actuales.map((producto) =>
+        producto.id === productoId ? { ...producto, precio_venta: precioVenta } : producto
+      )
+    )
+    setProductoSeleccionado((actual) =>
+      actual?.id === productoId ? { ...actual, precio_venta: precioVenta } : actual
+    )
+  }, [])
   
   // Estado del carrito
   const [carrito, setCarrito] = useState([])
@@ -734,7 +745,11 @@ function VentaDetalladaPrueba() {
   return (
     <Layout>
       <div className="container vp-module vp-vd-page">
-        <VentasPruebaToolbar showNuevaVenta showClientes />
+        <VentasPruebaToolbar
+          showNuevaVenta
+          showClientes
+          onProductoPrecioActualizado={handleProductoPrecioActualizado}
+        />
 
         {error && (
           <Alert variant="danger" dismissible onDismiss={() => setError(null)} className="vp-vd-alert">

@@ -15,6 +15,7 @@ function VentasPruebaToolbar({
   showNuevaVenta = true,
   showClientes = true,
   extraEnd = null,
+  onProductoPrecioActualizado,
 }) {
   const { setToolbarEndOverride } = useLayoutChrome()
   const { puedeModulo, puedeModuloVentasORapidas } = useAuthContext()
@@ -163,7 +164,11 @@ function VentasPruebaToolbar({
   ])
 
   return (
-    <ConsultaProductoStockModal isOpen={consultaOpen} onClose={() => setConsultaOpen(false)} />
+    <ConsultaProductoStockModal
+      isOpen={consultaOpen}
+      onClose={() => setConsultaOpen(false)}
+      onPrecioActualizado={onProductoPrecioActualizado}
+    />
   )
 }
 

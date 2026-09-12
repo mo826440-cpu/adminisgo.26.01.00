@@ -135,6 +135,30 @@
   color: #fb7185;
 }
 
+.consulta-stock__cambiar-precio {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.consulta-stock__precio-editor {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.consulta-stock__precio-editor .form-group {
+  margin-bottom: 0.65rem;
+}
+
+.consulta-stock__precio-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.consulta-stock__precio-actions .btn {
+  flex: 1;
+}
+
 @media (max-width: 520px) {
   .consulta-stock__row {
     flex-direction: column;
@@ -143,6 +167,10 @@
 
   .consulta-stock__kpis {
     grid-template-columns: 1fr;
+  }
+
+  .consulta-stock__precio-actions {
+    flex-direction: column;
   }
 }
 
