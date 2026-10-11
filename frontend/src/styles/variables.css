@@ -4,13 +4,14 @@
 
 :root {
   /* Colores Primarios */
-  --color-primary: #667eea;
-  --color-primary-light: #8fa3f0;
-  --color-primary-dark: #4c63d2;
+  --color-primary: #ff861c;
+  --color-primary-light: #ffb067;
+  --color-primary-dark: #e97510;
+  --color-primary-ink: #161616;
   --primary: var(--color-primary);
   --primary-dark: var(--color-primary-dark);
-  --color-secondary: #764ba2;
-  --color-accent: #f093fb;
+  --color-secondary: #9a3412;
+  --color-accent: #ffb067;
   
   /* Colores Semánticos */
   --color-success: #28a745;
@@ -44,7 +45,7 @@
   --color-cancelled: #6c757d;
   
   /* Gradientes */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary: linear-gradient(135deg, #ff861c 0%, #e97510 100%);
   --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-dark: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);

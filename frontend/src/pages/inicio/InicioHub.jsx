@@ -4,13 +4,14 @@ import { Alert, Spinner } from '../../components/common'
 import { useAuthContext } from '../../context/AuthContext'
 import { buildInicioNavCards } from '../../utils/inicioNavCards'
 import InicioHeroUserActions from './InicioHeroUserActions'
+import KioscoAliensMark from '../../components/layout/KioscoAliensMark'
 import './InicioApp.css'
 
 function InicioHub() {
   const { loadingPermisos, sinAccesoNingunModulo, isAdmin, puedeModulo } = useAuthContext()
 
   useEffect(() => {
-    document.title = 'AdminisGo · Inicio'
+    document.title = 'Kiosco Aliens · Inicio'
   }, [])
 
   const navCards = useMemo(() => buildInicioNavCards(puedeModulo, isAdmin), [puedeModulo, isAdmin])
@@ -37,24 +38,23 @@ function InicioHub() {
           </div>
         )}
 
-        <header className="inicio-app-hero lh-glass-panel">
+        <header className="inicio-app-hero inicio-app-hero--nav">
+          <div className="inicio-app-hero__alien" aria-hidden>
+            <KioscoAliensMark className="inicio-app-hero__alien-mark" />
+          </div>
           <div className="inicio-app-hero__head">
-            <div className="lh-brand-row">
-              <div className="lh-logo-slot" aria-hidden>
+            <div className="inicio-app-hero__identity">
+              <div className="inicio-app-hero__shop" aria-hidden>
                 <i className="bi bi-shop" />
               </div>
-              <div>
-                <p className="lh-brand-kicker">AdminisGo</p>
-                <h1 className="lh-brand-title inicio-app-hero__title">Panel de navegación</h1>
+              <div className="inicio-app-hero__copy">
+                <p className="inicio-app-hero__kicker">Kiosco Aliens</p>
+                <h1 className="inicio-app-hero__title">Panel de navegación</h1>
+                <p className="inicio-app-hero__desc">Todo tu negocio, en un solo lugar.</p>
               </div>
             </div>
             <InicioHeroUserActions />
           </div>
-          <p className="inicio-app-hero__desc">
-            Elegí un módulo para continuar. El menú lateral se abre con el botón <strong className="inicio-hub-kbd">☰</strong>{' '}
-            arriba a la izquierda. En el resto del sistema, usá <strong>Panel de inicio</strong> en la barra superior para
-            volver aquí.
-          </p>
         </header>
 
         {sinAccesoNingunModulo ? null : navCards.length === 0 ? (

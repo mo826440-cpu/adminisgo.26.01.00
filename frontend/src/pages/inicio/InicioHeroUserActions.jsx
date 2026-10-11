@@ -14,8 +14,13 @@ function InicioHeroUserActions() {
 
   return (
     <div className="inicio-app-hero__user-actions">
-      <span className="inicio-app-hero__user-email" title={user?.email || ''}>
-        {user?.email || '—'}
+      <span className="inicio-app-hero__user-chip">
+        <span className="inicio-app-hero__user-avatar" aria-hidden>
+          <i className="bi bi-person-fill" />
+        </span>
+        <span className="inicio-app-hero__user-email" title={user?.email || ''}>
+          {user?.email || '—'}
+        </span>
       </span>
       <button type="button" className="inicio-app-hero__user-logout" onClick={() => void handleLogout()}>
         Cerrar sesión

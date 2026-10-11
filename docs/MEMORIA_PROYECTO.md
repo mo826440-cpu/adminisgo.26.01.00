@@ -100,7 +100,7 @@ Hasta que se aplique la 045 y se redesplieguen las Edge Functions, el cierre en 
 
 ### Inicio
 
-`/inicio` es un panel de tarjetas según permisos. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
+`/inicio` es el panel de navegación de Kiosco Aliens. El contenido ocupa el ancho libre a la derecha del sidebar. La marca del menú es un SVG provisional (cabeza ancha y mentón estrecho); no hay un logo entregado por el negocio. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
 
 ### Referencias (catálogos)
 
@@ -343,6 +343,10 @@ La última implementación ya commiteada sigue siendo la del 12 de septiembre de
 
 | Fecha | Implementación | Áreas | Validación |
 | --- | --- | --- | --- |
+| 2026-10-11 | Inicio y sidebar más cerca de la captura: ancho completo, marca grande, encabezado y tarjetas | `InicioHub.jsx`, `InicioApp.css`, `Sidebar.css`, `Layout.css`, `kiosco-aliens-logo.svg` | Revisión visual del panel. El logo sigue siendo un SVG provisional |
+| 2026-10-11 | Logo del alien redondo, como en la referencia, y rótulo Kiosco / Aliens | `public/marca/kiosco-aliens-logo.svg`, `Sidebar.jsx` | Contraste visual con la captura del panel |
+| 2026-10-11 | Identidad Kiosco Aliens: paleta `#FF861C` / `#101010`, sidebar y panel de navegación | `variables.css`, `estiloTemaOscuro.css`, `Sidebar`, `InicioHub`, `LandingHome.css` | Compilación del frontend |
+| 2026-10-11 | Acento visual del sistema alineado al naranja del alien, con texto carbón sobre botones naranja | `variables.css`, layout, inicio, dashboard, ventas, compras, listados | Recolor de tokens y azules de marca. Verde, rojo y ámbar de estado quedan iguales |
 | 2026-10-11 | En el listado, la búsqueda por código muestra solo la observación de ese código | `ProductosList.jsx`, `codigosBarrasProducto.js` | Prueba del filtro con los tres códigos de Quento X90 |
 | 2026-10-11 | El listado de productos muestra las observaciones de cada código de barras | `ProductosList.jsx`, `ProductosList.css`, `codigosBarrasProducto.js` | Vite recargó el listado. El usuario ya había confirmado el guardado de Quento X90 |
 | 2026-10-11 | Un producto dado de baja libera sus códigos de barras para reutilizarlos en otro producto activo | `services/productos.js`, `ProductoForm.jsx` | El usuario guardó Quento X90 y lo encontró por el código `7798187212158` |

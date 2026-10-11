@@ -128,7 +128,7 @@
   transform: translateY(-50%);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #93c5fd;
+  color: #ffb067;
   pointer-events: none;
 }
 
@@ -142,7 +142,7 @@
   border-radius: 10px !important;
   border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
   background: color-mix(in srgb, var(--bg-primary) 40%, #0d1118);
-  color: #93c5fd;
+  color: #ffb067;
   text-decoration: none;
   padding: 0 !important;
   align-self: center;
@@ -155,7 +155,7 @@
 }
 
 .vp-vd-icon-btn:hover {
-  background: color-mix(in srgb, #2563eb 16%, transparent);
+  background: color-mix(in srgb, #ff861c 16%, transparent);
   color: #bfdbfe;
 }
 
@@ -194,7 +194,7 @@
 
 .vp-vd-page .autocomplete-list li.active,
 .vp-vd-page .autocomplete-list li:hover {
-  background: color-mix(in srgb, #2563eb 18%, transparent);
+  background: color-mix(in srgb, #ff861c 18%, transparent);
 }
 
 .vp-vd-vaciar {
@@ -356,7 +356,7 @@
 }
 
 .vp-vd-qty__btn:hover:not(:disabled) {
-  background: color-mix(in srgb, #2563eb 16%, transparent);
+  background: color-mix(in srgb, #ff861c 16%, transparent);
 }
 
 .vp-vd-qty__btn:disabled {
@@ -455,7 +455,7 @@
 }
 
 .vp-vd-pagos__metodo > i {
-  color: #93c5fd;
+  color: #ffb067;
   flex-shrink: 0;
 }
 
@@ -506,12 +506,12 @@
   align-items: flex-start;
   padding: 0.95rem 1rem;
   border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #2563eb 35%, var(--border-color));
-  background: color-mix(in srgb, #2563eb 12%, transparent);
+  border: 1px solid color-mix(in srgb, #ff861c 35%, var(--border-color));
+  background: color-mix(in srgb, #ff861c 12%, transparent);
 }
 
 .vp-vd-hint > i {
-  color: #60a5fa;
+  color: #ffb067;
   flex-shrink: 0;
   margin-top: 0.1rem;
 }
@@ -572,13 +572,14 @@
 }
 
 .vp-vd-footer__finish {
-  background: #2563eb !important;
-  border-color: #2563eb !important;
+  background: #ff861c !important;
+  border-color: #ff861c !important;
+  color: #161616 !important;
 }
 
 .vp-vd-footer__finish:hover:not(:disabled) {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
+  background: #e97510 !important;
+  border-color: #e97510 !important;
 }
 
 @media (max-width: 1100px) {

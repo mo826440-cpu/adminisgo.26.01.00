@@ -23,8 +23,8 @@
 
 .reporte-export-icon-btn:hover:not(:disabled) {
   background: var(--bg-tertiary);
-  border-color: var(--accent-color, #667eea);
-  color: var(--accent-color, #667eea);
+  border-color: var(--accent-color, #ff861c);
+  color: var(--accent-color, #ff861c);
 }
 
 .reporte-export-icon-btn:disabled {

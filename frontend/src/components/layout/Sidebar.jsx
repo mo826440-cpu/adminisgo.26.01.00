@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 import { buildInicioNavCards, buildReferenciasHubCards } from '../../utils/inicioNavCards'
 import { signOut } from '../../services/auth'
+import KioscoAliensMark from './KioscoAliensMark'
 import './Sidebar.css'
 
 const REF_PATHS = ['/inicio/referencias', '/categorias', '/marcas', '/clientes', '/proveedores', '/productos']
@@ -256,9 +257,15 @@ function Sidebar({ isOpen, onClose, isCompact = false, onToggleCompact }) {
       <div className="sidebar-shell">
         <div className="sidebar-brand">
           <div className="sidebar-brand__mark" aria-hidden>
-            <img src="/favicon.svg" alt="" width="36" height="36" decoding="async" />
+            <KioscoAliensMark className="sidebar-brand__logo" />
           </div>
-          <span className="sidebar-brand__name">AdminisGo</span>
+          <span className="sidebar-brand__text">
+            <span className="sidebar-brand__name">
+              <span>Kiosco</span>
+              <span className="sidebar-brand__aliens">Aliens</span>
+            </span>
+            <span className="sidebar-brand__system">AdminisGo</span>
+          </span>
           {typeof onToggleCompact === 'function' ? (
             <button
               type="button"

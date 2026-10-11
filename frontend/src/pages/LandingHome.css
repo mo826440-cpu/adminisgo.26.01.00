@@ -5,8 +5,8 @@
   min-height: 100dvh;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: #f4f4f5;
-  background: #050508;
+  color: #f5f5f5;
+  background: #101010;
   position: relative;
 }
 
@@ -16,7 +16,7 @@
 }
 
 .lh-root ::selection {
-  background: rgba(34, 211, 238, 0.3);
+  background: rgba(255, 134, 28, 0.3);
   color: #fff;
 }
 
@@ -40,7 +40,7 @@
   width: 520px;
   height: 520px;
   transform: translateX(-50%);
-  background: rgba(6, 182, 212, 0.15);
+  background: rgba(255, 134, 28, 0.15);
   --blur: 120px;
 }
 
@@ -49,7 +49,7 @@
   right: -10%;
   width: 420px;
   height: 420px;
-  background: rgba(124, 58, 237, 0.2);
+  background: rgba(154, 52, 18, 0.22);
   --blur: 100px;
 }
 
@@ -98,11 +98,9 @@
 }
 
 .lh-glass-panel {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: #202020;
+  border: 1px solid #333333;
+  box-shadow: none;
 }
 
 .lh-header {
@@ -145,18 +143,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(
-    to bottom right,
-    rgba(34, 211, 238, 0.2),
-    rgba(139, 92, 246, 0.15),
-    rgba(52, 211, 153, 0.15)
-  );
-  box-shadow:
-    0 0 24px -8px rgba(34, 211, 238, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid #333333;
+  background: #202020;
+  box-shadow: none;
   font-size: 1.5rem;
-  color: #67e8f9;
+  color: #ff861c;
 }
 
 .lh-brand-kicker {
@@ -164,8 +155,8 @@
   font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: #71717a;
+  letter-spacing: 0.08em;
+  color: #ff861c;
 }
 
 .lh-brand-title {
@@ -183,7 +174,7 @@
 }
 
 .lh-brand-accent {
-  color: #22d3ee;
+  color: #ffb067;
 }
 
 .lh-header-actions {
@@ -248,8 +239,8 @@
   text-decoration: none;
   background: linear-gradient(to right, #06b6d4, #8b5cf6, #34d399);
   box-shadow:
-    0 0 40px -10px rgba(34, 211, 238, 0.35),
-    0 0 80px -20px rgba(167, 139, 250, 0.25);
+    0 0 40px -10px rgba(255, 134, 28, 0.35),
+    0 0 80px -20px rgba(154, 52, 18, 0.28);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -257,11 +248,11 @@
 
 .lh-btn-gradient:hover {
   transform: scale(1.02);
-  box-shadow: 0 0 48px -12px rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 48px -12px rgba(255, 134, 28, 0.55);
 }
 
 .lh-btn-gradient:focus-visible {
-  outline: 2px solid #22d3ee;
+  outline: 2px solid #ffb067;
   outline-offset: 2px;
 }
 
@@ -310,7 +301,7 @@
   margin: 0;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(34, 211, 238, 0.9);
+  color: rgba(255, 134, 28, 0.9);
 }
 
 .lh-intro h2 {
@@ -369,54 +360,26 @@
   gap: 1rem;
   text-decoration: none;
   color: inherit;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: #202020;
+  border: 1px solid #333333;
+  box-shadow: none;
   transition:
     transform 0.3s ease-out,
     box-shadow 0.3s ease-out;
 }
 
 .lh-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    rgba(34, 211, 238, 0.35),
-    rgba(167, 139, 250, 0.25),
-    rgba(52, 211, 153, 0.2)
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0.65;
-  transition: opacity 0.3s ease-out;
+  content: none;
 }
 
 .lh-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 0 40px -10px rgba(34, 211, 238, 0.35),
-    0 0 80px -20px rgba(167, 139, 250, 0.25);
-}
-
-.lh-card:hover::before {
-  opacity: 1;
+  transform: none;
+  border-color: #ff861c;
+  box-shadow: none;
 }
 
 .lh-card:focus-visible {
-  outline: 2px solid #a78bfa;
+  outline: 2px solid #ff861c;
   outline-offset: 2px;
 }
 
@@ -431,45 +394,24 @@
   transition: background 0.2s ease;
 }
 
-.lh-card-icon--cyan {
-  background: rgba(34, 211, 238, 0.1);
-  color: #67e8f9;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
-}
-
-.lh-card-icon--violet {
-  background: rgba(167, 139, 250, 0.1);
-  color: #c4b5fd;
-  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25);
-}
-
+.lh-card-icon,
+.lh-card-icon--cyan,
+.lh-card-icon--violet,
 .lh-card-icon--emerald {
-  background: rgba(52, 211, 153, 0.1);
-  color: #6ee7b7;
-  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.25);
-}
-
-.lh-card:hover .lh-card-icon--cyan {
-  background: rgba(34, 211, 238, 0.2);
-}
-
-.lh-card:hover .lh-card-icon--violet {
-  background: rgba(167, 139, 250, 0.2);
-}
-
-.lh-card:hover .lh-card-icon--emerald {
-  background: rgba(52, 211, 153, 0.2);
+  background: rgba(255, 134, 28, 0.12);
+  color: #ff861c;
+  box-shadow: none;
 }
 
 .lh-card-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #fff;
+  color: #f5f5f5;
 }
 
 .lh-card-sub {
-  font-size: 0.75rem;
-  color: #71717a;
+  font-size: 0.8rem;
+  color: #a8a8a8;
 }
 
 .lh-footer {
@@ -527,7 +469,7 @@
 }
 
 .lh-footer-links a:hover {
-  color: #22d3ee;
+  color: #ffb067;
 }
 
 .lh-footer-social {
@@ -559,9 +501,9 @@
 }
 
 .lh-social-btn:hover {
-  color: #67e8f9;
+  color: #ffb067;
   box-shadow:
-    0 0 24px -8px rgba(34, 211, 238, 0.4),
+    0 0 24px -8px rgba(255, 134, 28, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 

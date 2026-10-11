@@ -6,12 +6,12 @@ import {
 import { formatPctChange } from './dashboardFormat'
 
 const DONUT_COLORS = [
-  '#22d3ee',
+  '#ff861c',
   '#34d399',
   '#a78bfa',
   '#fbbf24',
   '#f87171',
-  '#60a5fa',
+  '#2dd4bf',
   '#fb923c',
   '#94a3b8',
 ]

@@ -32,7 +32,7 @@ export function buildInicioNavCards(puedeModulo, isAdmin) {
     push({
       key: 'dashboard',
       title: 'Dashboard',
-      subtitle: 'Resumen en tiempo real',
+      subtitle: 'Resumen del negocio',
       icon: 'bi-speedometer2',
       to: '/dashboard',
     })
@@ -43,7 +43,7 @@ export function buildInicioNavCards(puedeModulo, isAdmin) {
     push({
       key: 'referencias',
       title: 'Referencias',
-      subtitle: 'Catálogos y tablas maestras',
+      subtitle: 'Productos, clientes y proveedores',
       icon: 'bi-bookmark-star',
       to: '/inicio/referencias',
     })
@@ -83,7 +83,7 @@ export function buildInicioNavCards(puedeModulo, isAdmin) {
     push({
       key: 'ventas_rapidas',
       title: 'Ventas rápidas',
-      subtitle: 'Checkout exprés',
+      subtitle: 'Cobrá en pocos pasos',
       icon: 'bi-lightning-charge',
       to: '/ventas-rapidas',
     })

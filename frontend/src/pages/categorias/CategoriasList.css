@@ -63,7 +63,7 @@
 
 .categorias-expand-btn:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary-color, #0ea5e9);
+  border-color: var(--primary-color, #ff861c);
 }
 
 .categorias-expand-btn .bi {
@@ -78,7 +78,7 @@
   margin-top: 0.25rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--primary-color, #0ea5e9);
+  color: var(--primary-color, #ff861c);
 }
 
 /* Tabla principal de categorías — compacta y con divisores verticales */
@@ -378,7 +378,7 @@
 
 .categoria-productos-edit-link:hover {
   background: var(--bg-secondary);
-  color: var(--primary-color, #0ea5e9);
+  color: var(--primary-color, #ff861c);
 }
 
 .categoria-productos-edit-link .bi {

@@ -8,8 +8,9 @@
   --vp-radius-sm: 8px;
   --vp-gap: 1rem;
   --vp-gap-lg: 1.25rem;
-  --vp-primary: #2563eb;
-  --vp-primary-hover: #1d4ed8;
+  --vp-primary: #ff861c;
+  --vp-primary-hover: #e97510;
+  --vp-primary-ink: #161616;
   --vp-success: #22c55e;
   --vp-warning: #f59e0b;
   --vp-danger: #ef4444;
@@ -47,6 +48,7 @@
 .vp-module .btn-primary.vp-btn-primary {
   background: var(--vp-primary) !important;
   border-color: var(--vp-primary) !important;
+  color: var(--vp-primary-ink) !important;
 }
 
 .vp-module .vp-btn-primary:hover,
@@ -152,7 +154,7 @@
 }
 
 .vp-module .vp-info-banner i {
-  color: #60a5fa;
+  color: #ffb067;
   margin-top: 0.1rem;
 }
 

@@ -29,8 +29,8 @@
 }
 
 .vp-kpi--blue .vp-kpi__icon {
-  background: color-mix(in srgb, #2563eb 22%, transparent);
-  color: #60a5fa;
+  background: color-mix(in srgb, #ff861c 22%, transparent);
+  color: #ffb067;
 }
 
 .vp-kpi--green .vp-kpi__icon {

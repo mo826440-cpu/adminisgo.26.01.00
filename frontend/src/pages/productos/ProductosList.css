@@ -190,13 +190,13 @@
   white-space: nowrap;
   color: var(--text-primary);
   font-weight: 600;
-  border-bottom: 1px dashed rgba(56, 189, 248, 0.35);
+  border-bottom: 1px dashed rgba(255, 134, 28, 0.35);
   padding-bottom: 1px;
   cursor: help;
 }
 
 [data-theme='dark'] .productos-table__nombre-text {
-  color: rgba(165, 243, 252, 0.95);
+  color: #ffb067;
 }
 
 .productos-th-observaciones,

@@ -31,7 +31,7 @@
   gap: 1rem;
   padding: 1.25rem 1.35rem;
   border-radius: var(--radius-lg, 12px);
-  border: 1px solid rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(255, 134, 28, 0.12);
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.75) 100%);
   backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
@@ -61,7 +61,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.8125rem;
-  color: #22d3ee;
+  color: #ffb067;
   font-family: 'Courier New', monospace;
 }
 
@@ -225,7 +225,7 @@
   font-size: 1.15rem;
 }
 
-.dash-kpi--cyan .dash-kpi__icon-wrap { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+.dash-kpi--cyan .dash-kpi__icon-wrap { background: rgba(255, 134, 28, 0.15); color: #ffb067; }
 .dash-kpi--green .dash-kpi__icon-wrap { background: rgba(52, 211, 153, 0.15); color: #34d399; }
 .dash-kpi--violet .dash-kpi__icon-wrap { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
 .dash-kpi--amber .dash-kpi__icon-wrap { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
@@ -422,7 +422,7 @@
 .dash-status-card--green { background: rgba(52, 211, 153, 0.1); }
 .dash-status-card--amber { background: rgba(251, 191, 36, 0.1); }
 .dash-status-card--red { background: rgba(248, 113, 113, 0.1); }
-.dash-status-card--cyan { background: rgba(34, 211, 238, 0.1); }
+.dash-status-card--cyan { background: rgba(255, 134, 28, 0.1); }
 
 .dash-status-card__label {
   display: block;
@@ -471,12 +471,12 @@
 .dash-table thead th {
   text-align: left;
   padding: 0.5rem 0.65rem;
-  color: #22d3ee;
+  color: #ffb067;
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+  border-bottom: 1px solid rgba(255, 134, 28, 0.2);
 }
 
 .dash-table tbody td {
@@ -501,10 +501,10 @@
 .dash-badge--green { background: rgba(52, 211, 153, 0.2); color: #34d399; }
 .dash-badge--amber { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
 .dash-badge--red { background: rgba(248, 113, 113, 0.2); color: #f87171; }
-.dash-badge--cyan { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
+.dash-badge--cyan { background: rgba(255, 134, 28, 0.2); color: #ffb067; }
 
 .dash-link {
-  color: #22d3ee;
+  color: #ffb067;
   text-decoration: none;
   font-weight: 500;
 }
@@ -534,7 +534,7 @@
 
 .dash-alert--danger { background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
 .dash-alert--warning { background: rgba(251, 191, 36, 0.12); color: #fcd34d; }
-.dash-alert--info { background: rgba(34, 211, 238, 0.12); color: #67e8f9; }
+.dash-alert--info { background: rgba(255, 134, 28, 0.12); color: #ffb067; }
 
 .dash-stock__valor {
   margin: 0 0 0.75rem;

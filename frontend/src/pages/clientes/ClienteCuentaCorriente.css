@@ -36,8 +36,8 @@
 }
 
 .cc-back-btn:hover {
-  background: rgba(56, 189, 248, 0.12);
-  color: rgba(34, 211, 238, 1);
+  background: rgba(255, 134, 28, 0.12);
+  color: rgba(255, 134, 28, 1);
 }
 
 .cc-back-btn .bi {
@@ -53,7 +53,7 @@
 }
 
 .cc-breadcrumb__link {
-  color: #38bdf8;
+  color: #ffb067;
   text-decoration: none;
   font-weight: 600;
   white-space: nowrap;
@@ -90,7 +90,7 @@
   margin-bottom: 1rem;
   padding: 1rem 1.15rem;
   border-radius: 1rem;
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(255, 134, 28, 0.12);
   background: rgba(15, 23, 42, 0.35);
 }
 
@@ -112,7 +112,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #e0f2fe;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.35) 0%, rgba(37, 99, 235, 0.55) 100%);
+  background: linear-gradient(135deg, rgba(255, 134, 28, 0.35) 0%, rgba(233, 117, 16, 0.55) 100%);
   border: 1px solid rgba(125, 211, 252, 0.35);
 }
 
@@ -152,7 +152,7 @@
   margin-bottom: 1rem;
   padding: 0.85rem;
   border-radius: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(255, 134, 28, 0.12);
   background: rgba(15, 23, 42, 0.28);
 }
 
@@ -175,7 +175,7 @@
   height: 2.25rem;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid rgba(56, 189, 248, 0.22);
+  border: 1px solid rgba(255, 134, 28, 0.22);
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.35);
   color: var(--text-primary);
@@ -183,8 +183,8 @@
 }
 
 .cc-month-nav__btn:hover:not(:disabled) {
-  background: rgba(56, 189, 248, 0.12);
-  color: #38bdf8;
+  background: rgba(255, 134, 28, 0.12);
+  color: #ffb067;
 }
 
 .cc-month-nav__btn:disabled {
@@ -247,7 +247,7 @@
 }
 
 .cc-link--venta {
-  color: #38bdf8;
+  color: #ffb067;
 }
 
 .cc-link--cobro {
@@ -264,7 +264,7 @@
 }
 
 .cc-money--cargo {
-  color: #38bdf8;
+  color: #ffb067;
 }
 
 .cc-money--pago {
@@ -276,7 +276,7 @@
 }
 
 .cc-row--saldo-anterior {
-  background: rgba(56, 189, 248, 0.06);
+  background: rgba(255, 134, 28, 0.06);
 }
 
 .cc-row--saldo-anterior .cc-td-detalle {
@@ -338,7 +338,7 @@
 }
 
 .cc-mov-card--saldo-anterior {
-  border-color: rgba(56, 189, 248, 0.28);
+  border-color: rgba(255, 134, 28, 0.28);
 }
 
 .cc-mov-card__top {
@@ -402,8 +402,8 @@
 }
 
 .cc-kpi--cargo .cc-kpi__icon {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.14);
+  color: #ffb067;
+  background: rgba(255, 134, 28, 0.14);
 }
 
 .cc-kpi--pago .cc-kpi__icon {
@@ -500,7 +500,7 @@
 [data-theme='light'] .cc-breadcrumb__link,
 [data-theme='light'] .cc-link--venta,
 [data-theme='light'] .cc-money--cargo {
-  color: #0369a1;
+  color: #c2410c;
 }
 
 [data-theme='light'] .cc-link--cobro,

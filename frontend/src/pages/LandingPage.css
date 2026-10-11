@@ -22,8 +22,8 @@
 }
 
 .landing-hero {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark, #4c63d2) 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark, #e97510) 100%);
+  color: #161616;
   padding: 5rem 0;
   text-align: center;
 }

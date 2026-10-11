@@ -96,7 +96,7 @@
 }
 
 .vp-list-table-panel .vp-table tbody tr:hover td {
-  background: color-mix(in srgb, #2563eb 10%, #12161d);
+  background: color-mix(in srgb, #ff861c 10%, #12161d);
 }
 
 .vp-row--cancelada td {
@@ -153,14 +153,14 @@
 }
 
 .vp-list-footer .pagination-page:hover:not(:disabled):not(.active) {
-  background: color-mix(in srgb, #2563eb 18%, #12161d);
+  background: color-mix(in srgb, #ff861c 18%, #12161d);
   color: #fff;
 }
 
 .vp-list-footer .pagination-page.active {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
+  background: #ff861c;
+  color: #161616;
+  border-color: #ff861c;
 }
 
 .vp-list-footer .pagination > .btn {

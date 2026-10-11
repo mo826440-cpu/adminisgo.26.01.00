@@ -55,8 +55,8 @@ function EvolutionChart({ data, metric, granularity, onMetricChange, onGranulari
             <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="dashLineGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#ff861c" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#ff861c" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
@@ -68,7 +68,7 @@ function EvolutionChart({ data, metric, granularity, onMetricChange, onGranulari
                 formatter={(v) => [fmt(v), 'Valor']}
               />
               <Area type="monotone" dataKey="value" fill="url(#dashLineGrad)" stroke="none" />
-              <Line type="monotone" dataKey="value" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4, fill: '#22d3ee' }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="value" stroke="#ff861c" strokeWidth={2.5} dot={{ r: 4, fill: '#ff861c' }} activeDot={{ r: 6 }} />
             </ComposedChart>
           </ResponsiveContainer>
         )}

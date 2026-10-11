@@ -68,7 +68,7 @@ function TestConnection() {
         disabled={status === 'testing' || envStatus === 'not-configured'}
         style={{
           padding: '0.5rem 1rem',
-          backgroundColor: '#667eea',
+          backgroundColor: '#ff861c',
           color: 'white',
           border: 'none',
           borderRadius: '4px',

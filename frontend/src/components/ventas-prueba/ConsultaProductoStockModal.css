@@ -52,7 +52,7 @@
 
 .consulta-stock__suggestions li.is-active,
 .consulta-stock__suggestions li:hover {
-  background: color-mix(in srgb, #2563eb 18%, transparent);
+  background: color-mix(in srgb, #ff861c 18%, transparent);
 }
 
 .consulta-stock__hint {
@@ -75,7 +75,7 @@
   margin-top: 0.85rem;
   padding: 0.9rem 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(255, 134, 28, 0.18);
   background: rgba(15, 23, 42, 0.4);
 }
 
@@ -120,7 +120,7 @@
 }
 
 .consulta-stock__kpi--precio strong {
-  color: #38bdf8;
+  color: #ffb067;
 }
 
 .consulta-stock__kpi--stock strong {
@@ -184,7 +184,7 @@
 }
 
 [data-theme='light'] .consulta-stock__kpi--precio strong {
-  color: #0369a1;
+  color: #c2410c;
 }
 
 [data-theme='light'] .consulta-stock__kpi--stock strong {

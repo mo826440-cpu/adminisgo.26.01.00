@@ -31,9 +31,9 @@
 }
 
 .ventas-shared-tools-toolbar__btn.is-active {
-  border-color: var(--primary, #2563eb);
-  color: var(--primary, #2563eb);
-  background: color-mix(in srgb, var(--primary, #2563eb) 12%, transparent);
+  border-color: var(--primary, #ff861c);
+  color: var(--primary, #ff861c);
+  background: color-mix(in srgb, var(--primary, #ff861c) 12%, transparent);
 }
 
 @media (max-width: 480px) {

@@ -6,7 +6,7 @@
   border: none;
   border-radius: var(--radius-sm, 4px);
   background: transparent;
-  color: var(--color-primary, #2563eb);
+  color: var(--color-primary, #ff861c);
   cursor: pointer;
   flex-shrink: 0;
   line-height: 1;
@@ -14,8 +14,8 @@
 }
 
 .precio-calc-trigger:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--color-primary, #2563eb);
+  background: rgba(233, 117, 16, 0.12);
+  color: var(--color-primary, #ff861c);
 }
 
 .precio-calc-trigger:disabled {
