@@ -8,6 +8,7 @@ import { getClientes, getClientePreferible } from '../../services/clientes'
 import { getFormasPago } from '../../services/formasPago'
 import { createVenta, getVentaById, updateVenta } from '../../services/ventas'
 import { ventaEstaCancelada } from '../../utils/ventaEstado'
+import { productoCoincideCodigo, textoCodigosProducto } from '../../utils/codigosBarrasProducto'
 import { formatMoneyAR, parseMoneyAR, parseMoneyARNumeric } from '../reportes/reporteVentasUtils'
 import { useDateTime } from '../../context/DateTimeContext'
 import { useAuthContext } from '../../context/AuthContext'
@@ -227,8 +228,7 @@ function VentaDetalladaPrueba() {
     const lower = termino.toLowerCase()
     return productos.filter(p =>
       p.nombre?.toLowerCase().includes(lower) ||
-      p.codigo_barras?.toLowerCase().includes(lower) ||
-      p.codigo_interno?.toLowerCase().includes(lower)
+      productoCoincideCodigo(p, lower)
     ).slice(0, 8)
   }
 
@@ -246,10 +246,7 @@ function VentaDetalladaPrueba() {
       return
     }
 
-    const exact = productos.find(p =>
-      p.codigo_barras?.toLowerCase() === termino.toLowerCase() ||
-      p.codigo_interno?.toLowerCase() === termino.toLowerCase()
-    )
+    const exact = productos.find((p) => productoCoincideCodigo(p, termino, { exacto: true }))
 
     if (exact) {
       aplicarProductoSeleccionado(exact)
@@ -327,11 +324,7 @@ function VentaDetalladaPrueba() {
     const termino = (terminoOverride ?? productoSearch).trim()
     if (!termino) return null
 
-    const exact = productos.find(
-      (p) =>
-        p.codigo_barras?.toLowerCase() === termino.toLowerCase() ||
-        p.codigo_interno?.toLowerCase() === termino.toLowerCase()
-    )
+    const exact = productos.find((p) => productoCoincideCodigo(p, termino, { exacto: true }))
     if (exact) return exact
 
     if (productoSuggestions.length === 1) return productoSuggestions[0]
@@ -862,8 +855,8 @@ function VentaDetalladaPrueba() {
                         onMouseEnter={() => setProductoActiveIndex(idx)}
                       >
                         <strong>{p.nombre}</strong>
-                        {p.codigo_barras
-                          ? ` — ${p.codigo_barras}`
+                        {textoCodigosProducto(p)
+                          ? ` — ${textoCodigosProducto(p)}`
                           : p.codigo_interno
                             ? ` — ${p.codigo_interno}`
                             : ''}

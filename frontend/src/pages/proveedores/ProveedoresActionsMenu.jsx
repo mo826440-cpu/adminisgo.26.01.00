@@ -7,13 +7,13 @@ import '../ventas/ActionsMenu.css'
 const MENU_GAP = 4
 const ITEM_HEIGHT = 48
 
-function ProveedoresActionsMenu({ proveedorId, proveedorNombre, onVerDetalles }) {
+function ProveedoresActionsMenu({ proveedorId, proveedorNombre, onVerDetalles, onVerCompras }) {
   const [isOpen, setIsOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState(null)
   const buttonRef = useRef(null)
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
-  const menuItemCount = 2
+  const menuItemCount = 3
 
   const updateMenuPosition = useCallback(() => {
     const btn = buttonRef.current
@@ -77,6 +77,8 @@ function ProveedoresActionsMenu({ proveedorId, proveedorNombre, onVerDetalles })
     setIsOpen(false)
     if (action === 'detalles' && onVerDetalles) {
       onVerDetalles()
+    } else if (action === 'compras' && onVerCompras) {
+      onVerCompras()
     } else if (action === 'editar') {
       navigate(`/proveedores/${proveedorId}`)
     }
@@ -92,6 +94,14 @@ function ProveedoresActionsMenu({ proveedorId, proveedorNombre, onVerDetalles })
         >
           <i className="bi bi-eye" aria-hidden />
           <span>Ver detalle</span>
+        </button>
+        <button
+          type="button"
+          className="actions-menu-item"
+          onClick={(e) => handleAction('compras', e)}
+        >
+          <i className="bi bi-cart3" aria-hidden />
+          <span>Ver compras</span>
         </button>
         <button
           type="button"

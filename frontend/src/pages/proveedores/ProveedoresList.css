@@ -23,6 +23,23 @@
   gap: 1rem;
 }
 
+.proveedores-search-input {
+  max-width: 400px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+[data-theme='dark'] .proveedores-search-input {
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-primary);
+}
+
+.proveedores-search-input:focus {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+}
+
 .table-info {
   color: var(--text-secondary);
   font-size: var(--font-size-small);
@@ -128,12 +145,38 @@
   border-bottom: none;
 }
 
-.proveedores-col-nombre {
-  width: auto;
+.proveedores-col-expand,
+.proveedores-th-expand,
+.proveedores-td-expand {
+  width: 2.75rem;
+  text-align: center;
 }
 
-.proveedores-col-contacto {
-  width: 18rem;
+.proveedores-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(56, 189, 248, 0.85);
+  cursor: pointer;
+}
+
+.proveedores-expand-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  color: rgba(34, 211, 238, 1);
+}
+
+.proveedores-expand-btn .bi {
+  font-size: 1.1rem;
+}
+
+.proveedores-col-nombre {
+  width: auto;
 }
 
 .proveedores-col-estado,
@@ -163,7 +206,23 @@
 }
 
 .proveedores-td-nombre {
-  max-width: 320px;
+  max-width: 280px;
+}
+
+.proveedores-table__nombre-text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: 500;
+  border-bottom: 1px dashed rgba(56, 189, 248, 0.35);
+  padding-bottom: 1px;
+}
+
+[data-theme='dark'] .proveedores-table__nombre-text {
+  color: rgba(165, 243, 252, 0.95);
 }
 
 .proveedores-badge {
@@ -250,9 +309,13 @@
     padding: 0 1rem;
   }
 
-  .table {
+  .proveedores-table {
     font-size: 0.85rem;
-    min-width: 560px;
+    min-width: 420px;
+  }
+
+  .proveedores-search-input {
+    max-width: none;
   }
 
   .table th,

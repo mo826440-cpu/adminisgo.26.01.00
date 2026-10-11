@@ -13,6 +13,16 @@ function slugArchivo(texto) {
 }
 
 function codigoProducto(p) {
+  const filas = Array.isArray(p.codigos_barras) ? p.codigos_barras : []
+  const textos = filas
+    .map((fila) => {
+      const codigo = String(fila?.codigo ?? '').trim()
+      if (!codigo) return ''
+      const nota = String(fila?.observacion ?? '').trim()
+      return nota ? `${codigo} (${nota})` : codigo
+    })
+    .filter(Boolean)
+  if (textos.length > 0) return textos.join(' · ')
   return String(p.codigo_barras || p.codigo_interno || '—').trim() || '—'
 }
 

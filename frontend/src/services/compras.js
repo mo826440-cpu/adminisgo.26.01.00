@@ -591,6 +591,33 @@ function deudaDeCompra(compra) {
  * @param {Array<number|string>} proveedorIds
  * @returns {Promise<Map<number, number>>}
  */
+/**
+ * Órdenes de un proveedor, sin el recorte de fechas del listado de Compras.
+ * @param {number|string} proveedorId
+ */
+export const getComprasPorProveedorId = async (proveedorId) => {
+  try {
+    const id = Number(proveedorId)
+    if (!Number.isFinite(id) || id <= 0) {
+      return { data: [], error: null }
+    }
+
+    const { data, error } = await supabase
+      .from('compras')
+      .select('id, numero_orden, fecha_orden, total, monto_pagado, monto_deuda, estado')
+      .eq('proveedor_id', id)
+      .is('deleted_at', null)
+      .order('fecha_orden', { ascending: false })
+      .order('id', { ascending: false })
+
+    if (error) throw error
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error('Error al obtener compras del proveedor:', error)
+    return { data: null, error }
+  }
+}
+
 export const getMapaDeudaPorProveedorIds = async (proveedorIds) => {
   const map = new Map()
   if (!proveedorIds?.length) return map

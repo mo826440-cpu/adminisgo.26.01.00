@@ -27,6 +27,7 @@ import MarcasList from './pages/marcas/MarcasList'
 import MarcaForm from './pages/marcas/MarcaForm'
 import ProveedoresList from './pages/proveedores/ProveedoresList'
 import ProveedorForm from './pages/proveedores/ProveedorForm'
+import ProveedorCompras from './pages/proveedores/ProveedorCompras'
 import VentaDetalle from './pages/ventas/VentaDetalle'
 import VentasRapidas from './pages/ventas/VentasRapidas'
 import HistorialCajas from './pages/ventas/HistorialCajas'
@@ -251,6 +252,16 @@ function App() {
                 <ProveedorForm />
               </PermissionRoute>
             } 
+          />
+          <Route
+            path="/proveedores/:id/compras"
+            element={
+              <PermissionRoute modulo="proveedores">
+                <ErrorBoundary>
+                  <ProveedorCompras />
+                </ErrorBoundary>
+              </PermissionRoute>
+            }
           />
           <Route 
             path="/proveedores/:id" 

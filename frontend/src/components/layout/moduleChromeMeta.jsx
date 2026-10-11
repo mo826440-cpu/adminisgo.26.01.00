@@ -256,6 +256,15 @@ export function getModuleChrome(pathname) {
       toolbarEnd: <Tb to="/proveedores">← Volver al listado</Tb>,
     }
   }
+  if (/^\/proveedores\/[^/]+\/compras$/.test(p)) {
+    return {
+      kicker: K,
+      title: 'Compras del proveedor',
+      subtitle: 'Órdenes y saldo pendiente',
+      icon: 'bi-cart3',
+      toolbarEnd: null,
+    }
+  }
   if (/^\/proveedores\/(?!nuevo$)[^/]+$/.test(p)) {
     return {
       kicker: K,

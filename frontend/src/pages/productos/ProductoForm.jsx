@@ -1,17 +1,15 @@
 // Formulario para crear/editar producto
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal } from '../../components/common'
-import { getProducto, createProducto, updateProducto, getCategorias, getMarcas, verificarCodigoBarras, verificarCodigoInterno, verificarNombreProducto } from '../../services/productos'
-import { useAuthContext } from '../../context/AuthContext'
+import { getProducto, createProducto, updateProducto, getCategorias, getMarcas, verificarCodigoBarras, verificarNombreProducto, reemplazarCodigosBarras, liberarCodigosDeProductosInactivos } from '../../services/productos'
 import './ProductoForm.css'
 
 function ProductoForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { user } = useAuthContext()
   const isEditing = !!id
 
   const [loading, setLoading] = useState(isEditing)
@@ -22,12 +20,18 @@ function ProductoForm() {
 
   const [categorias, setCategorias] = useState([])
   const [marcas, setMarcas] = useState([])
+  const codigoKey = useRef(1)
+  const filaCodigo = (codigo = '', observacion = '') => {
+    codigoKey.current += 1
+    return { key: codigoKey.current, codigo, observacion }
+  }
+
+  const [codigos, setCodigos] = useState(() => [{ key: 1, codigo: '', observacion: '' }])
+  const [stockTocado, setStockTocado] = useState(false)
 
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    codigo_barras: '',
-    codigo_interno: '',
     categoria_id: '',
     marca_id: '',
     precio_venta: '',
@@ -53,7 +57,10 @@ function ProductoForm() {
     if (isEditing) return
     const cb = searchParams.get('codigo_barras')
     if (cb != null && String(cb).trim() !== '') {
-      setFormData((prev) => ({ ...prev, codigo_barras: String(cb).trim() }))
+      setCodigos((prev) => {
+        if (prev.some((fila) => String(fila.codigo).trim() !== '')) return prev
+        return [{ ...prev[0], codigo: String(cb).trim() }]
+      })
     }
   }, [isEditing, searchParams])
 
@@ -69,17 +76,20 @@ function ProductoForm() {
     }
     
     if (data) {
+      const filas = (data.codigos_barras || [])
+        .map((fila) => filaCodigo(String(fila.codigo ?? ''), String(fila.observacion ?? '')))
+        .filter((fila) => fila.codigo)
+      setCodigos(filas.length > 0 ? filas : [filaCodigo()])
+      setStockTocado(false)
       setFormData({
         nombre: data.nombre || '',
         descripcion: data.descripcion || '',
-        codigo_barras: data.codigo_barras || '',
-        codigo_interno: data.codigo_interno || '',
         categoria_id: data.categoria_id || '',
         marca_id: data.marca_id || '',
-        precio_venta: data.precio_venta || '',
-        precio_compra: data.precio_compra || '',
-        stock_actual: data.stock_actual || '',
-        stock_minimo: data.stock_minimo || '',
+        precio_venta: data.precio_venta ?? '',
+        precio_compra: data.precio_compra ?? '',
+        stock_actual: data.stock_actual == null ? '' : String(data.stock_actual),
+        stock_minimo: data.stock_minimo ?? '',
         unidad_medida: data.unidad_medida || 'unidad',
         activo: data.activo ?? true,
         preferible: data.preferible ?? false
@@ -100,10 +110,26 @@ function ProductoForm() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
+    if (name === 'stock_actual') setStockTocado(true)
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  const actualizarCodigo = (key, campo, valor) => {
+    setCodigos((prev) => prev.map((fila) => (fila.key === key ? { ...fila, [campo]: valor } : fila)))
+  }
+
+  const quitarCodigo = (key) => {
+    setCodigos((prev) => {
+      const siguientes = prev.filter((fila) => fila.key !== key)
+      return siguientes.length > 0 ? siguientes : [filaCodigo()]
+    })
+  }
+
+  const agregarCodigo = () => {
+    setCodigos((prev) => [...prev, filaCodigo()])
   }
 
   const handleSubmit = async (e) => {
@@ -117,12 +143,48 @@ function ProductoForm() {
       errores.push('El nombre es obligatorio')
     }
 
-    if (!formData.codigo_barras || !formData.codigo_barras.trim()) {
+    const filasCodigo = codigos.map((fila) => ({
+      codigo: String(fila.codigo ?? '').trim(),
+      observacion: String(fila.observacion ?? '').trim(),
+    }))
+    if (filasCodigo.some((fila) => !fila.codigo && fila.observacion)) {
+      errores.push('Hay una observación sin código de barras. Completá el código o quitá esa fila.')
+    }
+    const codigosUtiles = filasCodigo.filter((fila) => fila.codigo)
+    if (codigosUtiles.length === 0) {
       errores.push('El código de barras es obligatorio')
     }
+    const vistos = new Set()
+    for (const fila of codigosUtiles) {
+      const clave = fila.codigo.toLowerCase()
+      if (vistos.has(clave)) {
+        errores.push(`El código ${fila.codigo} está repetido en este producto.`)
+        break
+      }
+      vistos.add(clave)
+    }
 
-    if (!formData.codigo_interno || !formData.codigo_interno.trim()) {
-      errores.push('El código interno es obligatorio')
+    const categoriaId = String(formData.categoria_id || '')
+    if (!categoriaId || !categorias.some((cat) => String(cat.id) === categoriaId)) {
+      errores.push(
+        categorias.length === 0
+          ? 'No hay categorías cargadas. Creá una categoría antes de guardar el producto.'
+          : 'La categoría es obligatoria.',
+      )
+    }
+
+    const stockTexto = String(formData.stock_actual ?? '').trim()
+    let stockPayload
+    if (!isEditing) {
+      stockPayload = stockTexto === '' ? 0 : Number(stockTexto)
+      if (!Number.isFinite(stockPayload) || stockPayload < 0) {
+        errores.push('El stock actual debe ser mayor o igual a 0')
+      }
+    } else if (stockTocado && stockTexto !== '') {
+      stockPayload = Number(stockTexto)
+      if (!Number.isFinite(stockPayload) || stockPayload < 0) {
+        errores.push('El stock actual debe ser mayor o igual a 0')
+      }
     }
 
     if (!formData.precio_venta || parseFloat(formData.precio_venta) < 0) {
@@ -156,47 +218,43 @@ function ProductoForm() {
         return
       }
 
-      // Validar códigos únicos antes de enviar
-      const { existe: existeBarras, error: errorBarras } = await verificarCodigoBarras(
-        formData.codigo_barras.trim(), 
-        isEditing ? id : null
+      const { error: errorLiberar } = await liberarCodigosDeProductosInactivos(
+        codigosUtiles.map((fila) => fila.codigo),
+        isEditing ? id : null,
       )
-      
-      if (errorBarras) {
-        setError('Error al verificar el código de barras. Por favor, intenta nuevamente.')
-        return
-      }
-      
-      if (existeBarras) {
-        setError('El código de barras ya está en uso. Por favor, usa un código diferente.')
+      if (errorLiberar) {
+        setError('No se pudieron liberar los códigos de productos dados de baja. Intentá nuevamente.')
         return
       }
 
-      const { existe: existeInterno, error: errorInterno } = await verificarCodigoInterno(
-        formData.codigo_interno.trim(), 
-        isEditing ? id : null
-      )
-      
-      if (errorInterno) {
-        setError('Error al verificar el código interno. Por favor, intenta nuevamente.')
-        return
-      }
-      
-      if (existeInterno) {
-        setError('El código interno ya está en uso. Por favor, usa un código diferente.')
-        return
+      for (const fila of codigosUtiles) {
+        const { existe, error: errorBarras } = await verificarCodigoBarras(fila.codigo, isEditing ? id : null)
+        if (errorBarras) {
+          setError('Error al verificar el código de barras. Por favor, intenta nuevamente.')
+          return
+        }
+        if (existe) {
+          setError(`El código ${fila.codigo} ya identifica a otro producto.`)
+          return
+        }
       }
 
       const productoData = {
-        ...formData,
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion?.trim() || null,
+        categoria_id: Number(categoriaId),
+        marca_id: formData.marca_id ? Number(formData.marca_id) : null,
         precio_venta: parseFloat(formData.precio_venta) || 0,
         precio_compra: formData.precio_compra ? parseFloat(formData.precio_compra) : null,
-        stock_actual: parseFloat(formData.stock_actual) || 0,
         stock_minimo: parseFloat(formData.stock_minimo) || 0,
-        categoria_id: formData.categoria_id || null,
-        marca_id: formData.marca_id || null,
-        codigo_barras: formData.codigo_barras.trim(),
-        codigo_interno: formData.codigo_interno.trim()
+        unidad_medida: formData.unidad_medida || 'unidad',
+        activo: formData.activo,
+        preferible: formData.preferible,
+        codigo_barras: codigosUtiles[0].codigo,
+        codigos_barras: codigosUtiles,
+      }
+      if (stockPayload !== undefined) {
+        productoData.stock_actual = stockPayload
       }
 
       // Guardar datos validados y mostrar confirmación
@@ -216,20 +274,42 @@ function ProductoForm() {
     setError(null)
 
     try {
+      const { codigos_barras: codigosAGuardar, ...payload } = validatedData
+      const { error: errorLiberar } = await liberarCodigosDeProductosInactivos(
+        (codigosAGuardar || []).map((fila) => fila.codigo),
+        isEditing ? id : null,
+      )
+      if (errorLiberar) {
+        setError('No se pudieron liberar los códigos de productos dados de baja. Intentá nuevamente.')
+        setSaving(false)
+        return
+      }
+      let productoId = isEditing ? id : null
       if (isEditing) {
-        const { error: err } = await updateProducto(id, validatedData)
+        const { error: err } = await updateProducto(id, payload)
         if (err) {
           setError(err.message || 'Error al actualizar el producto')
           setSaving(false)
           return
         }
       } else {
-        const { error: err } = await createProducto(validatedData)
+        const { data, error: err } = await createProducto(payload)
         if (err) {
           setError(err.message || 'Error al crear el producto')
           setSaving(false)
           return
         }
+        productoId = data?.id
+      }
+
+      const { error: errorCodigos } = await reemplazarCodigosBarras(productoId, codigosAGuardar)
+      if (errorCodigos) {
+        setError(errorCodigos.message)
+        setSaving(false)
+        if (!isEditing && productoId) {
+          navigate(`/productos/${productoId}`, { replace: true })
+        }
+        return
       }
 
       setSaving(false)
@@ -299,39 +379,55 @@ function ProductoForm() {
             </div>
 
             <div className="form-row">
-              <div className="form-col">
-                <Input
-                  label="Código de Barras"
-                  name="codigo_barras"
-                  value={formData.codigo_barras}
-                  onChange={handleChange}
-                  required
-                  placeholder="Código de barras"
-                />
-              </div>
-              <div className="form-col">
-                <Input
-                  label="Código Interno"
-                  name="codigo_interno"
-                  value={formData.codigo_interno}
-                  onChange={handleChange}
-                  required
-                  placeholder="Código interno"
-                />
+              <div className="form-col form-col-full">
+                <div className="producto-codigos">
+                  <span className="form-label">
+                    Códigos de barras <span className="required">*</span>
+                  </span>
+                  {codigos.map((fila) => (
+                    <div className="producto-codigos__fila" key={fila.key}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={fila.codigo}
+                        onChange={(e) => actualizarCodigo(fila.key, 'codigo', e.target.value)}
+                        placeholder="Código de barras"
+                        autoComplete="off"
+                        inputMode="text"
+                      />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={fila.observacion}
+                        onChange={(e) => actualizarCodigo(fila.key, 'observacion', e.target.value)}
+                        placeholder="Observación (opcional)"
+                        autoComplete="off"
+                      />
+                      <Button type="button" variant="outline" onClick={() => quitarCodigo(fila.key)}>
+                        Quitar
+                      </Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" onClick={agregarCodigo}>
+                    Agregar código de barras
+                  </Button>
+                </div>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-col">
                 <label className="form-label">
-                  Categoría
+                  <span>
+                    Categoría <span className="required">*</span>
+                  </span>
                   <select
                     name="categoria_id"
                     value={formData.categoria_id}
                     onChange={handleChange}
                     className="form-control"
                   >
-                    <option value="">Sin categoría</option>
+                    <option value="">Seleccioná una categoría</option>
                     {categorias.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                     ))}
@@ -394,8 +490,7 @@ function ProductoForm() {
                   min="0"
                   value={formData.stock_actual}
                   onChange={handleChange}
-                  required
-                  placeholder="0"
+                  placeholder={isEditing ? 'Sin cambio si lo dejás vacío' : 'Vacío = 0'}
                 />
               </div>
               <div className="form-col">

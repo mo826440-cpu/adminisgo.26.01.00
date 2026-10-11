@@ -8,6 +8,7 @@ import { getMapaDeudaPorProveedorIds } from '../../services/compras'
 import { formatMoneyAR } from '../reportes/reporteVentasUtils'
 import GlassTooltip from '../../components/clientes/GlassTooltip'
 import ProveedoresActionsMenu from './ProveedoresActionsMenu'
+import { readProveedoresListState, writeProveedoresListState } from './proveedoresListState'
 import './ProveedoresList.css'
 import '../../styles/registros-seccion.css'
 import '../../components/ventas-prueba/VentasPruebaToolbar.css'
@@ -27,9 +28,9 @@ function ProveedoresList() {
   const [loading, setLoading] = useState(true)
   const [loadingDeudas, setLoadingDeudas] = useState(false)
   const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(() => readProveedoresListState()?.searchTerm || '')
   const [successMessage, setSuccessMessage] = useState(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => readProveedoresListState()?.currentPage || 1)
   const [detalleProveedor, setDetalleProveedor] = useState(null)
 
   const loadProveedores = useCallback(async () => {
@@ -68,8 +69,30 @@ function ProveedoresList() {
   }, [location.state, navigate, location.pathname])
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm])
+    const restore = location.state?.restoreList
+    if (!restore) return undefined
+    const t = window.setTimeout(() => {
+      if (typeof restore.searchTerm === 'string') setSearchTerm(restore.searchTerm)
+      if (Number(restore.currentPage) > 0) setCurrentPage(Number(restore.currentPage))
+      writeProveedoresListState({
+        searchTerm: typeof restore.searchTerm === 'string' ? restore.searchTerm : searchTerm,
+        currentPage: Number(restore.currentPage) > 0 ? Number(restore.currentPage) : currentPage,
+      })
+      navigate(location.pathname, {
+        replace: true,
+        state: location.state?.success
+          ? { success: location.state.success, message: location.state.message }
+          : {},
+      })
+    }, 0)
+    return () => window.clearTimeout(t)
+    // Solo al entrar con restoreList
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.restoreList])
+
+  useEffect(() => {
+    writeProveedoresListState({ searchTerm, currentPage })
+  }, [searchTerm, currentPage])
 
   useEffect(() => {
     let cancelled = false
@@ -117,6 +140,12 @@ function ProveedoresList() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const abrirCompras = (proveedor) => {
+    const listState = { searchTerm, currentPage }
+    writeProveedoresListState(listState)
+    navigate(`/proveedores/${proveedor.id}/compras`, { state: { listState } })
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -149,11 +178,13 @@ function ProveedoresList() {
           <div className="table-controls">
             <input
               type="text"
-              className="form-control"
+              className="form-control proveedores-search-input"
               placeholder="Buscar por nombre, contacto, email, teléfono o CUIT..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ maxWidth: '400px' }}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
             />
             {totalItems > 0 && (
               <div className="table-info">
@@ -189,15 +220,15 @@ function ProveedoresList() {
               <div className="table-container proveedores-table-wrap">
                 <table className="table table-sticky-header proveedores-table">
                   <colgroup>
+                    <col className="proveedores-col-expand" />
                     <col className="proveedores-col-nombre" />
-                    <col className="proveedores-col-contacto" />
                     <col className="proveedores-col-estado" />
                     <col className="proveedores-col-acciones" />
                   </colgroup>
                   <thead>
                     <tr>
+                      <th className="proveedores-th-expand" aria-label="Ver compras" />
                       <th>Nombre / Razón social</th>
-                      <th>Contacto</th>
                       <th className="proveedores-th-estado">Estado</th>
                       <th className="proveedores-th-acciones">Acciones</th>
                     </tr>
@@ -220,12 +251,54 @@ function ProveedoresList() {
                         </>
                       )
 
+                      const tooltipNombre = (
+                        <>
+                          <p className="glass-tooltip__title">Datos de contacto</p>
+                          <div className="glass-tooltip__row">
+                            <span className="glass-tooltip__label">Contacto</span>
+                            <span className="glass-tooltip__value">
+                              {datoOGuion(proveedor.contacto_principal)}
+                            </span>
+                          </div>
+                          <div className="glass-tooltip__row">
+                            <span className="glass-tooltip__label">Email</span>
+                            <span className="glass-tooltip__value">{datoOGuion(proveedor.email)}</span>
+                          </div>
+                          <div className="glass-tooltip__row">
+                            <span className="glass-tooltip__label">Teléfono</span>
+                            <span className="glass-tooltip__value">{datoOGuion(proveedor.telefono)}</span>
+                          </div>
+                          <div className="glass-tooltip__row">
+                            <span className="glass-tooltip__label">CUIT</span>
+                            <span className="glass-tooltip__value">{datoOGuion(proveedor.cuit_rut)}</span>
+                          </div>
+                          <div className="glass-tooltip__row">
+                            <span className="glass-tooltip__label">Dirección</span>
+                            <span className="glass-tooltip__value">{datoOGuion(proveedor.direccion)}</span>
+                          </div>
+                        </>
+                      )
+
                       return (
                         <tr key={proveedor.id}>
-                          <td className="proveedores-td-nombre">
-                            <strong>{proveedor.nombre_razon_social}</strong>
+                          <td className="proveedores-td-expand">
+                            <button
+                              type="button"
+                              className="proveedores-expand-btn"
+                              onClick={() => abrirCompras(proveedor)}
+                              aria-label={`Ver compras de ${proveedor.nombre_razon_social}`}
+                              title="Ver compras"
+                            >
+                              <i className="bi bi-chevron-right" aria-hidden />
+                            </button>
                           </td>
-                          <td>{datoOGuion(proveedor.contacto_principal)}</td>
+                          <td className="proveedores-td-nombre">
+                            <GlassTooltip content={tooltipNombre}>
+                              <span className="proveedores-table__nombre-text">
+                                {proveedor.nombre_razon_social}
+                              </span>
+                            </GlassTooltip>
+                          </td>
                           <td className="proveedores-td-estado">
                             {pendiente ? (
                               <GlassTooltip content={tooltipDeuda}>
@@ -244,6 +317,7 @@ function ProveedoresList() {
                               proveedorId={proveedor.id}
                               proveedorNombre={proveedor.nombre_razon_social}
                               onVerDetalles={() => setDetalleProveedor(proveedor)}
+                              onVerCompras={() => abrirCompras(proveedor)}
                             />
                           </td>
                         </tr>

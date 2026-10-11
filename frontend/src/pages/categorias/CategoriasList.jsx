@@ -327,6 +327,7 @@ function CategoriasList() {
         nombre: p.nombre,
         codigo_barras: p.codigo_barras,
         codigo_interno: p.codigo_interno,
+        codigos_barras: p.codigos_barras,
         precio_venta: p.precio_venta,
       })),
     })

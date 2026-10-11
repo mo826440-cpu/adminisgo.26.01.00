@@ -17,7 +17,7 @@ export const getProductos = async () => {
       .order('nombre', { ascending: true })
 
     if (error) throw error
-    return { data, error: null }
+    return { data: await adjuntarCodigosBarras(data || []), error: null }
   } catch (error) {
     console.error('Error al obtener productos:', error)
     return { data: null, error }
@@ -40,11 +40,78 @@ export const getProducto = async (id) => {
       .single()
 
     if (error) throw error
-    return { data, error: null }
+    const [conCodigos] = await adjuntarCodigosBarras(data ? [data] : [])
+    return { data: conCodigos || null, error: null }
   } catch (error) {
     console.error('Error al obtener producto:', error)
     return { data: null, error }
   }
+}
+
+function codigosDesdeColumna(producto) {
+  const codigo = String(producto?.codigo_barras ?? '').trim()
+  if (!codigo) return []
+  return [{ codigo, observacion: '', orden: 0 }]
+}
+
+function esTablaCodigosAusente(error) {
+  const texto = `${error?.code || ''} ${error?.message || ''}`.toLowerCase()
+  return texto.includes('producto_codigos_barras') || texto.includes('pgrst205') || texto.includes('42p01')
+}
+
+async function adjuntarCodigosBarras(productos) {
+  const lista = Array.isArray(productos) ? productos : []
+  if (lista.length === 0) return []
+
+  const ids = lista.map((p) => p.id).filter((id) => id != null)
+  const { data, error } = await supabase
+    .from('producto_codigos_barras')
+    .select('id, producto_id, codigo, observacion, orden')
+    .in('producto_id', ids)
+    .order('orden', { ascending: true })
+    .order('id', { ascending: true })
+
+  if (error) {
+    if (!esTablaCodigosAusente(error)) {
+      console.error('Error al leer códigos de barras:', error)
+    }
+    return lista.map((p) => ({ ...p, codigos_barras: codigosDesdeColumna(p) }))
+  }
+
+  const porProducto = new Map()
+  for (const fila of data || []) {
+    const pid = fila.producto_id
+    if (!porProducto.has(pid)) porProducto.set(pid, [])
+    porProducto.get(pid).push({
+      id: fila.id,
+      codigo: String(fila.codigo ?? ''),
+      observacion: fila.observacion || '',
+      orden: fila.orden ?? 0,
+    })
+  }
+
+  return lista.map((p) => {
+    const filas = porProducto.get(p.id) || []
+    return {
+      ...p,
+      codigos_barras: filas.length > 0 ? filas : codigosDesdeColumna(p),
+    }
+  })
+}
+
+async function buscarProductoIdPorCodigo(codigo) {
+  const { data, error } = await supabase
+    .from('producto_codigos_barras')
+    .select('producto_id')
+    .eq('codigo', codigo)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    if (esTablaCodigosAusente(error)) return { productoId: null, error: null }
+    throw error
+  }
+  return { productoId: data?.producto_id ?? null, error: null }
 }
 
 /**
@@ -56,7 +123,8 @@ export const getProductoPorCodigoBarras = async (codigoBarras) => {
     return { data: null, error: null }
   }
   try {
-    const { data, error } = await supabase
+    const { productoId } = await buscarProductoIdPorCodigo(codigo)
+    let query = supabase
       .from('productos')
       .select(`
         id,
@@ -67,13 +135,16 @@ export const getProductoPorCodigoBarras = async (codigoBarras) => {
         categorias: categoria_id (id, nombre),
         marcas: marca_id (id, nombre)
       `)
-      .eq('codigo_barras', codigo)
       .eq('activo', true)
       .limit(1)
-      .maybeSingle()
+
+    query = productoId ? query.eq('id', productoId) : query.eq('codigo_barras', codigo)
+    const { data, error } = await query.maybeSingle()
 
     if (error) throw error
-    return { data: data || null, error: null }
+    if (!data) return { data: null, error: null }
+    const [conCodigos] = await adjuntarCodigosBarras([data])
+    return { data: conCodigos || null, error: null }
   } catch (error) {
     console.error('Error al buscar producto por código de barras:', error)
     return { data: null, error }
@@ -98,15 +169,19 @@ export const consultarProductoStockPrecio = async (codigo) => {
   const valor = String(codigo || '').trim()
   if (!valor) return { data: null, error: null }
   try {
+    const { productoId } = await buscarProductoIdPorCodigo(valor)
     const byBarcode = await supabase
       .from('productos')
       .select(CONSULTA_STOCK_SELECT)
-      .eq('codigo_barras', valor)
+      .eq(productoId ? 'id' : 'codigo_barras', productoId || valor)
       .eq('activo', true)
       .limit(1)
       .maybeSingle()
     if (byBarcode.error) throw byBarcode.error
-    if (byBarcode.data) return { data: byBarcode.data, error: null }
+    if (byBarcode.data) {
+      const [conCodigos] = await adjuntarCodigosBarras([byBarcode.data])
+      return { data: conCodigos || byBarcode.data, error: null }
+    }
 
     const byInterno = await supabase
       .from('productos')
@@ -123,28 +198,145 @@ export const consultarProductoStockPrecio = async (codigo) => {
   }
 }
 
+async function idsInactivosConCodigos(codigos, productoIdExcluir = null) {
+  const buscados = [...new Set(codigos.map((codigo) => String(codigo ?? '').trim()).filter(Boolean))]
+  if (buscados.length === 0) return []
+
+  const ids = new Set()
+  let columna = supabase.from('productos').select('id').eq('activo', false).in('codigo_barras', buscados)
+  if (productoIdExcluir) columna = columna.neq('id', productoIdExcluir)
+  const porColumna = await columna
+  if (porColumna.error) throw porColumna.error
+  for (const fila of porColumna.data || []) ids.add(fila.id)
+
+  let hijos = supabase
+    .from('producto_codigos_barras')
+    .select('producto_id, productos!producto_codigos_barras_producto_id_fkey!inner(activo)')
+    .in('codigo', buscados)
+    .eq('productos.activo', false)
+  if (productoIdExcluir) hijos = hijos.neq('producto_id', productoIdExcluir)
+  const porHijos = await hijos
+  if (porHijos.error) {
+    if (!esTablaCodigosAusente(porHijos.error)) throw porHijos.error
+  } else {
+    for (const fila of porHijos.data || []) {
+      if (fila.producto_id != null) ids.add(fila.producto_id)
+    }
+  }
+
+  return [...ids]
+}
+
 /**
- * Verificar si existe un código de barras
+ * Un producto dado de baja conserva el registro por el historial, pero suelta sus códigos.
+ */
+export const liberarCodigosDeProductosInactivos = async (codigos, productoIdExcluir = null) => {
+  try {
+    const ids = await idsInactivosConCodigos(codigos, productoIdExcluir)
+    if (ids.length === 0) return { error: null }
+
+    const borrado = await supabase.from('producto_codigos_barras').delete().in('producto_id', ids)
+    if (borrado.error && !esTablaCodigosAusente(borrado.error)) throw borrado.error
+
+    const actualizado = await supabase
+      .from('productos')
+      .update({ codigo_barras: null })
+      .in('id', ids)
+      .eq('activo', false)
+    if (actualizado.error) throw actualizado.error
+    return { error: null }
+  } catch (error) {
+    console.error('Error al liberar códigos de productos inactivos:', error)
+    return { error: error instanceof Error ? error : new Error(error.message || 'Error al liberar códigos') }
+  }
+}
+
+/**
+ * Verificar si un código de barras ya identifica a un producto activo.
  */
 export const verificarCodigoBarras = async (codigoBarras, productoIdExcluir = null) => {
+  const codigo = String(codigoBarras ?? '').trim()
+  if (!codigo) return { existe: false, error: null }
   try {
     let query = supabase
       .from('productos')
       .select('id', { count: 'exact', head: true })
-      .eq('codigo_barras', codigoBarras)
       .eq('activo', true)
+      .eq('codigo_barras', codigo)
 
     if (productoIdExcluir) {
       query = query.neq('id', productoIdExcluir)
     }
 
     const { count, error } = await query
-
     if (error) throw error
-    return { existe: (count || 0) > 0, error: null }
+    if ((count || 0) > 0) return { existe: true, error: null }
+
+    let codigosQuery = supabase
+      .from('producto_codigos_barras')
+      .select('producto_id, productos!producto_codigos_barras_producto_id_fkey!inner(activo)')
+      .eq('codigo', codigo)
+      .eq('productos.activo', true)
+
+    if (productoIdExcluir) {
+      codigosQuery = codigosQuery.neq('producto_id', productoIdExcluir)
+    }
+
+    const codigos = await codigosQuery
+    if (codigos.error) {
+      if (esTablaCodigosAusente(codigos.error)) return { existe: false, error: null }
+      throw codigos.error
+    }
+    return { existe: (codigos.data || []).length > 0, error: null }
   } catch (error) {
     console.error('Error al verificar código de barras:', error)
     return { existe: false, error }
+  }
+}
+
+export const reemplazarCodigosBarras = async (productoId, codigos) => {
+  const filas = (Array.isArray(codigos) ? codigos : [])
+    .map((fila, index) => ({
+      producto_id: Number(productoId),
+      codigo: String(fila?.codigo ?? '').trim(),
+      observacion: String(fila?.observacion ?? '').trim() || null,
+      orden: index,
+    }))
+    .filter((fila) => fila.codigo)
+
+  try {
+    const borrado = await supabase
+      .from('producto_codigos_barras')
+      .delete()
+      .eq('producto_id', productoId)
+
+    if (borrado.error) {
+      if (esTablaCodigosAusente(borrado.error)) {
+        throw new Error(
+          'Falta aplicar la migración de códigos de barras en Supabase. El producto se guardó con el primer código.',
+        )
+      }
+      throw borrado.error
+    }
+
+    if (filas.length === 0) return { error: null }
+
+    const { error } = await supabase.from('producto_codigos_barras').insert(filas)
+    if (error) {
+      if (error.code === '23505' || String(error.message || '').includes('codigo_barras_en_uso')) {
+        throw new Error('Uno de los códigos de barras ya identifica a otro producto.')
+      }
+      if (esTablaCodigosAusente(error)) {
+        throw new Error(
+          'Falta aplicar la migración de códigos de barras en Supabase. El producto se guardó con el primer código.',
+        )
+      }
+      throw error
+    }
+    return { error: null }
+  } catch (error) {
+    console.error('Error al guardar códigos de barras:', error)
+    return { error: error instanceof Error ? error : new Error(error.message || 'Error al guardar códigos') }
   }
 }
 
@@ -317,9 +509,12 @@ export const updateProducto = async (id, producto) => {
  */
 export const deleteProducto = async (id) => {
   try {
+    const borrado = await supabase.from('producto_codigos_barras').delete().eq('producto_id', id)
+    if (borrado.error && !esTablaCodigosAusente(borrado.error)) throw borrado.error
+
     const { data, error } = await supabase
       .from('productos')
-      .update({ activo: false })
+      .update({ activo: false, codigo_barras: null })
       .eq('id', id)
       .select()
       .single()
@@ -383,7 +578,8 @@ export const getProductoPreferible = async () => {
       .maybeSingle()
 
     if (error) throw error
-    return { data, error: null }
+    const [conCodigos] = await adjuntarCodigosBarras(data ? [data] : [])
+    return { data: conCodigos || null, error: null }
   } catch (error) {
     console.error('Error al obtener producto preferible:', error)
     return { data: null, error }

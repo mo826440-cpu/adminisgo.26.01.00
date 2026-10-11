@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Input, Modal, Spinner } from '../common'
 import { consultarProductoStockPrecio, getProductos, updateProducto } from '../../services/productos'
 import { formatMoneyAR } from '../../pages/reportes/reporteVentasUtils'
+import { productoCoincideCodigo, textoCodigosProducto } from '../../utils/codigosBarrasProducto'
 import './ConsultaProductoStockModal.css'
 
 function parsePrecioInput(valor) {
@@ -17,9 +18,7 @@ function filtrarProductos(productos, termino) {
   return productos
     .filter(
       (p) =>
-        p.nombre?.toLowerCase().includes(lower) ||
-        p.codigo_barras?.toLowerCase().includes(lower) ||
-        p.codigo_interno?.toLowerCase().includes(lower),
+        p.nombre?.toLowerCase().includes(lower) || productoCoincideCodigo(p, lower),
     )
     .slice(0, 8)
 }
@@ -30,8 +29,7 @@ function buscarExactoPorCodigo(productos, termino) {
   return (
     productos.find(
       (p) =>
-        p.codigo_barras?.toLowerCase() === lower ||
-        p.codigo_interno?.toLowerCase() === lower,
+        productoCoincideCodigo(p, lower, { exacto: true }),
     ) || null
   )
 }
@@ -365,7 +363,7 @@ function ConsultaProductoStockModal({ isOpen, onClose, onPrecioActualizado }) {
                 >
                   <strong>{p.nombre}</strong>
                   <span>
-                    {p.codigo_barras || p.codigo_interno || 'Sin código'}
+                    {textoCodigosProducto(p) || p.codigo_interno || 'Sin código'}
                     {' · '}
                     {formatMoneyAR(p.precio_venta)}
                   </span>
@@ -400,7 +398,7 @@ function ConsultaProductoStockModal({ isOpen, onClose, onPrecioActualizado }) {
           <div className="consulta-stock__result">
             <p className="consulta-stock__nombre">{producto.nombre}</p>
             <p className="consulta-stock__codigo">
-              {producto.codigo_barras || producto.codigo_interno || 'Sin código'}
+              {textoCodigosProducto(producto) || producto.codigo_interno || 'Sin código'}
             </p>
             <div className="consulta-stock__kpis">
               <article className="consulta-stock__kpi consulta-stock__kpi--precio">

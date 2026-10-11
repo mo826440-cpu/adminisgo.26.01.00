@@ -19,6 +19,29 @@
   grid-column: 1 / -1;
 }
 
+.producto-codigos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.producto-codigos > .form-label .required {
+  margin-bottom: 0;
+}
+
+.producto-codigos__fila {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1.4fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .producto-codigos__fila {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-label {
   display: flex;
   flex-direction: column;

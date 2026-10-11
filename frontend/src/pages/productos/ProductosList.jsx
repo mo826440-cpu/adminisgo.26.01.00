@@ -9,10 +9,26 @@ import ProductosActionsMenu from './ProductosActionsMenu'
 import GlassTooltip from '../../components/clientes/GlassTooltip'
 import PrecioVentaCalcIconButton from '../../components/productos/PrecioVentaCalcIconButton'
 import { formatMoneyAR } from '../reportes/reporteVentasUtils'
+import { observacionesFiltradas, productoCoincideCodigo, textoCodigosProducto } from '../../utils/codigosBarrasProducto'
 import './ProductosList.css'
 import '../../styles/registros-seccion.css'
 
 const ITEMS_PER_PAGE = 100
+
+function ObservacionesProducto({ producto, termino }) {
+  const filas = observacionesFiltradas(producto, termino)
+  if (filas.length === 0) return '—'
+  return (
+    <ul className="productos-observaciones">
+      {filas.map((fila) => (
+        <li key={fila.codigo}>
+          <span className="productos-observacion__nota">{fila.observacion}</span>
+          <span className="productos-observacion__codigo">{fila.codigo}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function parsePrecioInput(str) {
   const normalized = String(str ?? '')
@@ -39,12 +55,8 @@ function buildProductoTooltipContent(producto) {
     <>
       <p className="glass-tooltip__title">Detalle del producto</p>
       <div className="glass-tooltip__row">
-        <span className="glass-tooltip__label">Código barras</span>
-        <span className="glass-tooltip__value">{datoOGuion(producto.codigo_barras)}</span>
-      </div>
-      <div className="glass-tooltip__row">
-        <span className="glass-tooltip__label">Código interno</span>
-        <span className="glass-tooltip__value">{datoOGuion(producto.codigo_interno)}</span>
+        <span className="glass-tooltip__label">Códigos</span>
+        <span className="glass-tooltip__value">{datoOGuion(textoCodigosProducto(producto))}</span>
       </div>
       <div className="glass-tooltip__row">
         <span className="glass-tooltip__label">Categoría</span>
@@ -138,7 +150,7 @@ function ProductosList() {
     const term = searchTerm.toLowerCase()
     return (
       producto.nombre?.toLowerCase().includes(term) ||
-      producto.codigo_barras?.toLowerCase().includes(term)
+      productoCoincideCodigo(producto, term)
     )
   })
 
@@ -150,8 +162,9 @@ function ProductosList() {
       categoriaNombre: categoriaSeleccionadaNombre,
       productos: filteredProductos.map((p) => ({
         nombre: p.nombre,
-        codigo_barras: p.codigo_barras,
+        codigo_barras: textoCodigosProducto(p),
         codigo_interno: p.codigo_interno,
+        codigos_barras: p.codigos_barras,
         precio_venta: p.precio_venta,
       })),
     })
@@ -371,6 +384,7 @@ function ProductosList() {
                   <thead>
                     <tr>
                       <th className="productos-th-nombre">Nombre</th>
+                      <th className="productos-th-observaciones">Observaciones</th>
                       <th className="productos-th-precio">Precio</th>
                       <th className="productos-th-stock">Stock</th>
                       <th className="productos-th-estado">Estado</th>
@@ -384,6 +398,9 @@ function ProductosList() {
                           <GlassTooltip content={buildProductoTooltipContent(producto)}>
                             <span className="productos-table__nombre-text">{producto.nombre}</span>
                           </GlassTooltip>
+                        </td>
+                        <td className="productos-td-observaciones">
+                          <ObservacionesProducto producto={producto} termino={searchTerm} />
                         </td>
                         <td className="productos-td-precio productos-precio-cell">
                           <div className="productos-precio-edit">
@@ -486,10 +503,12 @@ function ProductosList() {
               <strong>{detalleProducto.nombre}</strong>
             </p>
             <dl className="producto-detalle-modal__lista">
-              <dt>Código de barras</dt>
-              <dd>{datoOGuion(detalleProducto.codigo_barras)}</dd>
-              <dt>Código interno</dt>
-              <dd>{datoOGuion(detalleProducto.codigo_interno)}</dd>
+              <dt>Códigos de barras</dt>
+              <dd>
+                {textoCodigosProducto(detalleProducto)
+                  ? textoCodigosProducto(detalleProducto)
+                  : '—'}
+              </dd>
               <dt>Categoría</dt>
               <dd>{detalleProducto.categorias?.nombre || '—'}</dd>
               <dt>Precio venta</dt>

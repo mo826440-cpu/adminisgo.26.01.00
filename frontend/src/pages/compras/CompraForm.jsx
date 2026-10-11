@@ -11,6 +11,7 @@ import {
   getProductoPorCodigoBarras,
 } from '../../services/productos'
 import { CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA } from '../../constants/ventaRapida'
+import { productoCoincideCodigo, textoCodigosProducto } from '../../utils/codigosBarrasProducto'
 import '../../components/ventas-prueba/ventasPrueba.css'
 import '../ventas-prueba/VentaDetalladaPrueba.css'
 import './CompraForm.css'
@@ -173,8 +174,7 @@ function CompraForm() {
           generico =
             listaProductos.find(
               (p) =>
-                String(p.codigo_barras || '').trim() ===
-                String(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA).trim(),
+                productoCoincideCodigo(p, CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA, { exacto: true }),
             ) || null
           if (!generico) {
             const { data: porCodigo } = await getProductoPorCodigoBarras(
@@ -273,8 +273,7 @@ function CompraForm() {
       .filter(
         (p) =>
           p.nombre?.toLowerCase().includes(lower) ||
-          p.codigo_barras?.toLowerCase().includes(lower) ||
-          p.codigo_interno?.toLowerCase().includes(lower),
+          productoCoincideCodigo(p, lower),
       )
       .slice(0, 8)
   }
@@ -318,8 +317,7 @@ function CompraForm() {
 
     const exact = productos.find(
       (p) =>
-        p.codigo_barras?.toLowerCase() === termino.toLowerCase() ||
-        p.codigo_interno?.toLowerCase() === termino.toLowerCase(),
+        productoCoincideCodigo(p, termino, { exacto: true }),
     )
     if (exact) {
       setProductoSeleccionado(exact)
@@ -340,8 +338,7 @@ function CompraForm() {
       }
       const exact = productos.find(
         (p) =>
-          p.codigo_barras?.toLowerCase() === productoSearch.toLowerCase() ||
-          p.codigo_interno?.toLowerCase() === productoSearch.toLowerCase(),
+          productoCoincideCodigo(p, productoSearch, { exacto: true }),
       )
       if (exact) agregarProductoAlCarrito(exact)
       return
@@ -640,8 +637,11 @@ function CompraForm() {
                   />
                   {productoSeleccionado &&
                   (productoSeleccionado.preferible ||
-                    String(productoSeleccionado.codigo_barras || '').trim() ===
-                      String(CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA).trim()) ? (
+                    productoCoincideCodigo(
+                      productoSeleccionado,
+                      CODIGO_BARRAS_PRODUCTO_VENTA_RAPIDA,
+                      { exacto: true },
+                    )) ? (
                     <span className="vp-vd-search-stock" title="Producto genérico por defecto">
                       Genérico
                     </span>
@@ -669,8 +669,8 @@ function CompraForm() {
                         onMouseEnter={() => setProductoActiveIndex(idx)}
                       >
                         <strong>{p.nombre}</strong>
-                        {p.codigo_barras
-                          ? ` — ${p.codigo_barras}`
+                        {textoCodigosProducto(p)
+                          ? ` — ${textoCodigosProducto(p)}`
                           : p.codigo_interno
                             ? ` — ${p.codigo_interno}`
                             : ''}
