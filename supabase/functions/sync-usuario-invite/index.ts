@@ -38,12 +38,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    const meta = user.user_metadata || {}
+    const meta = user.app_metadata || {}
     const comercioId = meta.comercio_id
-    if (comercioId == null) {
+    const rolId = meta.rol_id
+    if (meta.invited !== true || comercioId == null || rolId == null) {
       return new Response(
-        JSON.stringify({ success: false, message: 'No es un usuario invitado a un comercio' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'La cuenta no está autorizada para este negocio' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabaseAdmin.from('usuarios').insert({
       id: user.id,
       comercio_id: Number(comercioId),
-      rol_id: Number(meta.rol_id ?? 2),
+      rol_id: Number(rolId),
       nombre: (meta.nombre || user.email || '').trim(),
       email: (user.email || '').trim(),
       telefono: (meta.telefono || '').trim() || null,

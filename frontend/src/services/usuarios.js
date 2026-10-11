@@ -110,8 +110,8 @@ export const invitarUsuario = async (payload) => {
 }
 
 /**
- * Sincronizar usuario invitado a public.usuarios (llamar tras primer login si getUsuario devuelve null).
- * La Edge Function lee user_metadata e inserta en public.usuarios.
+ * Sincronizar usuario invitado a public.usuarios (primer ingreso, si aún no tiene fila).
+ * La Edge Function solo acepta app_metadata escrito por create-comercio-user.
  */
 export const syncUsuarioInvitado = async () => {
   try {

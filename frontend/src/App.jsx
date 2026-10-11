@@ -6,13 +6,10 @@ import ProtectedRoute from './components/common/ProtectedRoute'
 import { AdminRoute, PermissionRoute } from './components/common'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import CompleteRegistration from './pages/auth/CompleteRegistration'
-import SelectPlan from './pages/auth/SelectPlan'
 import AuthCallback from './pages/auth/AuthCallback'
 import ForgotPassword from './pages/auth/ForgotPassword'
+import OlvideUsuario from './pages/auth/OlvideUsuario'
 import ResetPassword from './pages/auth/ResetPassword'
-import LandingPage from './pages/LandingPage'
 import TerminosPublic from './pages/legal/TerminosPublic'
 import PrivacidadPublic from './pages/legal/PrivacidadPublic'
 import Dashboard from './pages/dashboard/Dashboard'
@@ -71,33 +68,13 @@ function App() {
           <Routes>
             {/* Rutas públicas */}
             <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/register" element={<Navigate to="/" replace />} />
+            <Route path="/auth/select-plan" element={<Navigate to="/" replace />} />
+            <Route path="/auth/complete-registration" element={<Navigate to="/" replace />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/olvide-usuario" element={<OlvideUsuario />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route 
-              path="/auth/callback" 
-              element={
-                <ProtectedRoute>
-                  <AuthCallback />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/auth/select-plan" 
-              element={
-                <ProtectedRoute>
-                  <SelectPlan />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/auth/complete-registration" 
-              element={
-                <ProtectedRoute>
-                  <CompleteRegistration />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             
             {/* Ruta de prueba de servicios (solo desarrollo) */}
           <Route 
@@ -507,8 +484,7 @@ function App() {
           <Route path="/terminos" element={<TerminosPublic />} />
           <Route path="/privacidad" element={<PrivacidadPublic />} />
 
-          {/* Ruta raíz: Landing Page */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Login />} />
           </Routes>
         </Router>
           </TicketPrintProvider>

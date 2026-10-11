@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, isAdmin, loading, loadingPermisos } = useAuthContext()
+  const { isAuthenticated, isAdmin, loading, loadingPermisos, usuario, perfilError } = useAuthContext()
 
   if (loading || loadingPermisos) {
     return (
@@ -18,8 +18,16 @@ function AdminRoute({ children }) {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />
+  if (perfilError) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '1.5rem' }}>
+        <p>No se pudo verificar el acceso. Recargá la página.</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !usuario) {
+    return <Navigate to="/" replace />
   }
 
   if (!isAdmin) {

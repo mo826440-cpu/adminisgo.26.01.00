@@ -72,15 +72,18 @@ Deno.serve(async (req) => {
       )
     }
 
+    const nombreLimpio = (nombre || '').trim()
+    const telefonoLimpio = (telefono || '').trim() || null
+    const direccionLimpia = (direccion || '').trim() || null
+    const rolId = Number(rol_id)
+
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email.trim(),
       {
         data: {
-          comercio_id: comercioId,
-          rol_id: Number(rol_id),
-          nombre: (nombre || '').trim(),
-          telefono: (telefono || '').trim() || null,
-          direccion: (direccion || '').trim() || null,
+          nombre: nombreLimpio,
+          telefono: telefonoLimpio,
+          direccion: direccionLimpia,
         },
       }
     )
@@ -90,6 +93,33 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: msg }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const invitedUserId = inviteData?.user?.id
+    if (!invitedUserId) {
+      return new Response(
+        JSON.stringify({ error: 'La invitación no devolvió un usuario' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // app_metadata solo lo escribe el servidor. El cliente no puede elegir comercio ni rol.
+    const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(invitedUserId, {
+      app_metadata: {
+        invited: true,
+        comercio_id: comercioId,
+        rol_id: rolId,
+        nombre: nombreLimpio,
+        telefono: telefonoLimpio,
+        direccion: direccionLimpia,
+      },
+    })
+
+    if (metaError) {
+      return new Response(
+        JSON.stringify({ error: 'La invitación se envió, pero no se pudo autorizar el acceso. Reintentá desde Usuarios.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

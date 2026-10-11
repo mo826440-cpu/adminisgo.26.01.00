@@ -1,9 +1,10 @@
 // Contexto de Autenticación
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { getSession, onAuthStateChange } from '../services/auth'
+import { getSession, onAuthStateChange, signOut } from '../services/auth'
 import { getUsuario, syncUsuarioInvitado } from '../services/usuarios'
 import { fetchPermisosMapForUser } from '../services/permisos'
 import { NAV_ORDER_PATHS } from '../constants/modulosPermiso'
+import { guardarAvisoAcceso, marcarRecuperacionClave } from '../utils/accesoSesion'
 
 const AuthContext = createContext(null)
 
@@ -14,12 +15,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [permisosMap, setPermisosMap] = useState(null)
   const [loadingPermisos, setLoadingPermisos] = useState(false)
+  const [perfilError, setPerfilError] = useState(null)
+  const [avisoAcceso, setAvisoAcceso] = useState(null)
   const mountedRef = useRef(false)
+  const denegandoRef = useRef(false)
 
   const loadUsuario = async () => {
     const { data, error } = await getUsuario()
-    if (error || !data) return null
-    return data
+    if (data && !data.deleted_at && data.activo !== false && data.comercio_id != null) {
+      return { usuario: data, missing: false, error: null }
+    }
+    if (data) return { usuario: null, missing: true, error: null }
+    const code = error?.code || ''
+    const texto = `${error?.message || ''} ${error?.details || ''}`
+    const missing = code === 'PGRST116' || texto.includes('0 rows') || texto.includes('multiple (or no) rows')
+    if (missing || !error) return { usuario: null, missing: true, error: null }
+    return { usuario: null, missing: false, error }
   }
 
   const loadPermisos = useCallback(async (u) => {
@@ -46,62 +57,100 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
+  const aplicarPerfil = useCallback(async (sess) => {
+    if (!sess) {
+      setUsuario(null)
+      setPermisosMap(null)
+      setPerfilError(null)
+      setLoadingPermisos(false)
+      return
+    }
+    if (window.location.hash.includes('type=recovery')) {
+      marcarRecuperacionClave()
+    }
+    let result = await loadUsuario()
+    const appMeta = sess.user?.app_metadata
+    if (result.missing && appMeta?.invited === true && appMeta?.comercio_id != null) {
+      await syncUsuarioInvitado()
+      result = await loadUsuario()
+    }
+    if (!mountedRef.current) return
+    if (result.error) {
+      setPerfilError(result.error)
+      setUsuario(null)
+      setPermisosMap(null)
+      setLoadingPermisos(false)
+      return
+    }
+    setPerfilError(null)
+    if (!result.usuario) {
+      if (!denegandoRef.current) {
+        denegandoRef.current = true
+        const texto = 'Tu cuenta no está habilitada para este negocio. Contactá al administrador.'
+        setAvisoAcceso(texto)
+        guardarAvisoAcceso(texto)
+        await signOut()
+        denegandoRef.current = false
+      }
+      if (mountedRef.current) {
+        setUsuario(null)
+        setPermisosMap(null)
+        setLoadingPermisos(false)
+      }
+      return
+    }
+    setUsuario(result.usuario)
+    await loadPermisos(result.usuario)
+  }, [loadPermisos])
+
   const refreshPermisos = useCallback(async () => {
-    const u = await loadUsuario()
-    if (mountedRef.current && u) {
-      setUsuario(u)
-      await loadPermisos(u)
+    const result = await loadUsuario()
+    if (mountedRef.current && result.usuario) {
+      setUsuario(result.usuario)
+      await loadPermisos(result.usuario)
     }
   }, [loadPermisos])
 
   useEffect(() => {
     mountedRef.current = true
-
-    const initSession = async (sess) => {
-      if (!sess) {
-        setUsuario(null)
-        setPermisosMap(null)
-        setLoadingPermisos(false)
-        return
-      }
-      let u = await loadUsuario()
-      if (!u && sess.user?.user_metadata?.comercio_id != null) {
-        await syncUsuarioInvitado()
-        u = await loadUsuario()
-      }
-      if (mountedRef.current) {
-        setUsuario(u)
-        await loadPermisos(u)
-      }
+    if (window.location.hash.includes('type=recovery')) {
+      marcarRecuperacionClave()
     }
 
-    getSession().then(({ session: sess, error }) => {
-      if (mountedRef.current) {
+    getSession().then(async ({ session: sess, error }) => {
+      if (!mountedRef.current) return
+      try {
         if (sess) {
           setSession(sess)
           setUser(sess.user)
-          void initSession(sess)
+          await aplicarPerfil(sess)
         } else if (error) {
           console.error('Error al obtener sesión:', error)
         }
-        setLoading(false)
+      } finally {
+        if (mountedRef.current) setLoading(false)
       }
     })
 
     const { data: { subscription } } = onAuthStateChange(async (event, sess) => {
       if (!mountedRef.current) return
 
+      if (event === 'PASSWORD_RECOVERY') {
+        marcarRecuperacionClave()
+      }
+
       if (event === 'SIGNED_OUT') {
         setSession(null)
         setUser(null)
         setUsuario(null)
         setPermisosMap(null)
+        setPerfilError(null)
         setLoadingPermisos(false)
         setLoading(false)
       } else if (sess) {
         setSession(sess)
         setUser(sess.user)
-        await initSession(sess)
+        await aplicarPerfil(sess)
         if (mountedRef.current) setLoading(false)
       } else {
         setLoading(false)
@@ -112,7 +161,7 @@ export const AuthProvider = ({ children }) => {
       mountedRef.current = false
       if (subscription) subscription.unsubscribe()
     }
-  }, [loadPermisos])
+  }, [aplicarPerfil])
 
   const isAdmin = usuario?.rol_nombre === 'dueño'
 
@@ -169,6 +218,9 @@ export const AuthProvider = ({ children }) => {
       session,
       usuario,
       loading,
+      perfilError,
+      avisoAcceso,
+      establecerAvisoAcceso: setAvisoAcceso,
       isAuthenticated: !!user,
       isAdmin,
       permisosMap,
@@ -184,6 +236,8 @@ export const AuthProvider = ({ children }) => {
       session,
       usuario,
       loading,
+      perfilError,
+      avisoAcceso,
       isAdmin,
       permisosMap,
       loadingPermisos,

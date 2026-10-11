@@ -8,7 +8,7 @@ import { useAuthContext } from '../../context/AuthContext'
  */
 function PermissionRoute({ children, modulo }) {
   const location = useLocation()
-  const { isAuthenticated, loading, loadingPermisos, puedeModulo, firstNavigatePath } = useAuthContext()
+  const { isAuthenticated, loading, loadingPermisos, usuario, perfilError, puedeModulo, firstNavigatePath } = useAuthContext()
 
   if (loading || loadingPermisos) {
     return (
@@ -25,8 +25,16 @@ function PermissionRoute({ children, modulo }) {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />
+  if (perfilError) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '1.5rem' }}>
+        <p>No se pudo verificar el acceso. Recargá la página.</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !usuario) {
+    return <Navigate to="/" replace />
   }
 
   const modulos = Array.isArray(modulo) ? modulo : [modulo]

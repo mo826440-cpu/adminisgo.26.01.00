@@ -2,32 +2,13 @@
 import { supabase } from './supabase'
 
 /**
- * Registro de nuevo usuario
+ * El alta pública está cerrada. Las cuentas las crea el administrador
+ * con la invitación (Edge Function create-comercio-user).
  */
-export const signUp = async (email, password, userData = {}) => {
-  try {
-    // En desarrollo, forzar localhost para evitar redirecciones a producción
-    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    const redirectUrl = isDevelopment 
-      ? 'http://localhost:5173/auth/callback'
-      : `${window.location.origin}/auth/callback`
-    
-    console.log('[signUp] URL de redirección:', redirectUrl, { hostname: window.location.hostname, origin: window.location.origin })
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData, // Datos adicionales para el perfil
-        emailRedirectTo: redirectUrl
-      }
-    })
-
-    if (error) throw error
-    return { data, error: null }
-  } catch (error) {
-    console.error('Error en signUp:', error)
-    return { data: null, error }
+export const signUp = async () => {
+  return {
+    data: null,
+    error: new Error('El registro público está deshabilitado. El acceso lo crea el administrador.'),
   }
 }
 
@@ -130,11 +111,13 @@ export const updatePassword = async (newPassword) => {
  */
 export const signInWithGoogle = async () => {
   try {
+    const redirectTo = `${window.location.origin}/auth/callback`
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
+        redirectTo,
+        queryParams: { prompt: 'select_account' },
+      },
     })
     if (error) throw error
     return { data, error: null }

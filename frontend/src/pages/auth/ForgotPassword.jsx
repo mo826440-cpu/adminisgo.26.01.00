@@ -1,7 +1,19 @@
-// Página "Olvidé mi contraseña" - Solicitar enlace de recuperación
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { resetPassword } from '../../services/auth'
+import AccesoShell from './AccesoShell'
+import './AccesoShell.css'
+
+function esFalloDeRed(error) {
+  const texto = (error?.message || '').toLowerCase()
+  return (
+    texto.includes('rate') ||
+    texto.includes('too many') ||
+    texto.includes('network') ||
+    texto.includes('fetch') ||
+    texto.includes('failed to fetch')
+  )
+}
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -9,94 +21,70 @@ function ForgotPassword() {
   const [error, setError] = useState(null)
   const [enviado, setEnviado] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     setLoading(true)
     setError(null)
-
-    const { error } = await resetPassword(email)
-
-    if (error) {
-      setError(error.message || 'Error al enviar el enlace')
+    const { error: resetError } = await resetPassword(email.trim())
+    if (resetError && esFalloDeRed(resetError)) {
+      setError('No se pudo enviar el correo en este momento. Intentá más tarde.')
       setLoading(false)
       return
     }
-
     setEnviado(true)
     setLoading(false)
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'var(--bg-secondary)',
-      padding: '1rem'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '400px',
-        backgroundColor: 'var(--bg-primary)',
-        padding: '2rem',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-lg)'
-      }}>
-        <h1 style={{ marginBottom: '0.5rem', textAlign: 'center' }}>Recuperar contraseña</h1>
-        <p style={{
-          fontSize: 'var(--font-size-small)',
-          color: 'var(--text-secondary)',
-          textAlign: 'center',
-          marginBottom: '1.5rem'
-        }}>
-          Ingresá tu email y te enviamos un enlace para restablecer tu contraseña.
+    <AccesoShell>
+      <h2>Recuperar contraseña</h2>
+      <p className="acceso__intro">
+        Si el correo está registrado, vas a recibir un enlace para elegir una contraseña nueva.
+      </p>
+
+      {enviado ? (
+        <p className="acceso__alerta acceso__alerta--ok" role="status">
+          Si ese correo está registrado, vas a recibir un enlace para restablecer la contraseña.
+          Revisá la bandeja de entrada y el spam. Si tu cuenta entra solo con Google, usá
+          “Continuar con Google” en el acceso.
         </p>
+      ) : (
+        <form className="acceso__form" onSubmit={handleSubmit} aria-busy={loading}>
+          {error && (
+            <p className="acceso__alerta acceso__alerta--error" role="alert">
+              {error}
+            </p>
+          )}
+          <label className="acceso__campo">
+            <span>Correo electrónico</span>
+            <input
+              className="acceso__input"
+              type="email"
+              name="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              placeholder="tu@correo.com"
+            />
+          </label>
+          <button type="submit" className="acceso__ingresar" disabled={loading}>
+            {loading ? 'Enviando...' : 'Enviar enlace'}
+          </button>
+          <p className="acceso__nota">
+            Si tu cuenta entra solo con Google, no hace falta una contraseña: volvé al acceso y
+            usá “Continuar con Google”.
+          </p>
+        </form>
+      )}
 
-        {enviado ? (
-          <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-            Si ese email está registrado, vas a recibir un enlace para restablecer tu contraseña. Revisá tu bandeja de entrada y también la carpeta de spam.
-          </div>
-        ) : (
-          <>
-            {error && (
-              <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  placeholder="tu@email.com"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-block"
-                disabled={loading}
-              >
-                {loading ? 'Enviando...' : 'Enviar enlace'}
-              </button>
-            </form>
-          </>
-        )}
-
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <Link to="/auth/login" style={{ fontSize: 'var(--font-size-small)' }}>
-            Volver al inicio de sesión
-          </Link>
-        </div>
-      </div>
-    </div>
+      <p className="acceso__ayuda">
+        <Link className="acceso__volver" to="/">
+          Volver al acceso
+        </Link>
+      </p>
+    </AccesoShell>
   )
 }
 

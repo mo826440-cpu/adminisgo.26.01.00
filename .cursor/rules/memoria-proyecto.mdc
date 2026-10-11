@@ -1,0 +1,20 @@
+---
+description: Leer y mantener la memoria técnica del proyecto al implementar
+alwaysApply: true
+---
+
+# Memoria del proyecto
+
+Antes de implementar, leer `docs/MEMORIA_PROYECTO.md` y contrastar las secciones del área tocada con el código actual. Si el código y la memoria difieren, prevalece el código y la memoria se corrige en el mismo cambio.
+
+Al cerrar la implementación, actualizar en ese archivo las secciones afectadas, el estado del trabajo y el historial (fecha, qué se hizo, áreas, cómo se validó).
+
+Diferenciar implementado, pendiente y propuesto. No dar por hecho `README.md` ni `Guias_Inicio/` si esta memoria o el código dicen otra cosa.
+
+No copiar a la memoria contraseñas, tokens, service role ni claves.
+
+Ejemplo de historial:
+
+```
+| 2026-10-11 | Ajuste de stock al cancelar | ventas.js, migración 045 | npm run build |
+```
