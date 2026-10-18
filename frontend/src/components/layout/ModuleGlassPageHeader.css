@@ -31,13 +31,16 @@
 
   width: 100%;
   margin-bottom: 1rem;
-  padding: var(--mgph-pad-y) var(--mgph-pad-x) !important;
-  /* Evita que el contenido que pasa por detrás se mezcle demasiado al hacer scroll */
-  background: #202020 !important;
-  border: 1px solid #333333;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.55);
+  padding: 1.15rem 1.35rem !important;
+  min-height: 9.75rem;
+  background:
+    radial-gradient(ellipse 62% 150% at 108% 48%, rgba(255, 134, 28, 0.72), transparent 58%),
+    radial-gradient(ellipse 36% 100% at 88% 60%, rgba(255, 90, 0, 0.28), transparent 62%),
+    linear-gradient(180deg, #1c1c1c 0%, #121212 100%) !important;
+  border: 1px solid rgba(255, 134, 28, 0.28);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   transition:
     padding var(--mgph-transition),
     box-shadow var(--mgph-transition),
@@ -68,11 +71,10 @@
   min-width: 0;
 }
 
-.module-glass-page-header__logo.lh-logo-slot {
-  width: var(--mgph-logo);
-  height: var(--mgph-logo);
-  font-size: var(--mgph-logo-font);
-  border-radius: 0.7rem;
+.module-glass-page-header__logo.inicio-app-hero__shop {
+  width: 4.15rem;
+  height: 4.15rem;
+  font-size: 1.5rem;
   transition:
     width var(--mgph-transition),
     height var(--mgph-transition),
@@ -88,8 +90,10 @@
 
 .module-glass-page-header__title {
   margin: 0;
-  font-size: var(--mgph-title) !important;
-  line-height: 1.2;
+  font-size: clamp(1.7rem, 2.2vw, 2.15rem) !important;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
   transition: font-size var(--mgph-transition);
 }
 
@@ -129,8 +133,8 @@
     transform var(--mgph-transition);
   max-height: 3rem;
   opacity: 1;
-  transform: translateY(0);
-  overflow: hidden;
+  transform: none;
+  overflow: visible;
   order: 2;
 }
 
@@ -156,8 +160,12 @@
   --mgph-logo-font: 1.05rem;
   --mgph-title: 1.15rem;
   --mgph-gap: 0.5rem 0.85rem;
+  min-height: 0;
   margin-bottom: 0.75rem;
+  padding: 0.55rem 0.95rem !important;
   border-radius: 0.85rem !important;
+  background: #161616 !important;
+  border-color: #333333;
   box-shadow:
     0 8px 28px -14px rgba(0, 0, 0, 0.65),
     0 0 0 1px rgba(255, 255, 255, 0.04);
@@ -174,6 +182,8 @@
   align-items: center;
 }
 
+.module-glass-page-header--compact .inicio-app-hero__backdrop,
+.module-glass-page-header--compact .inicio-app-hero__kicker,
 .module-glass-page-header--compact .module-glass-page-header__desc,
 .module-glass-page-header--compact .module-glass-page-header__user {
   max-height: 0;
@@ -184,14 +194,29 @@
   overflow: hidden;
 }
 
+.module-glass-page-header--compact .inicio-app-hero__backdrop {
+  display: none;
+}
+
+.module-glass-page-header--compact .inicio-app-hero__head {
+  padding-right: 0;
+}
+
 .module-glass-page-header--compact .module-glass-page-header__right {
   flex-direction: row;
   align-items: center;
   gap: 0;
 }
 
-.module-glass-page-header--compact .module-glass-page-header__logo.lh-logo-slot {
+.module-glass-page-header--compact .module-glass-page-header__logo.inicio-app-hero__shop {
+  width: 2.35rem;
+  height: 2.35rem;
+  font-size: 1.05rem;
   box-shadow: none;
+}
+
+.module-glass-page-header--compact .module-glass-page-header__title {
+  font-size: 1.2rem !important;
 }
 
 @media (max-width: 639px) {
@@ -234,7 +259,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .module-glass-page-header,
-  .module-glass-page-header__logo.lh-logo-slot,
+  .module-glass-page-header__logo.inicio-app-hero__shop,
   .module-glass-page-header__title,
   .module-glass-page-header__desc,
   .module-glass-page-header__user {

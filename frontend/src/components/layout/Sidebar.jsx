@@ -266,18 +266,6 @@ function Sidebar({ isOpen, onClose, isCompact = false, onToggleCompact }) {
             </span>
             <span className="sidebar-brand__system">AdminisGo</span>
           </span>
-          {typeof onToggleCompact === 'function' ? (
-            <button
-              type="button"
-              className="sidebar-brand__compact"
-              onClick={onToggleCompact}
-              aria-pressed={isCompact}
-              aria-label={isCompact ? 'Ensanchar menú lateral' : 'Contraer menú a iconos'}
-              title={isCompact ? 'Ensanchar menú' : 'Contraer a iconos'}
-            >
-              <i className={`bi ${isCompact ? 'bi-chevron-right' : 'bi-chevron-left'}`} aria-hidden />
-            </button>
-          ) : null}
         </div>
 
         <nav className="sidebar-nav" aria-label="Módulos">
@@ -291,7 +279,7 @@ function Sidebar({ isOpen, onClose, isCompact = false, onToggleCompact }) {
           />
 
           {orderedCards.map((card) =>
-            card.key === 'referencias' && refCards.length > 0 ? (
+            card.key === 'ventas_rapidas' ? null : card.key === 'referencias' && refCards.length > 0 ? (
               <SidebarReferenciasSection
                 key="referencias"
                 meta={card}
@@ -317,6 +305,20 @@ function Sidebar({ isOpen, onClose, isCompact = false, onToggleCompact }) {
         </nav>
 
         <div className="sidebar-footer">
+          {typeof onToggleCompact === 'function' ? (
+            <div className="sidebar-footer__tools">
+              <button
+                type="button"
+                className="sidebar-footer__compact"
+                onClick={onToggleCompact}
+                aria-pressed={isCompact}
+                aria-label={isCompact ? 'Ensanchar menú lateral' : 'Contraer menú a iconos'}
+                title={isCompact ? 'Ensanchar menú' : 'Contraer a iconos'}
+              >
+                <i className={`bi ${isCompact ? 'bi-chevron-right' : 'bi-chevron-left'}`} aria-hidden />
+              </button>
+            </div>
+          ) : null}
           <SidebarUserCard compact={isCompact} />
         </div>
       </div>

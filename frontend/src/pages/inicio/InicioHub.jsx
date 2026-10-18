@@ -39,8 +39,10 @@ function InicioHub() {
         )}
 
         <header className="inicio-app-hero inicio-app-hero--nav">
-          <div className="inicio-app-hero__alien" aria-hidden>
-            <KioscoAliensMark className="inicio-app-hero__alien-mark" />
+          <div className="inicio-app-hero__backdrop" aria-hidden>
+            <div className="inicio-app-hero__alien">
+              <KioscoAliensMark variant="header" className="inicio-app-hero__alien-mark" />
+            </div>
           </div>
           <div className="inicio-app-hero__head">
             <div className="inicio-app-hero__identity">

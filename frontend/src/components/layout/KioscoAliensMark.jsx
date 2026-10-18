@@ -1,17 +1,21 @@
 import { useState } from 'react'
 
-const LOGO_SRC = '/marca/kiosco-aliens-logo.svg'
+const MARKS = {
+  logo: '/marca/alien-cabeza.png',
+  header: '/marca/alien-brillo.png',
+}
 
-/** Marca de Kiosco Aliens. Si el archivo no está, queda el espacio con un alien simple. */
-function KioscoAliensMark({ className = '' }) {
+/** Cabeza de Kiosco Aliens. `logo` en el menú; `header` en la barra del panel. */
+function KioscoAliensMark({ className = '', variant = 'logo' }) {
   const [failed, setFailed] = useState(false)
+  const src = MARKS[variant] || MARKS.logo
 
   if (failed) {
     return (
-      <svg className={className} viewBox="0 0 72 86" aria-hidden>
-        <path fill="#FF861C" d="M36 2.2C55.2 2.2 67.2 16.4 67.2 35.2c0 15.2-6.1 27.4-14.6 36.2C47.4 77.2 42.2 83.6 36 83.6c-6.2 0-11.4-6.4-16.6-12.2C10.9 62.6 4.8 50.4 4.8 35.2 4.8 16.4 16.8 2.2 36 2.2z" />
-        <ellipse fill="#141414" cx="26.2" cy="38.5" rx="7.1" ry="10.4" transform="rotate(-27 26.2 38.5)" />
-        <ellipse fill="#141414" cx="45.8" cy="38.5" rx="7.1" ry="10.4" transform="rotate(27 45.8 38.5)" />
+      <svg className={className} viewBox="0 0 200 214" aria-hidden>
+        <path fill="#FF861C" d="M100 6C152.2 6 194 46.2 194 102c0 52.4-35.2 96.2-94 106C41.2 198.2 6 154.4 6 102 6 46.2 47.8 6 100 6z" />
+        <ellipse fill="#101010" cx="73" cy="108" rx="21" ry="32" transform="rotate(-26 73 108)" />
+        <ellipse fill="#101010" cx="127" cy="108" rx="21" ry="32" transform="rotate(26 127 108)" />
       </svg>
     )
   }
@@ -19,10 +23,10 @@ function KioscoAliensMark({ className = '' }) {
   return (
     <img
       className={className}
-      src={LOGO_SRC}
+      src={src}
       alt=""
-      width="48"
-      height="48"
+      width="160"
+      height="160"
       decoding="async"
       onError={() => setFailed(true)}
     />

@@ -4,6 +4,7 @@ import { Spinner } from '../../components/common'
 import { useAuthContext } from '../../context/AuthContext'
 import { buildReferenciasHubCards } from '../../utils/inicioNavCards'
 import InicioHeroUserActions from './InicioHeroUserActions'
+import KioscoAliensMark from '../../components/layout/KioscoAliensMark'
 import './InicioApp.css'
 
 function InicioReferencias() {
@@ -28,15 +29,21 @@ function InicioReferencias() {
   return (
     <div className="inicio-hub-page lh-root">
       <div className="inicio-hub-page__inner">
-        <header className="inicio-app-hero lh-glass-panel">
+        <header className="inicio-app-hero inicio-app-hero--nav">
+          <div className="inicio-app-hero__backdrop" aria-hidden>
+            <div className="inicio-app-hero__alien">
+              <KioscoAliensMark variant="header" className="inicio-app-hero__alien-mark" />
+            </div>
+          </div>
           <div className="inicio-app-hero__head">
-            <div className="lh-brand-row">
-              <div className="lh-logo-slot" aria-hidden>
+            <div className="inicio-app-hero__identity">
+              <div className="inicio-app-hero__shop" aria-hidden>
                 <i className="bi bi-bookmark-star" />
               </div>
-              <div>
-                <p className="lh-brand-kicker">Referencias</p>
-                <h1 className="lh-brand-title inicio-app-hero__title">Catálogos y tablas maestras</h1>
+              <div className="inicio-app-hero__copy">
+                <p className="inicio-app-hero__kicker">Kiosco Aliens</p>
+                <h1 className="inicio-app-hero__title">Catálogos y tablas maestras</h1>
+                <p className="inicio-app-hero__desc">Elegí una sección para abrir el listado correspondiente.</p>
               </div>
             </div>
             <InicioHeroUserActions />
@@ -46,7 +53,6 @@ function InicioReferencias() {
               <i className="bi bi-arrow-left" aria-hidden /> Volver al panel de navegación
             </Link>
           </div>
-          <p className="inicio-app-hero__desc">Elegí una sección para abrir el listado correspondiente.</p>
         </header>
 
         {cards.length === 0 ? (

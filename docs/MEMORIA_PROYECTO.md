@@ -100,7 +100,7 @@ Hasta que se aplique la 045 y se redesplieguen las Edge Functions, el cierre en 
 
 ### Inicio
 
-`/inicio` es el panel de navegación de Kiosco Aliens. El contenido ocupa el ancho libre a la derecha del sidebar. La marca del menú es un SVG provisional (cabeza ancha y mentón estrecho); no hay un logo entregado por el negocio. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
+`/inicio` es el panel de navegación de Kiosco Aliens. El contenido ocupa el ancho libre a la derecha del sidebar. La marca del menú usa `public/marca/alien-cabeza.png` (la cabeza con volumen de `Ejemplos/img`) y el alien del encabezado usa `public/marca/alien-brillo.png`. Los dos PNG tienen fondo transparente. Queda junto al rótulo Kiosco / Aliens y AdminisGo. El botón de contraer el menú quedó en el pie del sidebar. El encabezado del panel lleva el resplandor naranja y, con sesión activa, el estado «Sincronizado» más el correo, que abre el menú de cerrar sesión. Los encabezados de módulo y el de Referencias usan el mismo banner (resplandor, alien y «Kiosco Aliens»). Los atajos de cada módulo siguen en esa barra. El bloque de usuario también está ahí. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
 
 ### Referencias (catálogos)
 
@@ -145,7 +145,7 @@ El listado de `/ventas` usa `fetchVentasRegistros` (`ventasListado.js`): página
 
 ### Ventas rápidas y caja (ruta histórica)
 
-`/ventas-rapidas` y `/ventas-rapidas/:id` siguen enrutados (`pages/ventas/VentasRapidas.jsx`). También leen `ventas`. `/ventas-rapidas/historial` es el historial de caja. Permiso: módulo `ventas_rapidas`; caja y venta rápida de `/ventas` aceptan `ventas` o `ventas_rapidas`.
+`/ventas-rapidas` y `/ventas-rapidas/:id` siguen enrutados (`pages/ventas/VentasRapidas.jsx`). También leen `ventas`. `/ventas-rapidas/historial` es el historial de caja. Permiso: módulo `ventas_rapidas`; caja y venta rápida de `/ventas` aceptan `ventas` o `ventas_rapidas`. El ítem no está en el sidebar: se entra por la tarjeta de Inicio o por el atajo del encabezado de Ventas.
 
 La caja usa `historial_cajas` (apertura/cierre). La migración 032 agrega desglose: efectivo, virtual (QR, transferencia, débito), crédito y otros.
 
@@ -314,7 +314,7 @@ Producción: el frontend desplegado en Vercel sigue a lo que esté en el remoto 
 
 ## 8. Estado del trabajo
 
-**Última implementación en el working tree (11 de octubre de 2026, sin commit):** listado de proveedores alineado con clientes (tooltip de contacto, flecha y menú a las compras del proveedor, búsqueda recordada) más la ruta `/proveedores/:id/compras`. Antes, en el mismo árbol: acceso de Alien’s · Kiosco/Bebidas. En Supabase, el SQL Editor devolvió éxito al ejecutar el cierre de `crear_comercio_y_usuario` (migración 045). `SELECT public.get_user_comercio_id();` en ese editor devolvió NULL porque no hay sesión de usuario. “Allow new users to sign up” quedó apagado y guardado; “Confirm email” sigue prendido. URL Configuration tiene Site URL `https://www.adminisgo.com` y las rutas `/auth/callback` y `/reset-password` para localhost, `adminisgo.com` y `www.adminisgo.com`. El cliente OAuth de Google quedó guardado con el callback de Supabase y el dominio de marca igual a ese host. Después de corregir el `redirect_uri_mismatch`, la sesión de `mo826440@gmail.com` abrió Ventas en `http://localhost:5173/ventas` como Empleado 01. La app de Google sigue en estado Prueba. Las Edge Functions nuevas no se desplegaron: en PowerShell `supabase` no está instalado.
+**Última implementación en el working tree (17 de octubre de 2026, sin commit):** marca del sidebar más compacta y encabezado del panel alineado a la referencia (resplandor, «Sincronizado» y cierre de sesión en el menú del correo). Antes, sin commit (11 de octubre de 2026): listado de proveedores alineado con clientes (tooltip de contacto, flecha y menú a las compras del proveedor, búsqueda recordada) más la ruta `/proveedores/:id/compras`. Antes, en el mismo árbol: acceso de Alien’s · Kiosco/Bebidas. En Supabase, el SQL Editor devolvió éxito al ejecutar el cierre de `crear_comercio_y_usuario` (migración 045). `SELECT public.get_user_comercio_id();` en ese editor devolvió NULL porque no hay sesión de usuario. “Allow new users to sign up” quedó apagado y guardado; “Confirm email” sigue prendido. URL Configuration tiene Site URL `https://www.adminisgo.com` y las rutas `/auth/callback` y `/reset-password` para localhost, `adminisgo.com` y `www.adminisgo.com`. El cliente OAuth de Google quedó guardado con el callback de Supabase y el dominio de marca igual a ese host. Después de corregir el `redirect_uri_mismatch`, la sesión de `mo826440@gmail.com` abrió Ventas en `http://localhost:5173/ventas` como Empleado 01. La app de Google sigue en estado Prueba. Las Edge Functions nuevas no se desplegaron: en PowerShell `supabase` no está instalado.
 
 La última implementación ya commiteada sigue siendo la del 12 de septiembre de 2026 (“Cambiar precio desde consultar”), más el módulo de mantenimiento del mismo día.
 
@@ -343,6 +343,10 @@ La última implementación ya commiteada sigue siendo la del 12 de septiembre de
 
 | Fecha | Implementación | Áreas | Validación |
 | --- | --- | --- | --- |
+| 2026-10-18 | Encabezado de módulos igual al panel; Ventas rápidas fuera del sidebar | `ModuleGlassPageHeader.jsx`, `ModuleGlassPageHeader.css`, `InicioReferencias.jsx`, `Sidebar.jsx` | El usuario revisa los módulos en su sesión |
+| 2026-10-18 | Logo y encabezado con las dos cabezas PNG de Ejemplos/img | `public/marca/alien-cabeza.png`, `public/marca/alien-brillo.png`, `KioscoAliensMark.jsx`, `InicioHub.jsx`, `Sidebar.css`, `InicioApp.css` | El usuario revisa `/inicio` en su sesión |
+| 2026-10-17 | Alien redondo de la referencia, el mismo archivo en el menú y en el encabezado | `public/marca/kiosco-aliens-logo.svg`, `KioscoAliensMark.jsx`, `Sidebar.css`, `InicioApp.css` | El usuario revisa `/inicio` en su sesión |
+| 2026-10-17 | Marca del sidebar compacta y barra del panel con estado de sesión | `Sidebar.jsx`, `Sidebar.css`, `InicioHub.jsx`, `InicioHeroUserActions.jsx`, `InicioApp.css`, `ModuleGlassPageHeader.css` | ESLint de los archivos tocados. El navegador de verificación llegó al ingreso; el panel autenticado queda para revisar con la sesión local |
 | 2026-10-11 | Inicio y sidebar más cerca de la captura: ancho completo, marca grande, encabezado y tarjetas | `InicioHub.jsx`, `InicioApp.css`, `Sidebar.css`, `Layout.css`, `kiosco-aliens-logo.svg` | Revisión visual del panel. El logo sigue siendo un SVG provisional |
 | 2026-10-11 | Logo del alien redondo, como en la referencia, y rótulo Kiosco / Aliens | `public/marca/kiosco-aliens-logo.svg`, `Sidebar.jsx` | Contraste visual con la captura del panel |
 | 2026-10-11 | Identidad Kiosco Aliens: paleta `#FF861C` / `#101010`, sidebar y panel de navegación | `variables.css`, `estiloTemaOscuro.css`, `Sidebar`, `InicioHub`, `LandingHome.css` | Compilación del frontend |
