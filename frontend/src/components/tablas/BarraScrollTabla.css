@@ -1,0 +1,25 @@
+.prov-tabla-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.prov-tabla-scroll__top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  margin: 0 0 0.35rem;
+}
+
+.prov-tabla-scroll__top.is-off {
+  display: none;
+}
+
+.prov-tabla-scroll__ancho {
+  height: 1px;
+}
+
+.prov-tabla-scroll__top:focus-visible,
+.prov-tabla-scroll > .table-container:focus-visible {
+  outline: 2px solid #ff861c;
+  outline-offset: 2px;
+}

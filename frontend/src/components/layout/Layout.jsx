@@ -47,6 +47,7 @@ function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(readInitialSidebarOpen)
   const [sidebarCompact, setSidebarCompact] = useState(readInitialSidebarCompact)
   const [toolbarEndOverride, setToolbarEndOverride] = useState(null)
+  const [headerOverride, setHeaderOverride] = useState(null)
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
@@ -89,13 +90,18 @@ function Layout({ children }) {
     setToolbarEndOverride(node)
   }, [])
 
+  const setHeaderOverrideStable = useCallback((value) => {
+    setHeaderOverride(value)
+  }, [])
+
   const layoutChromeValue = useMemo(
     () => ({
       toggleSidebar,
       sidebarOpen,
       setToolbarEndOverride: setToolbarEndOverrideStable,
+      setHeaderOverride: setHeaderOverrideStable,
     }),
-    [toggleSidebar, sidebarOpen, setToolbarEndOverrideStable],
+    [toggleSidebar, sidebarOpen, setToolbarEndOverrideStable, setHeaderOverrideStable],
   )
 
   const resolvedToolbarEnd = toolbarEndOverride ?? moduleChrome?.toolbarEnd ?? null
@@ -137,10 +143,12 @@ function Layout({ children }) {
                 <ModuleGlassPageHeader
                   key={location.pathname}
                   kicker={moduleChrome.kicker}
-                  title={moduleChrome.title}
-                  subtitle={moduleChrome.subtitle}
+                  title={headerOverride?.title || moduleChrome.title}
+                  subtitle={headerOverride?.subtitle ?? moduleChrome.subtitle}
+                  keepSubtitle={Boolean(headerOverride?.keepSubtitle)}
                   iconClass={moduleChrome.icon}
                   toolbarEnd={resolvedToolbarEnd}
+                  density={location.pathname.startsWith('/proveedores') ? 'compact' : 'regular'}
                 />
               ) : null}
               {children}

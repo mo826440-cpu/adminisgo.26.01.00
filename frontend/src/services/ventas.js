@@ -599,21 +599,43 @@ function pagosRealesParaPersistir(pagos) {
   return pagos.filter(esPagoReal)
 }
 
+const VENTA_PAGO_COLUMNAS = 'id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones, anulado_at'
+const VENTA_PAGO_COLUMNAS_BASE = 'id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones'
+
+function errorEsColumnaAnulado(error) {
+  return String(error?.message || error?.details || '').includes('anulado_at')
+}
+
+async function fetchPagosVentaChunk(part, columnas, ordenar) {
+  return fetchAllQueryPages(
+    () => {
+      let query = supabase.from('venta_pagos').select(columnas).in('venta_id', part)
+      if (ordenar) query = query.order('fecha_pago', { ascending: true })
+      return query
+    },
+    SUPABASE_PAGE_SIZE,
+    { interPageDelayMs: 0 }
+  )
+}
+
+async function fetchPagosVentaChunkSeguro(part, columnasRef, ordenar) {
+  try {
+    return await fetchPagosVentaChunk(part, columnasRef.actual, ordenar)
+  } catch (error) {
+    if (!errorEsColumnaAnulado(error) || columnasRef.actual === VENTA_PAGO_COLUMNAS_BASE) throw error
+    columnasRef.actual = VENTA_PAGO_COLUMNAS_BASE
+    return fetchPagosVentaChunk(part, columnasRef.actual, ordenar)
+  }
+}
+
 async function fetchPagosByVentaIds(ventaIds) {
   const pagosByVentaId = new Map()
   const ids = (ventaIds || []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
   if (ids.length === 0) return pagosByVentaId
   const idChunks = chunkIds(ids, 200)
+  const columnasRef = { actual: VENTA_PAGO_COLUMNAS }
   for (const part of idChunks) {
-    const pagos = await fetchAllQueryPages(
-      () =>
-        supabase
-          .from('venta_pagos')
-          .select('id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones')
-          .in('venta_id', part),
-      SUPABASE_PAGE_SIZE,
-      { interPageDelayMs: 0 }
-    )
+    const pagos = await fetchPagosVentaChunkSeguro(part, columnasRef, false)
     for (const p of pagos || []) {
       const key = Number(p.venta_id)
       if (!key) continue
@@ -964,6 +986,26 @@ export const cancelVenta = async (id) => {
   }
 }
 
+/** Deja de contar esos cobros en la deuda. La fila sigue visible con anulado_at. */
+export const anularPagosVenta = async (pagoIds) => {
+  const ids = [...new Set((pagoIds || []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))]
+  if (ids.length === 0) {
+    return { error: new Error('Este movimiento no tiene un cobro para anular.') }
+  }
+  const { error } = await supabase
+    .from('venta_pagos')
+    .update({ anulado_at: new Date().toISOString() })
+    .in('id', ids)
+    .is('anulado_at', null)
+  if (error) {
+    if (errorEsColumnaAnulado(error)) {
+      return { error: new Error('Falta ejecutar en Supabase la migración 047 (columna anulado_at).') }
+    }
+    return { error }
+  }
+  return { error: null }
+}
+
 /**
  * Eliminar una venta (soft delete) y restaurar stock
  * @deprecated Usar cancelVenta — las ventas no deben eliminarse.
@@ -1245,6 +1287,7 @@ export const getCuentaCorrientePorClienteId = async (clienteId) => {
     }
 
     const idChunks = chunkIds(ids, 200)
+    const columnasCuentaRef = { actual: VENTA_PAGO_COLUMNAS }
     for (const part of idChunks) {
       const items = await fetchAllQueryPages(
         () =>
@@ -1262,16 +1305,7 @@ export const getCuentaCorrientePorClienteId = async (clienteId) => {
         itemsByVentaId.get(key).push(it)
       }
 
-      const pagos = await fetchAllQueryPages(
-        () =>
-          supabase
-            .from('venta_pagos')
-            .select('id, venta_id, metodo_pago, monto_pagado, fecha_pago, observaciones')
-            .in('venta_id', part)
-            .order('fecha_pago', { ascending: true }),
-        SUPABASE_PAGE_SIZE,
-        { interPageDelayMs: 0 }
-      )
+      const pagos = await fetchPagosVentaChunkSeguro(part, columnasCuentaRef, true)
       for (const p of pagos || []) {
         const key = Number(p.venta_id)
         if (!key) continue

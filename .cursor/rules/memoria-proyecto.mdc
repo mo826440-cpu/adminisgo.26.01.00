@@ -9,6 +9,8 @@ Antes de implementar, leer `docs/MEMORIA_PROYECTO.md` y contrastar las secciones
 
 Al cerrar la implementación, actualizar en ese archivo las secciones afectadas, el estado del trabajo y el historial (fecha, qué se hizo, áreas, cómo se validó).
 
+Las fichas de módulo están en `.cursor/modulos/` (`00-indice.md` y `base-de-datos.md`). Si piden leer la ficha de un módulo, leer ese archivo y responder solo que se entendió, sin resumirlo, hasta que pidan el cambio. Al implementar, actualizar la ficha del módulo y, si cambia el esquema o las reglas de acceso, `base-de-datos.md`.
+
 Diferenciar implementado, pendiente y propuesto. No dar por hecho `README.md` ni `Guias_Inicio/` si esta memoria o el código dicen otra cosa.
 
 No copiar a la memoria contraseñas, tokens, service role ni claves.

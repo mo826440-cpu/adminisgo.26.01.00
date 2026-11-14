@@ -312,6 +312,24 @@ html:not([data-theme='dark']) .layout-main.layout-main--cosmic {
   padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
 }
 
+/* Proveedores: la franja bajo el botón de menú no hace falta con el sidebar abierto.
+   El ancho lo marca la columna, no la tabla. */
+.layout--module-glass-nav .layout-main:has(.proveedores-page),
+.layout--module-glass-nav .layout-main:has(.prov-cc-page),
+.layout--module-glass-nav .layout-main__content:has(.proveedores-page),
+.layout--module-glass-nav .layout-main__content:has(.prov-cc-page) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout--module-glass-nav .layout-module-glass-header-wrap:has(.module-glass-page-header--density-compact) {
+  padding-top: 0.45rem;
+}
+
+.layout--module-glass-nav:not(.layout--nav-open) .layout-module-glass-header-wrap:has(.module-glass-page-header--density-compact) {
+  padding-left: calc(var(--layout-nav-chrome-btn-size) + 0.75rem);
+}
+
 /* Fila de acciones bajo el chrome global (p. ej. Cancelar en POS) */
 .page-header.page-header--actions-only {
   justify-content: flex-end;

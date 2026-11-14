@@ -1,9 +1,11 @@
 # Memoria técnica y funcional — Adminis Go
 
-**Actualizado:** 11 de octubre de 2026  
-**Alcance de esta revisión:** código, migraciones SQL y la pantalla de acceso de Alien’s. No se consultó el proyecto remoto de Supabase ni se aplicó la migración 045.
+**Actualizado:** 13 de noviembre de 2026  
+**Alcance de esta revisión:** fichas de módulo en `.cursor/modulos/` y contraste del stock al cancelar una venta. No se consultó el proyecto remoto de Supabase.
 
 Esta memoria es la referencia para retomar implementaciones. `README.md`, `database/README.md` y varios archivos de `Guias_Inicio/` describen etapas anteriores o propuestas. Si contradicen el código, prevalece el código y, después de cada cambio, esta memoria.
+
+Las fichas por módulo (rutas, funciones, estilos, conexiones y reglas) están en `.cursor/modulos/`. El índice es `00-indice.md`. El esquema, la RLS y las reglas de datos están en `.cursor/modulos/base-de-datos.md`. Esas fichas se leen antes de un cambio de módulo y se actualizan al cerrarlo. Si difieren del código, prevalece el código.
 
 ## 1. Objetivo y alcance
 
@@ -75,6 +77,7 @@ Organización del repositorio:
 | `local-admin-template/` | Panel en `http://127.0.0.1:3847` con service role, solo en la PC |
 | `Guias_Inicio/` | Guías de arranque, deploy, Mercado Pago y estilo. Pueden estar desactualizadas |
 | `docs/MEMORIA_PROYECTO.md` | Esta memoria |
+| `.cursor/modulos/` | Fichas de módulo, índice y base de datos |
 
 El `README.md` de la raíz dice “Fase 0” y “React 18”. Eso no describe el estado del código en octubre de 2026.
 
@@ -100,7 +103,7 @@ Hasta que se aplique la 045 y se redesplieguen las Edge Functions, el cierre en 
 
 ### Inicio
 
-`/inicio` es el panel de navegación de Kiosco Aliens. El contenido ocupa el ancho libre a la derecha del sidebar. La marca del menú usa `public/marca/alien-cabeza.png` (la cabeza con volumen de `Ejemplos/img`) y el alien del encabezado usa `public/marca/alien-brillo.png`. Los dos PNG tienen fondo transparente. Queda junto al rótulo Kiosco / Aliens y AdminisGo. El botón de contraer el menú quedó en el pie del sidebar. El encabezado del panel lleva el resplandor naranja y, con sesión activa, el estado «Sincronizado» más el correo, que abre el menú de cerrar sesión. Los encabezados de módulo y el de Referencias usan el mismo banner (resplandor, alien y «Kiosco Aliens»). Los atajos de cada módulo siguen en esa barra. El bloque de usuario también está ahí. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
+`/inicio` es el panel de navegación de Kiosco Aliens. El contenido ocupa el ancho libre a la derecha del sidebar. La marca del menú usa `public/marca/alien-cabeza.png` (la cabeza con volumen de `Ejemplos/img`) y el alien del encabezado usa `public/marca/alien-brillo.png`. Los dos PNG tienen fondo transparente. Queda junto al rótulo Kiosco / Aliens y AdminisGo. El botón de contraer el menú quedó en el pie del sidebar. El encabezado del panel lleva el resplandor naranja y, con sesión activa, el estado «Sincronizado» más el correo, que abre el menú de cerrar sesión. Los encabezados de módulo y el de Referencias usan el mismo banner (resplandor, alien y «Kiosco Aliens»). Ese banner solo pasa a la barra compacta si, al achicarse, la página sigue pudiendo scrollear: en listados que apenas superan la ventana, compactar dejaba la pantalla más corta y el scroll de la página volvía solo arriba. Los atajos de cada módulo siguen en esa barra. El bloque de usuario también está ahí. `/inicio/referencias` agrupa categorías, marcas, clientes, proveedores y productos.
 
 ### Referencias (catálogos)
 
@@ -109,8 +112,8 @@ CRUD de categorías, marcas, clientes, proveedores y productos, cada uno con per
 - Productos: precio, stock, categoría, marca, proveedor, flag `preferible` (uno por comercio). El formulario ya no muestra código interno; la columna y su unicidad (007) siguen. La categoría es obligatoria al guardar. El stock del alta vacío queda en 0; en la edición no se reescribe si el campo no se tocó.
 - Varios códigos de barras por producto, con observación opcional, viven en `producto_codigos_barras` (migración 046, aplicada en Supabase el 2026-10-11; la consulta de conflictos devolvió 0 filas). El primer código se copia a `productos.codigo_barras` para el único y las consultas viejas. Ventas, compras, el listado y el PDF buscan por cualquiera de los códigos. El listado de productos muestra, junto al nombre, las observaciones de cada código. Si la búsqueda coincide con un código, la columna deja solo la observación de ese código. Dar de baja un producto conserva el historial y libera sus códigos. Si un código quedó en un producto ya inactivo, al guardarlo en otro producto activo se libera solo.
 - Hay calculadora de precio de venta y, en categorías, exportación PDF del listado.
-- Clientes: ficha y `/clientes/:clienteId/cuenta-corriente` (deuda a partir de ventas).
-- Proveedores: ficha y `/proveedores/:id/compras`. El resumen usa la misma ficha que la cuenta corriente del cliente (iniciales, estado, saldo actual, mes, tipo, búsqueda, libro con saldo arrastrado y totales del mes). Las columnas son cargo de la compra, pago, resto de la orden y saldo. El pago sigue registrándose en la orden. El listado recuerda búsqueda y página.
+- Clientes: ficha y `/clientes/:clienteId/cuenta-corriente` (deuda a partir de ventas). El libro tiene columna «Monto anulado» y menú de tres puntos: anular la venta (`cancelVenta`, repone stock) o el cobro (`venta_pagos.anulado_at`, migración 047). Lo anulado deja de mover el saldo.
+- Proveedores: listado con saldo, deuda y estado comercial visibles, detalle en modal, alta con secciones y cuenta en `/proveedores/:id/compras`. El pago se imputa en `compra_pagos` de la orden más antigua a la más reciente. El libro separa saldo del período y saldo actual. Anular una orden usa `cancelarCompra`; anular un pago marca `anulado_at` (migración 047). Las columnas elegidas se guardan en el navegador, por usuario y comercio. No hay vencimiento: no existe fecha de vencimiento de la deuda.
 - Un cliente y un producto pueden marcarse como preferibles para el POS (migración 043).
 
 ### Compras
@@ -136,8 +139,8 @@ Persistencia: tablas `ventas`, `venta_items` y `venta_pagos`. No existe la tabla
 Comportamiento de stock y estado, según `frontend/src/services/ventas.js`:
 
 - Crear o editar una venta ajusta `productos.stock_actual` en el cliente. El stock no queda negativo: se guarda 0.
-- Cancelar deja la venta visible, no toca el stock y la rentabilidad mensual la excluye (`estado <> 'cancelada'`).
-- Eliminar es soft delete (`deleted_at`) y restaura stock.
+- Cancelar deja la venta visible, repone el stock de los ítems (piso 0) y la rentabilidad mensual la excluye (`estado <> 'cancelada'`). El comentario de `cancelVenta` dice que no toca el stock; el cuerpo de la función sí lo repone. Desde la cuenta del cliente, anular el movimiento de la venta llama a esa misma cancelación. Anular un cobro no borra la fila: pone `anulado_at` (migración 047) y el trigger deja de sumarlo.
+- Eliminar es soft delete (`deleted_at`) y también restaura stock. El listado de `/ventas` cancela. El listado histórico de ventas rápidas usa el soft delete.
 
 El listado de `/ventas` usa `fetchVentasRegistros` (`ventasListado.js`): página en el servidor, sin un rango de tres meses obligatorio. Los KPIs de esa pantalla piden el día de hoy vía `getVentas`. `getVentas`, si no recibe ambas fechas, limita a los últimos tres meses. Esa función sigue usándose en dashboard y otros consumos. La guía `Guias_Inicio/inicio-local/DESARROLLO_LOCAL.md` todavía nombra `pages/ventas/VentasList.jsx` y un rango por defecto de tres meses en el listado: ese archivo ya no está y el listado actual no aplica ese rango si los filtros van vacíos.
 
@@ -302,7 +305,7 @@ Producción: el frontend desplegado en Vercel sigue a lo que esté en el remoto 
 - No ejecutar `crear_comercio_y_usuario` desde el cliente. La migración 045 le quita el permiso a `anon` y `authenticated`.
 - Los códigos de `app_modulos`, `MODULO_CODIGOS` y las rutas `PermissionRoute` se cambian juntos.
 - Las ventas, incluidas las rápidas, se guardan en `ventas` / `venta_items` / `venta_pagos`. No recrear `ventas_rapidas`.
-- Cancelar una venta no mueve stock y no debe entrar en rentabilidad. Borrar (soft delete) sí repone stock.
+- Cancelar una venta repone stock, la deja visible y no entra en rentabilidad. Borrar (soft delete) también repone stock.
 - El stock de pantalla es `productos.stock_actual`, actualizado desde los servicios de ventas y compras. Si se implementa inventario, definir ahí la relación con `movimientos_inventario` en lugar de sumar un tercer mecanismo en silencio.
 - Un solo preferible por comercio en clientes, productos y formas de pago.
 - Listados grandes de ventas: paginar en el servidor, no embeber relaciones pesadas en el `select` paginado, y no traer el historial completo sin filtro consciente.
@@ -314,7 +317,7 @@ Producción: el frontend desplegado en Vercel sigue a lo que esté en el remoto 
 
 ## 8. Estado del trabajo
 
-**Última implementación en el working tree (17 de octubre de 2026, sin commit):** marca del sidebar más compacta y encabezado del panel alineado a la referencia (resplandor, «Sincronizado» y cierre de sesión en el menú del correo). Antes, sin commit (11 de octubre de 2026): listado de proveedores alineado con clientes (tooltip de contacto, flecha y menú a las compras del proveedor, búsqueda recordada) más la ruta `/proveedores/:id/compras`. Antes, en el mismo árbol: acceso de Alien’s · Kiosco/Bebidas. En Supabase, el SQL Editor devolvió éxito al ejecutar el cierre de `crear_comercio_y_usuario` (migración 045). `SELECT public.get_user_comercio_id();` en ese editor devolvió NULL porque no hay sesión de usuario. “Allow new users to sign up” quedó apagado y guardado; “Confirm email” sigue prendido. URL Configuration tiene Site URL `https://www.adminisgo.com` y las rutas `/auth/callback` y `/reset-password` para localhost, `adminisgo.com` y `www.adminisgo.com`. El cliente OAuth de Google quedó guardado con el callback de Supabase y el dominio de marca igual a ese host. Después de corregir el `redirect_uri_mismatch`, la sesión de `mo826440@gmail.com` abrió Ventas en `http://localhost:5173/ventas` como Empleado 01. La app de Google sigue en estado Prueba. Las Edge Functions nuevas no se desplegaron: en PowerShell `supabase` no está instalado.
+**Última implementación en el working tree (13 de noviembre de 2026, sin commit):** el módulo de proveedores cambió de presentación (listado, detalle, alta, pago y cuenta corriente) sin cambiar la imputación de los pagos. Las columnas visibles se guardan en el navegador. Antes, el mismo día: en la cuenta del cliente y en el libro del proveedor, cada movimiento tiene menú de tres puntos para anularlo. Una venta o una orden se cancela (y, si corresponde, se mueve el stock). Un cobro o un pago queda con `anulado_at` (migración 047, hay que ejecutarla en Supabase): sigue visible en la columna «Monto anulado» y deja de entrar en el saldo. Antes, el mismo día: el libro de compras del proveedor muestra cada pago posterior como una fila propia y el saldo baja en esa fila, igual que el cobro en la cuenta del cliente. Antes, el mismo día: en proveedores se registra un pago pendiente y se imputa en las órdenes con deuda, de la más antigua a la más reciente, usando `compra_pagos` (migración 013, sin SQL nuevo). Antes, el mismo día: el encabezado de módulo ya no compacta el banner cuando eso dejaría la página más corta que la ventana (el scroll general volvía arriba en proveedores y en otros listados). Antes, el mismo día: fichas de cada módulo implementado y de la base en `.cursor/modulos/`, más la corrección de esta memoria: cancelar una venta sí repone stock, como hace `cancelVenta`. Antes (17 de octubre de 2026, sin commit): marca del sidebar más compacta y encabezado del panel alineado a la referencia (resplandor, «Sincronizado» y cierre de sesión en el menú del correo). Antes, sin commit (11 de octubre de 2026): listado de proveedores alineado con clientes (tooltip de contacto, flecha y menú a las compras del proveedor, búsqueda recordada) más la ruta `/proveedores/:id/compras`. Antes, en el mismo árbol: acceso de Alien’s · Kiosco/Bebidas. En Supabase, el SQL Editor devolvió éxito al ejecutar el cierre de `crear_comercio_y_usuario` (migración 045). `SELECT public.get_user_comercio_id();` en ese editor devolvió NULL porque no hay sesión de usuario. “Allow new users to sign up” quedó apagado y guardado; “Confirm email” sigue prendido. URL Configuration tiene Site URL `https://www.adminisgo.com` y las rutas `/auth/callback` y `/reset-password` para localhost, `adminisgo.com` y `www.adminisgo.com`. El cliente OAuth de Google quedó guardado con el callback de Supabase y el dominio de marca igual a ese host. Después de corregir el `redirect_uri_mismatch`, la sesión de `mo826440@gmail.com` abrió Ventas en `http://localhost:5173/ventas` como Empleado 01. La app de Google sigue en estado Prueba. Las Edge Functions nuevas no se desplegaron: en PowerShell `supabase` no está instalado.
 
 La última implementación ya commiteada sigue siendo la del 12 de septiembre de 2026 (“Cambiar precio desde consultar”), más el módulo de mantenimiento del mismo día.
 
@@ -343,6 +346,14 @@ La última implementación ya commiteada sigue siendo la del 12 de septiembre de
 
 | Fecha | Implementación | Áreas | Validación |
 | --- | --- | --- | --- |
+| 2026-11-13 | Rediseño de proveedores: listado, detalle, alta, pago y cuenta, con columnas por usuario en el navegador | `pages/proveedores`, `components/tablas`, encabezado solo en rutas de proveedores | Vite recargó los archivos. El navegador de verificación no tiene sesión, así que no se recorrió el alta ni un pago real |
+| 2026-11-13 | Corrección visual de proveedores: cabecera de tabla en el flujo, modales centrados, menú de columnas dentro de la ventana y un solo resumen en la cuenta | `ProveedoresList`, `ProveedorCompras`, `ModuleGlassPageHeader`, `SelectorColumnas` | La causa de la cabecera flotante era `top: 7rem` dentro del contenedor con scroll. Los modales heredaban `position: fixed` de Bootstrap |
+| 2026-11-13 | El listado de proveedores ya no ensancha la página: solo la tabla se desplaza. El pendiente de cada orden descuenta los pagos vigentes. Una fecha de pago sin hora se guarda al mediodía local | `ProveedoresList.css`, `ProveedorCompras`, `compras.js`, `Layout.css` | El ancho mínimo de la tabla subía por los flex sin `min-width: 0`. El pendiente usaba solo el pago hecho en el momento de la orden |
+| 2026-11-13 | Acciones fija en el listado, barra horizontal superior sincronizada, pendiente $0,00 en compras pagadas y anulados legibles | `BarraScrollTabla`, `ProveedoresList`, `ProveedorCompras` | Presentación. No cambia imputaciones ni preferencias |
+| 2026-11-13 | Anular un movimiento de la cuenta del cliente o del libro del proveedor, con columna de monto anulado | `ClienteCuentaCorriente.jsx`, `ProveedorCompras.jsx`, `clienteCuentaCorriente.js`, `ventas.js`, `compras.js`, migración 047 | Revisión del armado del saldo. La migración 047 queda para ejecutar en Supabase. El navegador de verificación no tiene la sesión local |
+| 2026-11-13 | Pago a proveedor imputado en las órdenes con deuda, como el cobro del cliente | `compras.js`, `ProveedoresList.jsx`, `ProveedorCompras.jsx`, `RegistrarPagoProveedorModal.jsx` | Sin migración nueva: usa `compra_pagos`. El navegador de verificación no tiene la sesión local |
+| 2026-11-13 | El banner de módulo no se achica si eso anula el scroll de la página | `ModuleGlassPageHeader.jsx`, `ModuleGlassPageHeader.css` | Revisión del cálculo de alto. El navegador de verificación llegó al ingreso; el scroll autenticado queda para la sesión ya abierta en localhost |
+| 2026-11-13 | Fichas de módulo y de la base para leer antes de cada cambio. La memoria queda alineada con el código: cancelar una venta repone stock | `.cursor/modulos/`, `.cursor/rules/memoria-proyecto.mdc`, `docs/MEMORIA_PROYECTO.md` | Contraste con rutas, servicios y migraciones. Sin compilación: no hubo cambio de aplicación |
 | 2026-10-18 | Encabezado de módulos igual al panel; Ventas rápidas fuera del sidebar | `ModuleGlassPageHeader.jsx`, `ModuleGlassPageHeader.css`, `InicioReferencias.jsx`, `Sidebar.jsx` | El usuario revisa los módulos en su sesión |
 | 2026-10-18 | Logo y encabezado con las dos cabezas PNG de Ejemplos/img | `public/marca/alien-cabeza.png`, `public/marca/alien-brillo.png`, `KioscoAliensMark.jsx`, `InicioHub.jsx`, `Sidebar.css`, `InicioApp.css` | El usuario revisa `/inicio` en su sesión |
 | 2026-10-17 | Alien redondo de la referencia, el mismo archivo en el menú y en el encabezado | `public/marca/kiosco-aliens-logo.svg`, `KioscoAliensMark.jsx`, `Sidebar.css`, `InicioApp.css` | El usuario revisa `/inicio` en su sesión |

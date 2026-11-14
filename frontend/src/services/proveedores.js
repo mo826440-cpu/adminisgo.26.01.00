@@ -4,13 +4,18 @@ import { supabase } from './supabase'
 /**
  * Obtener todos los proveedores
  */
-export const getProveedores = async () => {
+export const getProveedores = async (opciones = {}) => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('proveedores')
       .select('*')
-      .eq('activo', true)
       .order('nombre_razon_social', { ascending: true })
+    if (opciones.incluirInactivos) {
+      query = query.is('deleted_at', null)
+    } else {
+      query = query.eq('activo', true)
+    }
+    const { data, error } = await query
 
     if (error) throw error
     return { data, error: null }

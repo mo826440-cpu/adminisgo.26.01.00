@@ -12,7 +12,8 @@ function Modal({
   variant = 'default', // 'default', 'warning', 'danger'
   showCloseButton = true,
   closeOnOverlayClick = true,
-  footer
+  footer,
+  className = '',
 }) {
   // Prevenir scroll del body cuando el modal está abierto
   useEffect(() => {
@@ -47,7 +48,7 @@ function Modal({
 
   return createPortal(
     <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className={`modal modal-${variant}`}>
+      <div className={`modal modal-${variant}${className ? ` ${className}` : ''}`}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
           {showCloseButton && (

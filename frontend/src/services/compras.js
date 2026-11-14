@@ -1,6 +1,17 @@
 // Servicio para gestión de compras
 import { supabase } from './supabase'
 
+/** Una fecha sola (YYYY-MM-DD) se guarda al mediodía local.
+ *  Si se manda tal cual, Postgres la toma como medianoche UTC y en Argentina se ve el día anterior a las 21:00. */
+function fechaPagoParaGuardar(valor) {
+  const texto = String(valor || '').trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    const local = new Date(`${texto}T12:00:00`)
+    if (Number.isFinite(local.getTime())) return local.toISOString()
+  }
+  return texto || new Date().toISOString()
+}
+
 /**
  * Sin filas en compra_pagos los triggers no actualizan monto_pagado/monto_deuda
  * (migración 013). Recalcula siempre a partir de los pagos reales.
@@ -17,14 +28,22 @@ async function sincronizarMontosCompra(compraId, totalOverride = null) {
     total = compra?.total
   }
 
-  const { data: pagos, error: errorPagos } = await supabase
+  let { data: pagos, error: errorPagos } = await supabase
     .from('compra_pagos')
-    .select('monto_pagado')
+    .select('monto_pagado, anulado_at')
     .eq('compra_id', compraId)
+
+  if (errorPagos && String(errorPagos.message || '').includes('anulado_at')) {
+    const retry = await supabase.from('compra_pagos').select('monto_pagado').eq('compra_id', compraId)
+    pagos = retry.data
+    errorPagos = retry.error
+  }
 
   if (errorPagos) throw errorPagos
 
-  const pagado = (pagos || []).reduce((sum, p) => sum + (parseFloat(p.monto_pagado) || 0), 0)
+  const pagado = (pagos || [])
+    .filter((p) => !p.anulado_at)
+    .reduce((sum, p) => sum + (parseFloat(p.monto_pagado) || 0), 0)
   const t = parseFloat(total) || 0
   const montos = {
     monto_pagado: pagado,
@@ -124,7 +143,7 @@ export const createCompra = async (compraData) => {
         compra_id: compraCreada.id,
         metodo_pago: String(p.metodo_pago || '').trim(),
         monto_pagado: parseFloat(p.monto_pagado || 0) || 0,
-        fecha_pago: p.fecha_pago || new Date().toISOString(),
+        fecha_pago: fechaPagoParaGuardar(p.fecha_pago),
         observaciones: p.observaciones || null
       }))
 
@@ -359,7 +378,7 @@ export const updateCompra = async (id, compraData) => {
           compra_id: id,
           metodo_pago: String(p.metodo_pago || '').trim(),
           monto_pagado: parseFloat(p.monto_pagado || 0) || 0,
-          fecha_pago: p.fecha_pago || new Date().toISOString(),
+          fecha_pago: fechaPagoParaGuardar(p.fecha_pago),
           observaciones: p.observaciones || null
         }))
 
@@ -548,6 +567,30 @@ export const cancelarCompra = async (id) => {
   }
 }
 
+function errorEsColumnaAnulado(error) {
+  return String(error?.message || error?.details || '').includes('anulado_at')
+}
+
+/** Deja de contar esos pagos en la deuda. La fila sigue visible con anulado_at. */
+export const anularPagosCompra = async (pagoIds) => {
+  const ids = [...new Set((pagoIds || []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))]
+  if (ids.length === 0) {
+    return { error: new Error('Este movimiento no tiene un pago para anular.') }
+  }
+  const { error } = await supabase
+    .from('compra_pagos')
+    .update({ anulado_at: new Date().toISOString() })
+    .in('id', ids)
+    .is('anulado_at', null)
+  if (error) {
+    if (errorEsColumnaAnulado(error)) {
+      return { error: new Error('Falta ejecutar en Supabase la migración 047 (columna anulado_at).') }
+    }
+    return { error }
+  }
+  return { error: null }
+}
+
 /**
  * Eliminar una compra (soft delete)
  */
@@ -611,7 +654,63 @@ export const getComprasPorProveedorId = async (proveedorId) => {
       .order('id', { ascending: false })
 
     if (error) throw error
-    return { data: data || [], error: null }
+
+    const compras = data || []
+    if (compras.length === 0) return { data: [], error: null }
+
+    const pagos = []
+    const idChunks = []
+    const ids = compras.map((compra) => compra.id).filter((compraId) => compraId != null)
+    for (let i = 0; i < ids.length; i += 200) idChunks.push(ids.slice(i, i + 200))
+
+    const columnasPagos = 'id, compra_id, metodo_pago, monto_pagado, fecha_pago, observaciones, anulado_at'
+    const columnasPagosBase = 'id, compra_id, metodo_pago, monto_pagado, fecha_pago, observaciones'
+    let columnas = columnasPagos
+    for (const part of idChunks) {
+      let from = 0
+      const pageSize = 1000
+      let hasMore = true
+      while (hasMore) {
+        let { data: page, error: errorPagos } = await supabase
+          .from('compra_pagos')
+          .select(columnas)
+          .in('compra_id', part)
+          .order('fecha_pago', { ascending: true })
+          .range(from, from + pageSize - 1)
+        if (errorPagos && columnas !== columnasPagosBase && errorEsColumnaAnulado(errorPagos)) {
+          columnas = columnasPagosBase
+          const retry = await supabase
+            .from('compra_pagos')
+            .select(columnas)
+            .in('compra_id', part)
+            .order('fecha_pago', { ascending: true })
+            .range(from, from + pageSize - 1)
+          page = retry.data
+          errorPagos = retry.error
+        }
+        if (errorPagos) throw errorPagos
+        const rows = page || []
+        pagos.push(...rows)
+        hasMore = rows.length >= pageSize
+        from += pageSize
+      }
+    }
+
+    const pagosPorCompra = new Map()
+    for (const pago of pagos) {
+      const key = Number(pago.compra_id)
+      if (!key) continue
+      if (!pagosPorCompra.has(key)) pagosPorCompra.set(key, [])
+      pagosPorCompra.get(key).push(pago)
+    }
+
+    return {
+      data: compras.map((compra) => ({
+        ...compra,
+        compra_pagos: pagosPorCompra.get(Number(compra.id)) || [],
+      })),
+      error: null,
+    }
   } catch (error) {
     console.error('Error al obtener compras del proveedor:', error)
     return { data: null, error }
@@ -665,6 +764,95 @@ export const getMapaDeudaPorProveedorIds = async (proveedorIds) => {
   } catch (error) {
     console.error('Error al armar mapa de deuda por proveedor:', error)
     return map
+  }
+}
+
+/**
+ * Órdenes con deuda de un proveedor, de la más antigua a la más reciente.
+ * @param {number|string} proveedorId
+ */
+export const getComprasConDeudaPorProveedorId = async (proveedorId) => {
+  try {
+    const { data, error } = await getComprasPorProveedorId(proveedorId)
+    if (error) return { data: null, error }
+    const conDeuda = (data || [])
+      .filter((compra) => String(compra?.estado || '').toLowerCase() !== 'cancelada')
+      .map((compra) => ({ ...compra, monto_deuda: deudaEfectivaCompra(compra) }))
+      .filter((compra) => compra.monto_deuda > DEUDA_EPS)
+      .sort((a, b) => {
+        const fa = String(a.fecha_orden || '')
+        const fb = String(b.fecha_orden || '')
+        if (fa !== fb) return fa < fb ? -1 : 1
+        return Number(a.id) - Number(b.id)
+      })
+    return { data: conDeuda, error: null }
+  } catch (error) {
+    console.error('Error al obtener compras con deuda del proveedor:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Registra un pago al proveedor y lo imputa en órdenes con deuda (más antigua primero).
+ * Inserta filas en `compra_pagos`. El trigger de la migración 013 actualiza
+ * monto_pagado y monto_deuda; se vuelve a sincronizar por si no hubo trigger.
+ *
+ * @param {{
+ *  proveedorId: number|string,
+ *  monto: number,
+ *  metodo_pago?: string,
+ *  observaciones?: string|null,
+ *  fecha_pago?: string
+ * }} params
+ */
+export const registrarPagoProveedorDistribuido = async (params) => {
+  const proveedorId = params?.proveedorId
+  const monto = Number(params?.monto || 0)
+  const metodo_pago = String(params?.metodo_pago || 'efectivo').trim() || 'efectivo'
+  const observaciones = params?.observaciones ?? null
+  const fecha_pago = fechaPagoParaGuardar(params?.fecha_pago)
+
+  if (!proveedorId) return { data: null, error: new Error('Proveedor inválido') }
+  if (!Number.isFinite(monto) || monto <= 0) return { data: null, error: new Error('Monto inválido') }
+
+  try {
+    const { data: comprasDeuda, error: errDeuda } = await getComprasConDeudaPorProveedorId(proveedorId)
+    if (errDeuda) throw errDeuda
+    const compras = Array.isArray(comprasDeuda) ? comprasDeuda : []
+    if (compras.length === 0) {
+      return { data: { imputaciones: [], remanente: monto }, error: null }
+    }
+
+    let restante = monto
+    const imputaciones = []
+
+    for (const compra of compras) {
+      if (restante <= DEUDA_EPS) break
+      const deuda = Math.max(0, parseFloat(compra.monto_deuda) || 0)
+      if (deuda <= DEUDA_EPS) continue
+      const aplicar = Math.round(Math.min(deuda, restante) * 100) / 100
+      if (aplicar <= DEUDA_EPS) continue
+
+      const { error: errPago } = await supabase.from('compra_pagos').insert([
+        {
+          compra_id: compra.id,
+          metodo_pago,
+          monto_pagado: aplicar,
+          fecha_pago,
+          observaciones,
+        },
+      ])
+      if (errPago) throw errPago
+
+      await sincronizarMontosCompra(compra.id)
+      imputaciones.push({ compra_id: compra.id, monto: aplicar })
+      restante = Math.round((restante - aplicar) * 100) / 100
+    }
+
+    return { data: { imputaciones, remanente: Math.max(0, restante) }, error: null }
+  } catch (error) {
+    console.error('Error al registrar pago de proveedor:', error)
+    return { data: null, error }
   }
 }
 

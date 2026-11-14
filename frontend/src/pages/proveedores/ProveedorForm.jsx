@@ -1,9 +1,10 @@
 // Formulario para crear/editar proveedor
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Layout } from '../../components/layout'
 import { Card, Button, Input, Alert, Spinner, Modal } from '../../components/common'
 import { getProveedor, createProveedor, updateProveedor, verificarEmailProveedor, verificarCuitProveedor, verificarNombreProveedor } from '../../services/proveedores'
+import { readProveedoresListState } from './proveedoresListState'
 import './ProveedorForm.css'
 
 function ProveedorForm() {
@@ -17,6 +18,15 @@ function ProveedorForm() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showNombreWarningModal, setShowNombreWarningModal] = useState(false)
   const [validatedData, setValidatedData] = useState(null)
+
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [fiscalAbierta, setFiscalAbierta] = useState(false)
+  const [comercialAbierta, setComercialAbierta] = useState(false)
+  const [baseline, setBaseline] = useState('')
+  const nombreRef = useRef(null)
+  const emailRef = useRef(null)
+  const cuitRef = useRef(null)
+  const condicionesRef = useRef(null)
 
   const [formData, setFormData] = useState({
     nombre_razon_social: '',
@@ -61,9 +71,39 @@ function ProveedorForm() {
         notas: data.notas || '',
         activo: data.activo ?? true
       })
+      setBaseline(JSON.stringify({
+        nombre_razon_social: data.nombre_razon_social || '',
+        email: data.email || '',
+        telefono: data.telefono || '',
+        direccion: data.direccion || '',
+        cuit_rut: data.cuit_rut || '',
+        contacto_principal: data.contacto_principal || '',
+        condiciones_pago: data.condiciones_pago || '',
+        plazo_entrega: data.plazo_entrega || '',
+        notas: data.notas || '',
+        activo: data.activo ?? true,
+      }))
     }
     setLoading(false)
   }
+
+  const sucio = baseline !== '' && JSON.stringify(formData) !== baseline
+
+  useEffect(() => {
+    if (!isEditing) setBaseline(JSON.stringify(formData))
+    // Solo la base inicial del alta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing])
+
+  useEffect(() => {
+    const avisar = (event) => {
+      if (!sucio || saving) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', avisar)
+    return () => window.removeEventListener('beforeunload', avisar)
+  }, [sucio, saving])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -91,9 +131,21 @@ function ProveedorForm() {
     }
 
     if (errores.length > 0) {
+      const siguientes = {}
+      if (!formData.nombre_razon_social.trim()) siguientes.nombre = 'El nombre del proveedor es obligatorio.'
+      if (formData.email && formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        siguientes.email = 'El email no tiene un formato válido.'
+        setFiscalAbierta(true)
+      }
+      setFieldErrors(siguientes)
       setError(errores.join('. '))
+      window.setTimeout(() => {
+        if (siguientes.nombre) nombreRef.current?.focus()
+        else if (siguientes.email) emailRef.current?.focus()
+      }, 0)
       return
     }
+    setFieldErrors({})
 
     try {
       // 1. Validar CUIT/RUT único (si tiene valor)
@@ -109,7 +161,10 @@ function ProveedorForm() {
         }
         
         if (existeCuit) {
+          setFiscalAbierta(true)
+          setFieldErrors({ cuit: 'El CUIT ya está registrado.' })
           setError('El CUIT/RUT ya está registrado. Por favor, verifica los datos.')
+          window.setTimeout(() => cuitRef.current?.focus(), 0)
           return
         }
       }
@@ -127,7 +182,10 @@ function ProveedorForm() {
         }
         
         if (existeEmail) {
+          setFiscalAbierta(true)
+          setFieldErrors({ email: 'El email ya está en uso.' })
           setError('El email ya está en uso. Por favor, usa un email diferente.')
+          window.setTimeout(() => emailRef.current?.focus(), 0)
           return
         }
       }
@@ -177,29 +235,25 @@ function ProveedorForm() {
     setError(null)
 
     try {
-      if (isEditing) {
-        const { error: err } = await updateProveedor(id, validatedData)
-        if (err) {
-          setError(err.message || 'Error al actualizar el proveedor')
-          setSaving(false)
-          return
-        }
-      } else {
-        const { error: err } = await createProveedor(validatedData)
-        if (err) {
-          setError(err.message || 'Error al crear el proveedor')
-          setSaving(false)
-          return
-        }
+      const guardado = isEditing
+        ? await updateProveedor(id, validatedData)
+        : await createProveedor(validatedData)
+      if (guardado.error) {
+        setError(guardado.error.message || 'Error al guardar el proveedor')
+        setSaving(false)
+        return
       }
 
+      setBaseline(JSON.stringify(formData))
       setSaving(false)
-      navigate('/proveedores', { 
+      navigate('/proveedores', {
         replace: true,
-        state: { 
-          success: true, 
-          message: isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente' 
-        } 
+        state: {
+          success: true,
+          highlightId: guardado.data?.id || id,
+          restoreList: readProveedoresListState(),
+          message: isEditing ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente',
+        },
       })
     } catch (err) {
       console.error('Error inesperado:', err)
@@ -230,30 +284,20 @@ function ProveedorForm() {
 
         <Card>
           <form onSubmit={handleSubmit} className="proveedor-form">
+            <p className="prov-form__intro">
+              {isEditing ? 'Actualizá los datos del proveedor.' : 'Cargá los datos principales del proveedor.'}
+            </p>
+            <Input
+              ref={nombreRef}
+              label="Nombre del proveedor"
+              name="nombre_razon_social"
+              value={formData.nombre_razon_social}
+              onChange={handleChange}
+              required
+              error={fieldErrors.nombre}
+              placeholder="Nombre o razón social"
+            />
             <div className="form-row">
-              <div className="form-col form-col-full">
-                <Input
-                  label="Nombre / Razón Social"
-                  name="nombre_razon_social"
-                  value={formData.nombre_razon_social}
-                  onChange={handleChange}
-                  required
-                  placeholder="Nombre o razón social del proveedor"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col">
-                <Input
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="proveedor@email.com (opcional)"
-                />
-              </div>
               <div className="form-col">
                 <Input
                   label="Teléfono"
@@ -264,21 +308,9 @@ function ProveedorForm() {
                   placeholder="Teléfono (opcional)"
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-col">
                 <Input
-                  label="CUIT / RUT"
-                  name="cuit_rut"
-                  value={formData.cuit_rut}
-                  onChange={handleChange}
-                  placeholder="CUIT/RUT (opcional)"
-                />
-              </div>
-              <div className="form-col">
-                <Input
-                  label="Contacto Principal"
+                  label="Contacto"
                   name="contacto_principal"
                   value={formData.contacto_principal}
                   onChange={handleChange}
@@ -286,90 +318,96 @@ function ProveedorForm() {
                 />
               </div>
             </div>
+            <label className="prov-switch">
+              <input type="checkbox" name="activo" checked={formData.activo} onChange={handleChange} />
+              <span>Proveedor activo</span>
+            </label>
 
-            <div className="form-row">
-              <div className="form-col">
-                <Input
-                  label="Condiciones de Pago"
-                  name="condiciones_pago"
-                  value={formData.condiciones_pago}
-                  onChange={handleChange}
-                  placeholder="Ej: Contado, 30 días (opcional)"
-                />
-              </div>
-              <div className="form-col">
-                <Input
-                  label="Plazo de Entrega (días)"
-                  name="plazo_entrega"
-                  type="number"
-                  min="0"
-                  value={formData.plazo_entrega}
-                  onChange={handleChange}
-                  placeholder="Días (opcional)"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col form-col-full">
-                <label className="form-label">
-                  Dirección
-                  <textarea
-                    name="direccion"
-                    value={formData.direccion}
+            <details className="prov-seccion" open={fiscalAbierta} onToggle={(e) => setFiscalAbierta(e.currentTarget.open)}>
+              <summary>Datos fiscales y dirección</summary>
+              <div className="form-row">
+                <div className="form-col">
+                  <Input
+                    ref={cuitRef}
+                    label="CUIT / RUT"
+                    name="cuit_rut"
+                    value={formData.cuit_rut}
                     onChange={handleChange}
-                    className="form-control"
-                    rows="3"
-                    placeholder="Dirección completa (opcional)"
+                    error={fieldErrors.cuit}
+                    placeholder="Opcional"
                   />
-                </label>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col form-col-full">
-                <label className="form-label">
-                  Notas
-                  <textarea
-                    name="notas"
-                    value={formData.notas}
+                </div>
+                <div className="form-col">
+                  <Input
+                    ref={emailRef}
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
                     onChange={handleChange}
-                    className="form-control"
-                    rows="3"
-                    placeholder="Notas adicionales (opcional)"
+                    error={fieldErrors.email}
+                    placeholder="Opcional"
                   />
-                </label>
+                </div>
               </div>
-            </div>
+              <label className="form-label">
+                Dirección
+                <textarea name="direccion" value={formData.direccion} onChange={handleChange} className="form-control" rows="2" placeholder="Opcional" />
+              </label>
+            </details>
 
-            <div className="form-row">
-              <div className="form-col">
-                <label className="form-checkbox">
-                  <input
-                    type="checkbox"
-                    name="activo"
-                    checked={formData.activo}
+            <details className="prov-seccion" open={comercialAbierta} onToggle={(e) => setComercialAbierta(e.currentTarget.open)}>
+              <summary>Condiciones comerciales</summary>
+              <div className="form-row">
+                <div className="form-col">
+                  <Input
+                    ref={condicionesRef}
+                    label="Condiciones de pago"
+                    name="condiciones_pago"
+                    value={formData.condiciones_pago}
                     onChange={handleChange}
+                    placeholder="Ej: Contado, 30 días"
                   />
-                  <span>Proveedor Activo</span>
-                </label>
+                </div>
+                <div className="form-col">
+                  <Input
+                    label="Plazo de entrega (días)"
+                    name="plazo_entrega"
+                    type="number"
+                    min="0"
+                    value={formData.plazo_entrega}
+                    onChange={handleChange}
+                    placeholder="Opcional"
+                  />
+                </div>
               </div>
-            </div>
+              <label className="form-label">
+                Notas
+                <textarea name="notas" value={formData.notas} onChange={handleChange} className="form-control" rows="2" placeholder="Opcional" />
+              </label>
+            </details>
 
             <div className="form-actions">
-              <Link to="/proveedores">
-                <Button type="button" variant="outline" disabled={saving}>
-                  Cancelar
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={() => {
+                  if (sucio && !window.confirm('Hay cambios sin guardar. ¿Salir de todos modos?')) return
+                  navigate('/proveedores', { state: { restoreList: readProveedoresListState() } })
+                }}
+              >
+                Cancelar
+              </Button>
               <Button type="submit" variant="primary" loading={saving} disabled={saving}>
-                {isEditing ? 'Actualizar Proveedor' : 'Crear Proveedor'}
+                {isEditing ? 'Guardar cambios' : 'Crear proveedor'}
               </Button>
             </div>
           </form>
         </Card>
 
         <Modal
+          className="prov-modal"
           isOpen={showNombreWarningModal}
           onClose={() => {
             setShowNombreWarningModal(false)
@@ -409,6 +447,7 @@ function ProveedorForm() {
         </Modal>
 
         <Modal
+          className="prov-modal"
           isOpen={showConfirmModal}
           onClose={() => {
             setShowConfirmModal(false)

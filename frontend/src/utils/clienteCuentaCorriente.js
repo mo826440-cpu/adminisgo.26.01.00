@@ -61,8 +61,17 @@ export function esPagoReal(pago) {
 export function calcularDeudaVenta(venta, pagos) {
   if (!ventaAfectaCalculos(venta)) return 0
   const total = parseFloat(venta.total) || 0
-  const pagado = (pagos || []).filter(esPagoReal).reduce((s, p) => s + (parseFloat(p.monto_pagado) || 0), 0)
+  const pagado = (pagos || [])
+    .filter((p) => esPagoReal(p) && !p.anulado_at)
+    .reduce((s, p) => s + (parseFloat(p.monto_pagado) || 0), 0)
   return Math.max(0, total - pagado)
+}
+
+/** Monto que esa fila deja de mover en el saldo porque está anulada. */
+export function montoAnuladoDeMovimiento(m) {
+  if (!m?.anulado || m.esSaldoAnterior) return 0
+  if (m.tipo === 'cobro' || m.tipo === 'pago') return Number(m.pago) || 0
+  return Math.max(0, (Number(m.cargo) || 0) - (Number(m.pago) || 0))
 }
 
 function pagoEnElMomento(ventaFechaIso, pagoFechaIso) {
@@ -165,8 +174,10 @@ export function buildCuentaCorrienteMovimientos(payload = {}) {
     const anulado = ventaEstaCancelada(venta)
     const total = parseFloat(venta.total) || 0
     const pagos = (getPagos(venta.id) || []).filter(esPagoReal)
-    const atSale = pagos.filter((p) => pagoEnElMomento(venta.fecha_hora, p.fecha_pago))
-    const later = pagos.filter((p) => !pagoEnElMomento(venta.fecha_hora, p.fecha_pago))
+    const vigentes = pagos.filter((p) => !p.anulado_at)
+    const pagosAnulados = pagos.filter((p) => p.anulado_at)
+    const atSale = vigentes.filter((p) => pagoEnElMomento(venta.fecha_hora, p.fecha_pago))
+    const later = vigentes.filter((p) => !pagoEnElMomento(venta.fecha_hora, p.fecha_pago))
     const pagadoEnElMomento = atSale.reduce((s, p) => s + (parseFloat(p.monto_pagado) || 0), 0)
     const resto = Math.max(0, total - pagadoEnElMomento)
     const items = getItems(venta.id)
@@ -193,6 +204,9 @@ export function buildCuentaCorrienteMovimientos(payload = {}) {
     for (const p of later) {
       laterAll.push({ pago: p, venta, anulado })
     }
+    for (const p of pagosAnulados) {
+      laterAll.push({ pago: p, venta, anulado: true })
+    }
   }
 
   for (const grupo of groupLaterPagos(laterAll)) {
@@ -206,6 +220,7 @@ export function buildCuentaCorrienteMovimientos(payload = {}) {
       fecha: first.pago.fecha_pago || first.venta.fecha_hora,
       ventaId: first.venta.id,
       pagoId: first.pago.id,
+      pagoIds: pagos.map((p) => p.id).filter((pagoId) => pagoId != null),
       cargo: 0,
       pago: monto,
       resto: 0,
@@ -232,7 +247,7 @@ export function buildCuentaCorrienteMovimientos(payload = {}) {
     if (!m.anulado) {
       saldo += (Number(m.cargo) || 0) - (Number(m.pago) || 0)
     }
-    return { ...m, saldo }
+    return { ...m, saldo, montoAnulado: montoAnuladoDeMovimiento(m) }
   })
 }
 

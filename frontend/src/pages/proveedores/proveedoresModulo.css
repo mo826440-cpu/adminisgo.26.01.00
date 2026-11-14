@@ -1,0 +1,163 @@
+.actions-menu-dropdown.prov-actions-dropdown {
+  right: auto;
+  top: auto;
+  width: max-content;
+  max-width: min(280px, calc(100% - 1rem));
+}
+
+/* Modales y acciones del módulo. Bootstrap deja .modal fijo en la esquina;
+   estas clases lo devuelven al centro del overlay. */
+
+.modal.prov-modal,
+.modal.prov-modal-ancho,
+.modal.prov-modal-pago {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 2rem);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: auto;
+}
+
+.modal.prov-modal-ancho {
+  max-width: min(920px, calc(100% - 2rem));
+}
+
+.modal.prov-modal-pago {
+  max-width: min(640px, calc(100% - 2rem));
+}
+
+.modal.prov-modal-pago .modal-header,
+.modal.prov-modal-pago .modal-body,
+.modal.prov-modal-pago .modal-footer {
+  padding: 0.7rem 1rem;
+}
+
+.modal.prov-modal-pago .form-row {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  gap: 0.55rem 0.7rem;
+  margin-bottom: 0.45rem;
+}
+
+.modal.prov-modal-pago .form-label {
+  margin-bottom: 0.2rem;
+}
+
+.modal.prov-modal-pago textarea.form-control {
+  min-height: 2.4rem;
+}
+
+.modal.prov-modal-pago .prov-pago__saldo,
+.modal.prov-modal-pago .prov-pago__despues {
+  margin-bottom: 0.45rem;
+  padding: 0.45rem 0.7rem;
+}
+
+@media (max-width: 640px) {
+  .modal.prov-modal-pago .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal.prov-modal .modal-header,
+.modal.prov-modal-ancho .modal-header,
+.modal.prov-modal-pago .modal-header,
+.modal.prov-modal .modal-footer,
+.modal.prov-modal-ancho .modal-footer,
+.modal.prov-modal-pago .modal-footer {
+  flex-shrink: 0;
+}
+
+.modal.prov-modal .modal-body,
+.modal.prov-modal-ancho .modal-body,
+.modal.prov-modal-pago .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.proveedores-page .btn-primary,
+.proveedor-form .btn-primary,
+.prov-cc-page .btn-primary,
+.modal.prov-modal .btn-primary,
+.modal.prov-modal-ancho .btn-primary,
+.modal.prov-modal-pago .btn-primary {
+  background-color: #ff861c;
+  border-color: #ff861c;
+  color: #161616;
+}
+
+.proveedores-page .btn-primary:hover:not(:disabled),
+.proveedor-form .btn-primary:hover:not(:disabled),
+.prov-cc-page .btn-primary:hover:not(:disabled),
+.modal.prov-modal .btn-primary:hover:not(:disabled),
+.modal.prov-modal-ancho .btn-primary:hover:not(:disabled),
+.modal.prov-modal-pago .btn-primary:hover:not(:disabled) {
+  background-color: #e97510;
+  border-color: #e97510;
+  color: #161616;
+}
+
+.proveedores-page .btn-primary:focus-visible,
+.proveedor-form .btn-primary:focus-visible,
+.prov-cc-page .btn-primary:focus-visible,
+.modal.prov-modal .btn-primary:focus-visible,
+.modal.prov-modal-ancho .btn-primary:focus-visible,
+.modal.prov-modal-pago .btn-primary:focus-visible {
+  outline: 2px solid #ffb067;
+  outline-offset: 2px;
+}
+
+.proveedores-page .btn-primary:disabled,
+.proveedor-form .btn-primary:disabled,
+.prov-cc-page .btn-primary:disabled,
+.modal.prov-modal .btn-primary:disabled,
+.modal.prov-modal-ancho .btn-primary:disabled,
+.modal.prov-modal-pago .btn-primary:disabled {
+  background-color: #ff861c;
+  border-color: #ff861c;
+  color: #161616;
+  opacity: 0.55;
+}
+
+.prov-pago__saldo,
+.prov-pago__despues {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(255, 134, 28, 0.08);
+}
+
+.prov-pago__despues strong,
+.prov-pago__saldo strong {
+  font-size: 1.25rem;
+}
+
+.prov-pago__completo {
+  margin-top: 0.35rem;
+  border: 0;
+  background: none;
+  color: #ff861c;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.2rem 0;
+}
+
+.prov-pago__completo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.prov-pago__nota {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}

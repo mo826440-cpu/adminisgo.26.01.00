@@ -4,7 +4,12 @@ import { Layout } from '../../components/layout'
 import { Alert, Button, Card, Modal, Spinner } from '../../components/common'
 import { useLayoutChrome } from '../../components/layout/LayoutChromeContext'
 import { getCliente } from '../../services/clientes'
-import { getCuentaCorrientePorClienteId, registrarPagoClienteDistribuido } from '../../services/ventas'
+import {
+  anularPagosVenta,
+  cancelVenta,
+  getCuentaCorrientePorClienteId,
+  registrarPagoClienteDistribuido,
+} from '../../services/ventas'
 import { formatMoneyAR } from '../reportes/reporteVentasUtils'
 import { downloadClienteEstadoCuentaPdf } from '../../utils/clienteMovimientosExport'
 import {
@@ -23,6 +28,7 @@ import {
   parseYearMonthKey,
   yearMonthKey,
 } from '../../utils/clienteCuentaCorriente'
+import MovimientoAnularMenu from '../../components/cuenta/MovimientoAnularMenu'
 import { useDateTime } from '../../context/DateTimeContext'
 import { formatDateTime } from '../../utils/dateFormat'
 import '../../styles/registros-seccion.css'
@@ -94,9 +100,10 @@ function ClienteCuentaCorriente() {
     })
   }, [navigate, listState])
 
-  const loadCuenta = useCallback(async () => {
+  const loadCuenta = useCallback(async (options = {}) => {
+    const silent = options?.silent === true
     if (!clienteId) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
     const [clienteRes, ccRes] = await Promise.all([
       getCliente(clienteId),
@@ -227,7 +234,38 @@ function ClienteCuentaCorriente() {
     setShowPagoModal(false)
     setSuccessMessage('Cobro registrado correctamente.')
     window.setTimeout(() => setSuccessMessage(null), 5000)
-    await loadCuenta()
+    await loadCuenta({ silent: true })
+  }
+
+  const anularMovimiento = async (movimiento) => {
+    if (movimiento.tipo === 'venta' && movimiento.ventaId) {
+      const { error: err } = await cancelVenta(movimiento.ventaId)
+      if (err) throw err instanceof Error ? err : new Error(err.message || 'No se pudo anular la venta.')
+    } else if (movimiento.tipo === 'cobro') {
+      const ids = movimiento.pagoIds?.length ? movimiento.pagoIds : movimiento.pagoId ? [movimiento.pagoId] : []
+      const { error: err } = await anularPagosVenta(ids)
+      if (err) throw err instanceof Error ? err : new Error(err.message || 'No se pudo anular el cobro.')
+    } else {
+      throw new Error('Este movimiento no se puede anular.')
+    }
+    setSuccessMessage('Movimiento anulado. El saldo pendiente ya no lo tiene en cuenta.')
+    window.setTimeout(() => setSuccessMessage(null), 5000)
+    await loadCuenta({ silent: true })
+  }
+
+  const menuAnular = (movimiento) => {
+    if (movimiento.esSaldoAnterior || movimiento.anulado) return null
+    const confirmText =
+      movimiento.tipo === 'venta'
+        ? 'La venta deja de sumar al saldo pendiente y se repone el stock de sus productos.'
+        : 'El cobro deja de descontar la deuda. Ese monto vuelve al saldo pendiente.'
+    return (
+      <MovimientoAnularMenu
+        detalle={movimiento.detalle}
+        confirmText={confirmText}
+        onAnular={() => anularMovimiento(movimiento)}
+      />
+    )
   }
 
   const handleNuevaVenta = () => {
@@ -472,7 +510,9 @@ function ClienteCuentaCorriente() {
                           <th className="cc-th-money">Cargo / Venta</th>
                           <th className="cc-th-money">Pago / Cobro</th>
                           <th className="cc-th-money">Resto venta</th>
+                          <th className="cc-th-money">Monto anulado</th>
                           <th className="cc-th-money">Saldo pendiente</th>
+                          <th className="cc-th-actions" aria-label="Acciones" />
                         </tr>
                       </thead>
                       <tbody>
@@ -493,8 +533,12 @@ function ClienteCuentaCorriente() {
                             <td className="cc-td-money">{dashOMonto(m.pago, 'cc-money cc-money--pago')}</td>
                             <td className="cc-td-money">{dashOMonto(m.resto, 'cc-money cc-money--resto')}</td>
                             <td className="cc-td-money">
+                              {dashOMonto(m.montoAnulado, 'cc-money cc-money--anulado')}
+                            </td>
+                            <td className="cc-td-money">
                               <span className={saldoClass(m.saldo)}>{formatMoneyAR(m.saldo)}</span>
                             </td>
+                            <td className="cc-td-actions">{menuAnular(m)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -509,6 +553,7 @@ function ClienteCuentaCorriente() {
                       >
                         <div className="cc-mov-card__top">
                           <time className="cc-td-fecha">{formatearFechaFila(m)}</time>
+                          {menuAnular(m)}
                         </div>
                         <p className="cc-mov-card__detalle">{renderMovimientoDetalle(m)}</p>
                         <dl className="cc-mov-card__amounts">
@@ -523,6 +568,10 @@ function ClienteCuentaCorriente() {
                           <div>
                             <dt>Resto venta</dt>
                             <dd>{dashOMonto(m.resto, 'cc-money cc-money--resto')}</dd>
+                          </div>
+                          <div>
+                            <dt>Monto anulado</dt>
+                            <dd>{dashOMonto(m.montoAnulado, 'cc-money cc-money--anulado')}</dd>
                           </div>
                           <div>
                             <dt>Saldo pendiente</dt>

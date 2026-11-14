@@ -1,0 +1,112 @@
+@import './proveedoresModulo.css';
+
+.table.cc-table.prov-cc-table {
+  table-layout: auto;
+  min-width: 760px;
+}
+
+.table.cc-table.prov-cc-table th,
+.table.cc-table.prov-cc-table td {
+  width: auto;
+}
+
+.prov-cc-resumen {
+  margin: 0.75rem 0;
+}
+
+.prov-cc-aclaracion {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.prov-cc-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.prov-cc-page.container,
+.prov-cc-page .card,
+.prov-cc-page .cc-filters,
+.prov-cc-page .cc-summary,
+.prov-cc-page .cc-topbar,
+.prov-cc-page .prov-cc-resumen {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.prov-cc-page .cc-filters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.prov-cc-page .cc-topbar {
+  flex-wrap: wrap;
+}
+
+.prov-cc-page .cc-summary__name,
+.prov-cc-page .cc-breadcrumb__current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-cc-page .cc-table-wrap.table-container {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.prov-cc-page .prov-cc-table thead th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  box-shadow: none;
+}
+
+.prov-cc-page .cc-row--anulado,
+.prov-cc-page .cc-mov-card--anulado {
+  opacity: 1;
+}
+
+.prov-cc-page .cc-row--anulado td,
+.prov-cc-page .cc-row--anulado .cc-td-detalle,
+.prov-cc-page .cc-row--anulado .cc-td-fecha,
+.prov-cc-page .cc-mov-card--anulado,
+.prov-cc-page .cc-mov-card--anulado .cc-mov-card__detalle {
+  color: var(--text-primary);
+}
+
+.prov-cc-page .cc-row--anulado .cc-link {
+  color: #fdba74;
+}
+
+.prov-cc-page .cc-row--anulado .cc-money:not(.cc-money--anulado),
+.prov-cc-page .cc-mov-card--anulado .cc-money:not(.cc-money--anulado) {
+  text-decoration: none;
+}
+
+.prov-cc-page .cc-row--anulado .cc-money--anulado,
+.prov-cc-page .cc-mov-card--anulado .cc-money--anulado {
+  text-decoration: line-through;
+  color: #fca5a5;
+}
+
+.prov-cc-page .cc-anulado-badge {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.prov-cc-page .prov-cc-resumen {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .prov-cc-page .prov-cc-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

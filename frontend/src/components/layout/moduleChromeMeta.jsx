@@ -259,8 +259,8 @@ export function getModuleChrome(pathname) {
   if (/^\/proveedores\/[^/]+\/compras$/.test(p)) {
     return {
       kicker: K,
-      title: 'Compras del proveedor',
-      subtitle: 'Órdenes y saldo pendiente',
+      title: 'Cuenta corriente',
+      subtitle: 'Compras, pagos y saldo del proveedor',
       icon: 'bi-cart3',
       toolbarEnd: null,
     }
@@ -278,24 +278,9 @@ export function getModuleChrome(pathname) {
     return {
       kicker: K,
       title: 'Proveedores',
-      subtitle: 'Proveedores y contactos',
+      subtitle: 'Administrá los proveedores del kiosco.',
       icon: 'bi-truck',
-      toolbarEnd: (
-        <div className="vp-toolbar">
-          <Link to="/compras">
-            <Button type="button" variant="outline" className="vp-toolbar__btn" title="Ir a Compras">
-              <i className="bi bi-cart3" aria-hidden />
-              <span className="vp-toolbar__label">Compras</span>
-            </Button>
-          </Link>
-          <Link to="/proveedores/nuevo">
-            <Button variant="primary" className="vp-toolbar__btn vp-toolbar__btn--primary">
-              <i className="bi bi-plus-lg" aria-hidden />
-              <span className="vp-toolbar__label">Nuevo proveedor</span>
-            </Button>
-          </Link>
-        </div>
-      ),
+      toolbarEnd: null,
     }
   }
 

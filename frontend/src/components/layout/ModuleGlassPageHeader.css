@@ -1,12 +1,7 @@
-/* Sentinel: detecta cuándo el header deja el flujo natural (scroll → compacto) */
-.module-glass-page-header__sentinel {
-  position: relative;
-  width: 100%;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-  pointer-events: none;
-  visibility: hidden;
+/* Evita que el navegador “ancle” el scroll y lo suba al achicar el banner. */
+html.module-glass-scroll-stable,
+html.module-glass-scroll-stable body {
+  overflow-anchor: none;
 }
 
 /* Sticky en el .container: mismo ancho/padding que el resto de módulos */
@@ -17,6 +12,7 @@
   align-self: flex-start;
   width: 100%;
   margin-bottom: 0;
+  overflow-anchor: none;
   transition: padding-top 250ms ease;
 }
 
@@ -254,6 +250,87 @@
   .module-glass-page-header--compact .module-glass-page-header__toolbar .btn {
     flex: 0 1 auto;
     width: auto;
+  }
+}
+
+.module-glass-page-header--density-compact.inicio-app-hero--nav {
+  min-height: 0;
+  align-items: center;
+  padding: 0.65rem 1rem !important;
+  margin-bottom: 0.45rem;
+}
+
+.module-glass-page-header--density-compact .inicio-app-hero__head {
+  align-items: center;
+  padding-right: 0;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__left {
+  flex: 1 1 18rem;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__titles {
+  flex: 1 1 12rem;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__right {
+  flex: 0 1 auto;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__desc {
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+
+.module-glass-page-header--density-compact.module-glass-page-header--compact .module-glass-page-header__desc {
+  max-height: 0;
+  margin: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.module-glass-page-header--density-compact .inicio-app-hero__alien {
+  transform: scale(0.62);
+  transform-origin: 100% 50%;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__titles {
+  min-width: 0;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__title {
+  font-size: 1.35rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-glass-page-header--density-compact .module-glass-page-header__toolbar {
+  flex-shrink: 0;
+}
+
+.module-glass-page-header--keep-sub.module-glass-page-header--density-compact .module-glass-page-header__desc,
+.module-glass-page-header--keep-sub.module-glass-page-header--density-compact.module-glass-page-header--compact .module-glass-page-header__desc {
+  max-height: 1.35rem;
+  margin: 0.12rem 0 0 !important;
+  opacity: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .module-glass-page-header--density-compact:not(.module-glass-page-header--compact) .module-glass-page-header__body {
+    flex-wrap: wrap;
+  }
+
+  .module-glass-page-header--density-compact:not(.module-glass-page-header--compact) .module-glass-page-header__right {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
