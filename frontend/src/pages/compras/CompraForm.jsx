@@ -50,6 +50,10 @@ function recalcItem(item) {
   }
 }
 
+function esMetodoPendiente(metodo) {
+  return String(metodo || '').trim().toLowerCase() === 'pendiente'
+}
+
 function CompraForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -144,7 +148,7 @@ function CompraForm() {
           (pagosData || []).map((p) => ({
             metodo: p.metodo_pago || 'efectivo',
             fecha_pago: p.fecha_pago || new Date().toISOString().slice(0, 10),
-            monto_pagado: parseFloat(p.monto_pagado || 0),
+            monto_pagado: esMetodoPendiente(p.metodo_pago) ? 0 : parseFloat(p.monto_pagado || 0),
           })),
         )
 
@@ -293,7 +297,34 @@ function CompraForm() {
       impuesto: 0,
     })
 
-    setItems((prev) => [...prev, nuevoItem])
+    setItems((prev) => {
+      const esElMismo = (item) => String(item.producto_id) === String(producto.id)
+      if (!prev.some(esElMismo)) return [...prev, nuevoItem]
+
+      const cantidadPrevia = prev.reduce(
+        (sum, item) => (esElMismo(item) ? sum + (parseFloat(item.cantidad_solicitada) || 0) : sum),
+        0,
+      )
+      const base = prev.find(esElMismo)
+      const fusionado = recalcItem({
+        ...base,
+        producto_nombre: producto.nombre || base.producto_nombre,
+        cantidad_solicitada: cantidadPrevia + cantidad,
+      })
+      let puesto = false
+      const siguiente = []
+      for (const item of prev) {
+        if (!esElMismo(item)) {
+          siguiente.push(item)
+          continue
+        }
+        if (!puesto) {
+          siguiente.push(fusionado)
+          puesto = true
+        }
+      }
+      return siguiente
+    })
     setProductoSeleccionado(null)
     setProductoSearch('')
     setProductoSuggestions([])
@@ -325,22 +356,43 @@ function CompraForm() {
     }
   }
 
+  const resolverProductoParaCarga = (terminoOverride = null) => {
+    const termino = String(terminoOverride ?? productoSearch ?? '').trim()
+    if (termino) {
+      const exact = productos.find((p) => productoCoincideCodigo(p, termino, { exacto: true }))
+      if (exact) return exact
+    }
+    if (
+      showProductoSuggestions &&
+      productoActiveIndex >= 0 &&
+      productoSuggestions[productoActiveIndex]
+    ) {
+      return productoSuggestions[productoActiveIndex]
+    }
+    if (
+      productoSeleccionado &&
+      (!termino || termino === String(productoSeleccionado.nombre || '').trim())
+    ) {
+      return productoSeleccionado
+    }
+    return null
+  }
+
   const handleProductoKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (showProductoSuggestions && productoActiveIndex >= 0 && productoSuggestions[productoActiveIndex]) {
-        agregarProductoAlCarrito(productoSuggestions[productoActiveIndex])
+      const terminoInput = e.target?.value ?? productoSearch
+      const producto = resolverProductoParaCarga(terminoInput)
+      if (!producto) {
+        if (String(terminoInput || '').trim()) {
+          setError('No se encontró un producto para cargar. Seleccioná uno de la lista.')
+        }
         return
       }
-      if (productoSeleccionado) {
-        agregarProductoAlCarrito(productoSeleccionado)
-        return
-      }
-      const exact = productos.find(
-        (p) =>
-          productoCoincideCodigo(p, productoSearch, { exacto: true }),
-      )
-      if (exact) agregarProductoAlCarrito(exact)
+      setShowProductoSuggestions(false)
+      setProductoSuggestions([])
+      setProductoActiveIndex(-1)
+      agregarProductoAlCarrito(producto)
       return
     }
 
@@ -411,7 +463,10 @@ function CompraForm() {
       return
     }
     setMetodosPago((prev) => {
-      if (prev.length > 0) return prev
+      const normalizados = prev.map((mp) =>
+        esMetodoPendiente(mp.metodo) ? { ...mp, monto_pagado: 0 } : mp,
+      )
+      if (normalizados.length > 0) return normalizados
       return [
         {
           metodo: 'efectivo',
@@ -435,7 +490,23 @@ function CompraForm() {
   }
 
   const actualizarPago = (index, patch) => {
-    setMetodosPago((prev) => prev.map((mp, i) => (i === index ? { ...mp, ...patch } : mp)))
+    setMetodosPago((prev) =>
+      prev.map((mp, i) => {
+        if (i !== index) return mp
+        const siguiente = { ...mp, ...patch }
+        if (esMetodoPendiente(siguiente.metodo)) {
+          return { ...siguiente, monto_pagado: 0 }
+        }
+        if (esMetodoPendiente(mp.metodo) && patch.monto_pagado == null) {
+          const otros = prev.reduce(
+            (sum, linea, j) => (j === index ? sum : sum + (parseFloat(linea.monto_pagado) || 0)),
+            0,
+          )
+          return { ...siguiente, monto_pagado: Math.max(0, totalCalculado - otros) }
+        }
+        return siguiente
+      }),
+    )
   }
 
   const eliminarPago = (index) => {
@@ -964,9 +1035,18 @@ function CompraForm() {
                         min="0"
                         step="0.01"
                         className="form-control vp-vd-input"
-                        value={mp.monto_pagado}
-                        onChange={(e) => actualizarPago(index, { monto_pagado: e.target.value })}
-                        disabled={bloqueada}
+                        value={esMetodoPendiente(mp.metodo) ? 0 : mp.monto_pagado}
+                        onChange={(e) => {
+                          if (esMetodoPendiente(mp.metodo)) return
+                          actualizarPago(index, { monto_pagado: e.target.value })
+                        }}
+                        disabled={bloqueada || esMetodoPendiente(mp.metodo)}
+                        readOnly={esMetodoPendiente(mp.metodo)}
+                        title={
+                          esMetodoPendiente(mp.metodo)
+                            ? 'Pendiente queda en $0,00. El total de la orden pasa a deuda.'
+                            : undefined
+                        }
                         aria-label={`Monto pago línea ${index + 1}`}
                       />
                       <Button

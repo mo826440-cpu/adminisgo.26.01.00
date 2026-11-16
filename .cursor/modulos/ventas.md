@@ -31,7 +31,7 @@ La ruta `ventas/:id` está declarada después de `nueva`, `caja`, `rapida` y `:i
 
 - Ítems por código de barras (cualquiera de `producto_codigos_barras`) o búsqueda de producto. Si el producto ya está en el carrito, se suman las unidades en esa línea; no se abre otra. El precio y el descuento de la línea se mantienen. El stock en cero no impide cargarlos. Al finalizar, si la cantidad supera el stock (incluido stock 0), el modal avisa y pregunta si se carga igual. Si se acepta, la venta se guarda completa y entra en el total. El stock de pantalla no baja de 0.
 - Cliente opcional. Puede usar el cliente preferible. Sin pagos, la venta queda con deuda (`monto_pagado` 0, `monto_deuda` = total) y `metodo_pago` `pendiente`.
-- Pagos múltiples en `venta_pagos`. `metodo_pago` de la cabecera guarda los métodos unidos por coma.
+- Pagos múltiples en `venta_pagos`. `metodo_pago` de la cabecera guarda los métodos unidos por coma. Si la forma es `pendiente`, el monto de esa línea queda en 0 y el campo no se puede editar. El total no cobrado sigue como deuda. Ese método no se inserta en `venta_pagos`.
 - Número de ticket generado en el cliente: `TICKET-YYYYMMDD-HHMMSS-XXXX`.
 - Facturación única por comercio (`idx_ventas_comercio_facturacion_unique`).
 - Antes de crear se llama `validarLimiteVentas`. Si el plan no deja, no se inserta.
@@ -72,6 +72,7 @@ Según el cuerpo de `services/ventas.js` (el comentario de `cancelVenta` dice qu
 - Cancelar y borrar (soft delete) reponen stock. La venta cancelada sigue visible y no entra en rentabilidad.
 - No bloquear el alta del POS porque el stock sea 0. El aviso va al finalizar, y la venta aceptada se cuenta en el total.
 - Un mismo producto ocupa una sola línea del carrito. Cada carga o lectura de barras suma unidades.
+- La forma de pago `pendiente` deja el monto en 0 y no admite otro importe.
 
 ## Archivos
 

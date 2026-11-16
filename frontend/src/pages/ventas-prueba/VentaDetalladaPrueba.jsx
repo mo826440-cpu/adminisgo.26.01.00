@@ -214,7 +214,10 @@ function VentaDetalladaPrueba() {
         const pagos = (ventaData.pagos || []).map(p => ({
           metodo: p.metodo_pago,
           fecha_pago: p.fecha_pago,
-          monto_pagado: parseFloat(p.monto_pagado || 0),
+          monto_pagado:
+            String(p.metodo_pago || '').trim().toLowerCase() === 'pendiente'
+              ? 0
+              : parseFloat(p.monto_pagado || 0),
           monto_deuda: 0,
           _autoMonto: false,
         }))
@@ -538,23 +541,57 @@ function VentaDetalladaPrueba() {
     return pref?.codigo || 'efectivo'
   }
 
-  const crearLineaPago = (monto, autoMonto = true) => ({
-    metodo: getMetodoPagoPreferido(),
-    fecha_pago: new Date().toISOString().slice(0, 10),
-    monto_pagado: Math.max(0, Number(monto) || 0),
-    monto_deuda: 0,
-    _autoMonto: autoMonto,
-  })
+  const esPagoPendiente = (metodo) => String(metodo || '').trim().toLowerCase() === 'pendiente'
+
+  const crearLineaPago = (monto, autoMonto = true) => {
+    const metodo = getMetodoPagoPreferido()
+    const pendiente = esPagoPendiente(metodo)
+    return {
+      metodo,
+      fecha_pago: new Date().toISOString().slice(0, 10),
+      monto_pagado: pendiente ? 0 : Math.max(0, Number(monto) || 0),
+      monto_deuda: 0,
+      _autoMonto: pendiente ? false : autoMonto,
+    }
+  }
 
   const handlePagoMetodoChange = (index, metodo) => {
-    setMetodosPago((prev) => prev.map((mp, i) => (i === index ? { ...mp, metodo } : mp)))
+    setMetodosPago((prev) =>
+      prev.map((mp, i) => {
+        if (i !== index) return mp
+        if (esPagoPendiente(metodo)) {
+          return { ...mp, metodo, monto_pagado: 0, _autoMonto: false }
+        }
+        if (esPagoPendiente(mp.metodo)) {
+          const otros = prev.reduce(
+            (sum, linea, j) => (j === index ? sum : sum + (Number(linea.monto_pagado) || 0)),
+            0
+          )
+          return {
+            ...mp,
+            metodo,
+            monto_pagado: Math.max(0, totalFinal - otros),
+            _autoMonto: false,
+          }
+        }
+        return { ...mp, metodo }
+      })
+    )
+    if (editingPagoIdx === index) {
+      setEditingPagoIdx(null)
+      setPagoMontoRaw('')
+    }
     setError(null)
   }
 
   const handlePagoMontoChange = (index, raw) => {
     const monto = parseMoneyARNumeric(raw)
     setMetodosPago((prev) =>
-      prev.map((mp, i) => (i === index ? { ...mp, monto_pagado: monto, _autoMonto: false } : mp))
+      prev.map((mp, i) => {
+        if (i !== index) return mp
+        if (esPagoPendiente(mp.metodo)) return { ...mp, monto_pagado: 0, _autoMonto: false }
+        return { ...mp, monto_pagado: monto, _autoMonto: false }
+      })
     )
     setError(null)
   }
@@ -598,10 +635,15 @@ function VentaDetalladaPrueba() {
       if (prev.length === 0) {
         return [crearLineaPago(totalFinal)]
       }
-      if (prev.length === 1 && prev[0]._autoMonto !== false) {
-        return [{ ...prev[0], monto_pagado: totalFinal }]
-      }
-      return prev
+      return prev.map((mp) => {
+        if (esPagoPendiente(mp.metodo)) {
+          return { ...mp, monto_pagado: 0, _autoMonto: false }
+        }
+        if (prev.length === 1 && mp._autoMonto !== false) {
+          return { ...mp, monto_pagado: totalFinal }
+        }
+        return mp
+      })
     })
   }, [carrito.length, totalFinal])
 
@@ -1165,10 +1207,19 @@ function VentaDetalladaPrueba() {
                           autoComplete="off"
                           className="form-control vp-vd-input vp-vd-pagos__monto"
                           placeholder="$0,00"
+                          disabled={esPagoPendiente(mp.metodo)}
+                          readOnly={esPagoPendiente(mp.metodo)}
+                          title={
+                            esPagoPendiente(mp.metodo)
+                              ? 'Pendiente queda en $0,00. El total de la venta pasa a deuda.'
+                              : undefined
+                          }
                           value={
-                            editingPagoIdx === index
-                              ? pagoMontoRaw
-                              : formatCurrency(mp.monto_pagado)
+                            esPagoPendiente(mp.metodo)
+                              ? formatCurrency(0)
+                              : editingPagoIdx === index
+                                ? pagoMontoRaw
+                                : formatCurrency(mp.monto_pagado)
                           }
                           onChange={(e) => {
                             const valor = e.target.value

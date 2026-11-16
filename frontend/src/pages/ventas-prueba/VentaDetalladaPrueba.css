@@ -468,6 +468,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.vp-vd-pagos input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .vp-vd-resumen__rows {
   display: grid;
   gap: 0.55rem;

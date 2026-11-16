@@ -1,7 +1,7 @@
 # Módulo: Compras
 
 **Estado:** implementado  
-**Actualizado:** 2026-11-13  
+**Actualizado:** 2026-11-16  
 **Permiso:** `compras`. Quien tiene `reportes` también puede leer compras por RLS (`usuario_permiso_compras_o_reportes`), sin que eso le abra esta ruta.
 
 ## Qué hace
@@ -19,12 +19,12 @@
 
 ## Funciones
 
-- Alta con proveedor obligatorio, ítems (producto, cantidad solicitada, precio) y totales. `comercio_id` lo asigna el trigger de la migración 012. `numero_orden` identifica la orden.
+- Alta con proveedor obligatorio, ítems (producto, cantidad solicitada, precio) y totales. El mismo producto queda en una sola línea: cada carga o lectura de barras suma la cantidad y conserva precio, descuento e impuesto de esa línea. `comercio_id` lo asigna el trigger de la migración 012. `numero_orden` identifica la orden.
 - Estados usados por la UI: `pendiente` (default de la tabla), `recibida`, `cancelada`.
 - Recibir (`recibirCompra`): graba `cantidad_recibida`, suma esa cantidad a `productos.stock_actual` y pasa la orden a `recibida` con `fecha_recepcion`. No se recibe una orden ya recibida ni una cancelada. Si falla el update de stock, el servicio lo registra y sigue: no hay una transacción única en el cliente.
 - Cancelar (`cancelarCompra`): la orden queda visible con estado `cancelada`. Si estaba recibida, resta `cantidad_recibida` del stock sin bajar de cero. Si no estaba recibida, no mueve stock.
 - `deleteCompra` es soft delete (`deleted_at`) y no revierte stock. El listado vigente cancela; no usa este borrado como acción principal.
-- Pagos en `compra_pagos` (migración 013). También se pueden cargar desde la ficha del proveedor: un pago se reparte en las órdenes con deuda, de la más antigua a la más reciente. `deudaEfectivaCompra` = total − `monto_pagado`, y 0 si está cancelada. Anular un pago desde el libro del proveedor setea `anulado_at` (047); el trigger y `sincronizarMontosCompra` no lo suman.
+- Pagos en `compra_pagos` (migración 013). Si la forma es `pendiente`, el monto de esa línea queda en 0 y el campo no se puede editar; ese método no se inserta en `compra_pagos` y el total no pagado queda como deuda. También se pueden cargar desde la ficha del proveedor: un pago se reparte en las órdenes con deuda, de la más antigua a la más reciente. `deudaEfectivaCompra` = total − `monto_pagado`, y 0 si está cancelada. Anular un pago desde el libro del proveedor setea `anulado_at` (047); el trigger y `sincronizarMontosCompra` no lo suman.
 - Editar reemplaza ítems y datos de cabecera mientras la orden lo permite en el formulario.
 
 ## Datos
@@ -44,8 +44,10 @@
 
 ## Reglas
 
-- No descontar stock al crear la orden. El stock se mueve al recibir y se revierte solo si se cancela una recibida.
+- No descontar stock al crear la orden. El stock se mueve al recibir y se revierte solo si se cancela una recibida. El alta no pregunta por stock en cero: la orden se registra igual y el stock suma al recibir.
 - No recrear un ajuste paralelo en `movimientos_inventario` desde esta pantalla.
+- Un mismo producto ocupa una sola línea. Cada carga o lectura suma la cantidad.
+- La forma de pago `pendiente` deja el monto en 0 y no admite otro importe.
 
 ## Archivos
 
