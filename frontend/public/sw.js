@@ -2,7 +2,7 @@
 // IMPORTANTE: Cambiar esta versión cuando quieras forzar una actualización
 // El navegador detectará automáticamente cuando este archivo cambia
 
-const SW_VERSION = '2.6'; // Incrementar este número para forzar actualización
+const SW_VERSION = '2.7'; // Incrementar este número para forzar actualización
 const CACHE_NAME = `adminis-go-${SW_VERSION}`;
 const RUNTIME_CACHE = `adminis-go-runtime-${SW_VERSION}`;
 

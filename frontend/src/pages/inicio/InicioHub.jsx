@@ -11,7 +11,7 @@ function InicioHub() {
   const { loadingPermisos, sinAccesoNingunModulo, isAdmin, puedeModulo } = useAuthContext()
 
   useEffect(() => {
-    document.title = 'Kiosco Aliens · Inicio'
+    document.title = 'Alien’s Drnck’s · Inicio'
   }, [])
 
   const navCards = useMemo(() => buildInicioNavCards(puedeModulo, isAdmin), [puedeModulo, isAdmin])

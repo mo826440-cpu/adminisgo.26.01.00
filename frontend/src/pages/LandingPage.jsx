@@ -21,7 +21,7 @@ function LandingPage() {
   const [tieneComercio, setTieneComercio] = useState(null)
 
   useEffect(() => {
-    document.title = 'AdminisGo · Inicio'
+    document.title = 'Alien’s Drnck’s · Inicio'
   }, [])
 
   useEffect(() => {

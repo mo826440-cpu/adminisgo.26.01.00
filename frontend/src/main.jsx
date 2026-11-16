@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('Adminis Go', {
                 body: 'Hay una nueva versión disponible. La app se actualizará automáticamente.',
-                icon: '/favicon.svg?v=6',
+                icon: '/favicon.svg?v=7',
                 tag: 'app-update',
                 requireInteraction: false,
               });

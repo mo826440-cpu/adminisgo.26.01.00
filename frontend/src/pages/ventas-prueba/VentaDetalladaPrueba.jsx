@@ -30,6 +30,7 @@ function VentaDetalladaPrueba() {
   const productoInputRef = useRef(null)
   const clienteListRef = useRef(null)
   const productoListRef = useRef(null)
+  const cantidadesOriginalesRef = useRef(new Map())
   
   const [productos, setProductos] = useState([])
   const [clientes, setClientes] = useState([])
@@ -74,6 +75,7 @@ function VentaDetalladaPrueba() {
   
   // Estados para modales
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [avisosStock, setAvisosStock] = useState([])
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showPrintOfferModal, setShowPrintOfferModal] = useState(false)
   const [savedVentaId, setSavedVentaId] = useState(null)
@@ -101,16 +103,36 @@ function VentaDetalladaPrueba() {
     }
   }
 
-  const getStockDisponible = (productoId, excludeIndex = null) => {
+  const stockEfectivo = (productoId) => {
     const producto = productos.find((p) => p.id === productoId)
-    const stock = producto?.stock_actual ?? 0
-    const enCarrito = carrito.reduce((sum, item, i) => {
-      if (item.producto_id === productoId && i !== excludeIndex) {
-        return sum + (parseInt(item.cantidad, 10) || 0)
+    const stock = Number(producto?.stock_actual ?? 0)
+    const yaEnEstaVenta = isEditing
+      ? Number(cantidadesOriginalesRef.current.get(productoId) || 0)
+      : 0
+    return stock + yaEnEstaVenta
+  }
+
+  const lineasSinStockSuficiente = () => {
+    const porProducto = new Map()
+    for (const item of carrito) {
+      const actual = porProducto.get(item.producto_id) || {
+        productoId: item.producto_id,
+        nombre: item.nombre,
+        cantidad: 0,
       }
-      return sum
-    }, 0)
-    return Math.max(0, stock - enCarrito)
+      actual.cantidad += parseInt(item.cantidad, 10) || 0
+      actual.nombre = item.nombre || actual.nombre
+      porProducto.set(item.producto_id, actual)
+    }
+
+    const avisos = []
+    for (const info of porProducto.values()) {
+      const stock = stockEfectivo(info.productoId)
+      if (info.cantidad > stock) {
+        avisos.push({ ...info, stock })
+      }
+    }
+    return avisos
   }
 
   const actualizarItemCarrito = (index, patch) => {
@@ -179,6 +201,14 @@ function VentaDetalladaPrueba() {
           precio_unitario_final: parseFloat(item.precio_unitario || 0) * (1 - parseFloat(item.descuento || 0) / 100),
           subtotal: parseFloat(item.subtotal || 0)
         }))
+        const originales = new Map()
+        for (const item of items) {
+          originales.set(
+            item.producto_id,
+            (originales.get(item.producto_id) || 0) + item.cantidad
+          )
+        }
+        cantidadesOriginalesRef.current = originales
         setCarrito(items)
 
         const pagos = (ventaData.pagos || []).map(p => ({
@@ -190,6 +220,7 @@ function VentaDetalladaPrueba() {
         }))
         setMetodosPago(pagos)
       } else {
+        cantidadesOriginalesRef.current = new Map()
         const [{ data: prefCliente }, { data: prefProducto }] = await Promise.all([
           getClientePreferible(),
           getProductoPreferible(),
@@ -418,12 +449,6 @@ function VentaDetalladaPrueba() {
       return
     }
 
-    const disponible = getStockDisponible(producto.id)
-    if (cantidad > disponible) {
-      setError(`Stock insuficiente (disponible: ${disponible})`)
-      return
-    }
-
     const precioBase = parseFloat(producto.precio_venta || 0)
     const nuevoItem = recalcCarritoItem({
       producto_id: producto.id,
@@ -433,7 +458,35 @@ function VentaDetalladaPrueba() {
       descuento: 0,
     })
 
-    setCarrito([...carrito, nuevoItem])
+    setCarrito((prev) => {
+      const esElMismo = (item) => String(item.producto_id) === String(producto.id)
+      const yaCargado = prev.some(esElMismo)
+      if (!yaCargado) return [...prev, nuevoItem]
+
+      const cantidadPrevia = prev.reduce(
+        (sum, item) => (esElMismo(item) ? sum + (parseInt(item.cantidad, 10) || 0) : sum),
+        0
+      )
+      const base = prev.find(esElMismo)
+      const fusionado = recalcCarritoItem({
+        ...base,
+        nombre: producto.nombre || base.nombre,
+        cantidad: cantidadPrevia + cantidad,
+      })
+      let puesto = false
+      const siguiente = []
+      for (const item of prev) {
+        if (!esElMismo(item)) {
+          siguiente.push(item)
+          continue
+        }
+        if (!puesto) {
+          siguiente.push(fusionado)
+          puesto = true
+        }
+      }
+      return siguiente
+    })
 
     setProductoSearch('')
     setProductoSeleccionado(null)
@@ -456,12 +509,6 @@ function VentaDetalladaPrueba() {
   const handleCarritoCantidadChange = (index, raw) => {
     const cantidad = parseInt(String(raw).replace(/[^\d]/g, '') || '0', 10)
     if (cantidad <= 0) return
-    const item = carrito[index]
-    const disponible = getStockDisponible(item.producto_id, index)
-    if (cantidad > disponible) {
-      setError(`Stock insuficiente para "${item.nombre}" (máx. ${disponible})`)
-      return
-    }
     actualizarItemCarrito(index, { cantidad })
   }
 
@@ -575,6 +622,7 @@ function VentaDetalladaPrueba() {
       return
     }
 
+    setAvisosStock(lineasSinStockSuficiente())
     setShowConfirmModal(true)
   }
 
@@ -1222,15 +1270,38 @@ function VentaDetalladaPrueba() {
           footer={
             <>
               <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
-                Cancelar
+                {avisosStock.length > 0 ? 'No cargar' : 'Cancelar'}
               </Button>
               <Button variant="primary" onClick={guardarVenta} loading={saving}>
-                Confirmar
+                {avisosStock.length > 0 ? 'Sí, cargar igual' : 'Confirmar'}
               </Button>
             </>
           }
         >
-          <p className="vp-vd-confirm__intro">¿Confirmás el registro de esta venta?</p>
+          {avisosStock.length > 0 ? (
+            <div className="vp-vd-confirm__stock" role="alert">
+              {avisosStock.length === 1 ? (
+                <p>
+                  {avisosStock[0].nombre} figura con stock {avisosStock[0].stock}
+                  {avisosStock[0].cantidad > 1 ? ` y en esta venta van ${avisosStock[0].cantidad} unidades` : ''}.
+                </p>
+              ) : (
+                <>
+                  <p>Estos productos no tienen el stock de la venta:</p>
+                  <ul>
+                    {avisosStock.map((aviso) => (
+                      <li key={aviso.productoId}>
+                        {aviso.nombre}: stock {aviso.stock}, se venden {aviso.cantidad}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <p>Si aceptás, la venta se carga igual y se cuenta en el total.</p>
+            </div>
+          ) : (
+            <p className="vp-vd-confirm__intro">¿Confirmás el registro de esta venta?</p>
+          )}
           <dl className="vp-vd-confirm">
             <div className="vp-vd-confirm__row">
               <dt>Cliente</dt>

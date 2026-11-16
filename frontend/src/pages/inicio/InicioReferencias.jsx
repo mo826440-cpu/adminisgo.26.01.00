@@ -11,7 +11,7 @@ function InicioReferencias() {
   const { loadingPermisos, puedeModulo } = useAuthContext()
 
   useEffect(() => {
-    document.title = 'AdminisGo · Referencias'
+    document.title = 'Alien’s Drnck’s · Referencias'
   }, [])
 
   const cards = useMemo(() => buildReferenciasHubCards(puedeModulo), [puedeModulo])

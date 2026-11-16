@@ -1,7 +1,7 @@
 # Módulo: Ventas
 
 **Estado:** implementado. Es el módulo principal.  
-**Actualizado:** 2026-11-13  
+**Actualizado:** 2026-11-16  
 **Permiso:** `ventas`. Caja y venta rápida de esta UI aceptan `ventas` o `ventas_rapidas`. Quien tiene `reportes` puede leer las tablas de ventas por RLS sin abrir esta ruta.
 
 La UI vigente está en `pages/ventas-prueba/` y `components/ventas-prueba/`. El nombre “prueba” es histórico. `/ventas-prueba` redirige a `/ventas`.
@@ -29,7 +29,7 @@ La ruta `ventas/:id` está declarada después de `nueva`, `caja`, `rapida` y `:i
 
 ## POS y venta rápida de esta UI
 
-- Ítems por código de barras (cualquiera de `producto_codigos_barras`) o búsqueda de producto.
+- Ítems por código de barras (cualquiera de `producto_codigos_barras`) o búsqueda de producto. Si el producto ya está en el carrito, se suman las unidades en esa línea; no se abre otra. El precio y el descuento de la línea se mantienen. El stock en cero no impide cargarlos. Al finalizar, si la cantidad supera el stock (incluido stock 0), el modal avisa y pregunta si se carga igual. Si se acepta, la venta se guarda completa y entra en el total. El stock de pantalla no baja de 0.
 - Cliente opcional. Puede usar el cliente preferible. Sin pagos, la venta queda con deuda (`monto_pagado` 0, `monto_deuda` = total) y `metodo_pago` `pendiente`.
 - Pagos múltiples en `venta_pagos`. `metodo_pago` de la cabecera guarda los métodos unidos por coma.
 - Número de ticket generado en el cliente: `TICKET-YYYYMMDD-HHMMSS-XXXX`.
@@ -43,7 +43,7 @@ La ruta `ventas/:id` está declarada después de `nueva`, `caja`, `rapida` y `:i
 
 Según el cuerpo de `services/ventas.js` (el comentario de `cancelVenta` dice que no toca stock; el código sí lo repone):
 
-- Crear descuenta `cantidad` de `productos.stock_actual`. Si el resultado es negativo, se guarda 0. Un error de stock se registra y no revierte la venta ya insertada.
+- Crear descuenta `cantidad` de `productos.stock_actual`. Si el resultado es negativo, se guarda 0. La venta y sus ítems quedan igual, aunque el producto haya estado en stock 0. Un error de stock se registra y no revierte la venta ya insertada.
 - Editar devuelve el stock de los ítems viejos y descuenta los nuevos, con el mismo piso en 0 (`updateStockByDelta`).
 - Cancelar deja la venta visible, estado `cancelada`, y repone la cantidad de cada ítem. No se puede cancelar dos veces. La cuenta del cliente anula el movimiento de la venta con esta misma función.
 - `deleteVenta` es soft delete (`deleted_at`) y también repone stock. Está marcado como deprecado. Lo usa la ruta histórica de ventas rápidas, no el listado de `/ventas`.
@@ -70,6 +70,8 @@ Según el cuerpo de `services/ventas.js` (el comentario de `cancelVenta` dice qu
 - No embeber `clientes`/`usuarios` en el `select` paginado del listado.
 - No presentar el rango de tres meses como filtro por defecto del listado de `/ventas`. Ese rango sigue en `getVentas`.
 - Cancelar y borrar (soft delete) reponen stock. La venta cancelada sigue visible y no entra en rentabilidad.
+- No bloquear el alta del POS porque el stock sea 0. El aviso va al finalizar, y la venta aceptada se cuenta en el total.
+- Un mismo producto ocupa una sola línea del carrito. Cada carga o lectura de barras suma unidades.
 
 ## Archivos
 

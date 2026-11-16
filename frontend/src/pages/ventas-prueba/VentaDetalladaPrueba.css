@@ -637,6 +637,28 @@
   color: var(--text-primary);
 }
 
+.vp-vd-confirm__stock {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, #fbbf24 16%, transparent);
+  border: 1px solid color-mix(in srgb, #fbbf24 45%, transparent);
+  color: var(--text-primary);
+}
+
+.vp-vd-confirm__stock p {
+  margin: 0 0 0.45rem;
+}
+
+.vp-vd-confirm__stock p:last-child {
+  margin: 0;
+}
+
+.vp-vd-confirm__stock ul {
+  margin: 0 0 0.45rem;
+  padding-left: 1.1rem;
+}
+
 .vp-vd-confirm {
   margin: 0;
   display: grid;

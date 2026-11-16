@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 function AccesoShell({ children }) {
   useEffect(() => {
     const previo = document.title
-    document.title = 'Alien’s · Kiosco/Bebidas'
+    document.title = 'Alien’s Drnck’s'
     return () => {
       document.title = previo
     }
